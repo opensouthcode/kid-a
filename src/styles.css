@@ -1,0 +1,148 @@
+:root {
+  color: #213547;
+  background: #fff8eb;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  min-height: 100vh;
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+.app-shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+.site-header {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 32px;
+  border: 1px solid #f1d7a6;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #fffdf7 0%, #ffedbd 100%);
+  box-shadow: 0 16px 48px rgb(125 83 0 / 12%);
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  color: #a35d00;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  max-width: 720px;
+  margin-bottom: 12px;
+  font-size: clamp(2.3rem, 6vw, 4.5rem);
+  line-height: 0.95;
+}
+
+h2 {
+  margin-bottom: 16px;
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+}
+
+.site-description {
+  max-width: 680px;
+  margin-bottom: 0;
+  color: #5b4b31;
+  font-size: 1.15rem;
+}
+
+.language-picker {
+  display: grid;
+  gap: 8px;
+  min-width: 160px;
+  color: #5b4b31;
+  font-weight: 700;
+}
+
+.language-picker select {
+  border: 1px solid #dfb86b;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: #fffdf7;
+  color: #213547;
+}
+
+.route-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 28px 0;
+}
+
+.route-nav a {
+  border: 1px solid #f1d7a6;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #fffdf7;
+  color: #5b4b31;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.route-nav a.active,
+.route-nav a:hover {
+  border-color: #f4a300;
+  background: #f4a300;
+  color: #231a05;
+}
+
+.page-card {
+  min-height: 260px;
+  padding: 32px;
+  border: 1px solid #d8e7d4;
+  border-radius: 28px;
+  background: #f7fff4;
+  box-shadow: 0 16px 48px rgb(30 87 42 / 10%);
+}
+
+.page-card p:last-child {
+  max-width: 680px;
+  margin-bottom: 0;
+  color: #40573d;
+  font-size: 1.1rem;
+}
+
+@media (max-width: 720px) {
+  .site-header {
+    flex-direction: column;
+  }
+
+  .language-picker {
+    width: 100%;
+  }
+}
