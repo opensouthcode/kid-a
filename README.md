@@ -1,5 +1,7 @@
 # kid-a
 
+![Kid-A logo](docs/KidA.jpg)
+
 Web app to manage the pear-ish OpenSouthKids.
 
 Aplicación web para gestionar OpenSouthKids con cariño pear-ish.
