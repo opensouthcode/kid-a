@@ -1,7 +1,7 @@
 import { createContext, useContext, type PropsWithChildren } from 'react';
-import conferenceJson from './conference.json';
-import passportActivitiesJson from './passportActivities.json';
-import sampleKidJson from './sampleKid.json';
+import conferenceJson from '../data/conference.json';
+import passportActivitiesJson from '../data/passportActivities.json';
+import sampleKidJson from '../data/sampleKid.json';
 
 export type ConferenceData = {
   shortName: string;

@@ -9,7 +9,7 @@ import { TopBar } from '../components/TopBar';
 import {
   useConferenceData,
   usePassportData,
-} from '../data/DataLayerContext';
+} from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import type { MessageKey } from '../i18n/messages';
 

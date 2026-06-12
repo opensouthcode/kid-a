@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { TopBar } from './components/TopBar';
-import { useConferenceData } from './data/DataLayerContext';
+import { useConferenceData } from './contexts/DataLayerContext';
 import { useI18n } from './i18n/I18nProvider';
 import type { MessageKey } from './i18n/messages';
 import { PassportPage } from './pages/PassportPage';

@@ -10,7 +10,7 @@
 - Do not hard-code user-facing strings.
 - Before opening a PR, detect and remove unused literals.
 - Add screenshots of every UI change to the PR.
-- JSON demo data lives behind `DataLayerContext`; use hooks like `useUserData` and `usePassportData`.
+- JSON demo data lives in `src/data`; access it via `src/contexts/DataLayerContext` hooks.
 - Main page structure: `App` selects the page, `TopBar` is shared, route pages live in `src/pages`.
 - 2025 app is reference only; do not reuse its code.
 - Kid identity is QR-based, no password.

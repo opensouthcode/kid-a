@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { PersonIcon, SmileyGrinIcon } from '@primer/octicons-react';
-import { useUserData } from '../data/DataLayerContext';
+import { useUserData } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { isSupportedLocale, supportedLocales } from '../i18n/messages';
 
