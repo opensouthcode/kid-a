@@ -10,8 +10,7 @@ export function isSupportedLocale(value: string | null): value is Locale {
 
 export const messages = {
   en: {
-    'app.eyebrow': 'OpenSouthKids',
-    'app.title': 'Welcome to OpenSouthKids 2026',
+    'app.titlePrefix': 'Welcome to',
     'app.description':
       'A playful space inside OpenSouthCode where kids can explore activities, collect progress with their QR passport, and get ready for surprises.',
     'app.access': 'Access',
@@ -21,7 +20,6 @@ export const messages = {
     'access.role.wheel': 'Wheel',
     'access.role.lead': 'Lead',
     'access.role.parent': 'Parent',
-    'kid.eyebrow': 'OpenSouthKids 2026',
     'kid.title': 'Passport',
     'kid.activities.title': 'Activities',
     'kid.activity.completed': 'Completed',
@@ -36,7 +34,6 @@ export const messages = {
     'user.guest': 'Guest user',
     'user.kid.menu': 'Kid profile',
     'user.kid.nameLabel': 'Name',
-    'user.kid.name': 'Demo Kid',
     'user.kid.logout': 'Log out',
     'routes.home.title': 'Home',
     'routes.home.role': 'Welcome',
@@ -72,8 +69,7 @@ export const messages = {
       'A future map for finding activities and meeting points.',
   },
   es: {
-    'app.eyebrow': 'OpenSouthKids',
-    'app.title': 'Bienvenida a OpenSouthKids 2026',
+    'app.titlePrefix': 'Bienvenida a',
     'app.description':
       'Un espacio divertido dentro de OpenSouthCode donde peques pueden explorar actividades, guardar su progreso con su pasaporte QR y prepararse para sorpresas.',
     'app.access': 'Acceder',
@@ -83,7 +79,6 @@ export const messages = {
     'access.role.wheel': 'Ruleta',
     'access.role.lead': 'Guía',
     'access.role.parent': 'Familia',
-    'kid.eyebrow': 'OpenSouthKids 2026',
     'kid.title': 'Pasaporte',
     'kid.activities.title': 'Actividades',
     'kid.activity.completed': 'Completada',
@@ -98,7 +93,6 @@ export const messages = {
     'user.guest': 'Usuario invitado',
     'user.kid.menu': 'Perfil infantil',
     'user.kid.nameLabel': 'Nombre',
-    'user.kid.name': 'Peque demo',
     'user.kid.logout': 'Cerrar sesión',
     'routes.home.title': 'Inicio',
     'routes.home.role': 'Bienvenida',

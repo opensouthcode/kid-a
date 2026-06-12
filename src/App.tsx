@@ -8,6 +8,9 @@ import {
   SmileyGrinIcon,
 } from '@primer/octicons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import conference from './data/conference.json';
+import kidActivities from './data/passportActivities.json';
+import sampleKid from './data/sampleKid.json';
 import { useI18n } from './i18n/I18nProvider';
 import {
   isSupportedLocale,
@@ -59,25 +62,6 @@ const accessRoles: AccessRole[] = [
   },
 ];
 
-const kidActivities: KidActivity[] = [
-  { id: 1, isCompleted: true },
-  { id: 2, isCompleted: true },
-  { id: 3, isCompleted: false },
-  { id: 4, isCompleted: false },
-  { id: 5, isCompleted: true },
-  { id: 6, isCompleted: false },
-  { id: 7, isCompleted: false },
-  { id: 8, isCompleted: false },
-  { id: 9, isCompleted: true },
-  { id: 10, isCompleted: false },
-  { id: 11, isCompleted: false },
-  { id: 12, isCompleted: false },
-  { id: 13, isCompleted: true },
-  { id: 14, isCompleted: false },
-  { id: 15, isCompleted: false },
-  { id: 16, isCompleted: false },
-];
-
 const kidOptions: KidOption[] = [
   {
     id: 'wheel',
@@ -96,7 +80,8 @@ function App() {
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [isAccessDialogOpen, setIsAccessDialogOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  const completedActivities = kidActivities.filter(
+  const passportActivities: KidActivity[] = kidActivities;
+  const completedActivities = passportActivities.filter(
     (activity) => activity.isCompleted,
   ).length;
 
@@ -195,13 +180,13 @@ function App() {
                 onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
               >
                 <SmileyGrinIcon size={22} aria-hidden="true" />
-                <span>{t('user.kid.name')}</span>
+                <span>{sampleKid.name}</span>
               </button>
               {isUserMenuOpen ? (
                 <section className="user-menu" aria-label={t('user.kid.menu')}>
                   <div className="user-menu-name">
                     <span>{t('user.kid.nameLabel')}</span>
-                    <strong>{t('user.kid.name')}</strong>
+                    <strong>{sampleKid.name}</strong>
                   </div>
                   <div className="user-menu-language">
                     <span>{t('language.label')}</span>
@@ -265,12 +250,12 @@ function App() {
                 </button>
               ))}
             </nav>
-            <p className="eyebrow">{t('kid.eyebrow')}</p>
+            <p className="eyebrow">{conference.title}</p>
             <h1 id="kid-page-title">{t('kid.title')}</h1>
 
             <section className="activity-section" aria-label={t('kid.activities.title')}>
               <div className="activity-grid">
-                {kidActivities.map((activity) => (
+                {passportActivities.map((activity) => (
                   <article
                     className={
                       activity.isCompleted
@@ -297,8 +282,10 @@ function App() {
           </section>
         ) : (
           <section className="welcome-content">
-            <p className="eyebrow">{t('app.eyebrow')}</p>
-            <h1>{t('app.title')}</h1>
+            <p className="eyebrow">{conference.shortName}</p>
+            <h1>
+              {t('app.titlePrefix')} {conference.title}
+            </h1>
             <p className="site-description">{t('app.description')}</p>
             <div className="access-menu">
               <button
