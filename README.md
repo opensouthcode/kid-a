@@ -6,6 +6,10 @@ Web app to manage the pear-ish OpenSouthKids.
 
 Aplicación web para gestionar OpenSouthKids con cariño pear-ish.
 
+## Product stories
+
+- [Kid happy path](docs/kid-story.md)
+
 ## Local development
 
 This frontend uses React, TypeScript, Vite, and React Router.
