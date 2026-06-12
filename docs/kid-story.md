@@ -15,3 +15,7 @@ Happy path for a kid joining OpenSouthKids.
 11. The kid completes activity 3.
 12. The activity lead scans the kid QR and marks activity 3 as completed.
 13. The kid sees activity 3 completed in their passport.
+14. The kid clicks **Friends**.
+15. The kid can show their QR, or scan another kid QR, to become a follower.
+16. The kid completes 4 activities.
+17. The top bar shows a **1 wheel shot** button.
