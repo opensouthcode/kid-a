@@ -15,7 +15,7 @@ export const appRoutes: AppRoute[] = [
     descriptionKey: 'routes.home.description',
   },
   {
-    path: '/kid',
+    path: '/passport',
     titleKey: 'routes.kid.title',
     roleKey: 'routes.kid.role',
     descriptionKey: 'routes.kid.description',

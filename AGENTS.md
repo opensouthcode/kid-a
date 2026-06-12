@@ -8,6 +8,8 @@
 - App UI: English and Spanish.
 - Each kid has a language preference.
 - Do not hard-code user-facing strings.
+- Before opening a PR, detect and remove unused literals.
+- Add screenshots of every UI change to the PR.
 - 2025 app is reference only; do not reuse its code.
 - Kid identity is QR-based, no password.
 - Minimum production scope: registration, QR, activities, progress, wheel, staff roles, export/reset.
