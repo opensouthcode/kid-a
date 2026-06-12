@@ -280,6 +280,10 @@ h2 {
 }
 
 .role-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
   width: 100%;
   border: 1px solid #c9ac77;
   border-radius: 999px;
@@ -291,6 +295,14 @@ h2 {
 
 .role-card {
   cursor: not-allowed;
+}
+
+.role-card small {
+  color: #8c5a18;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .role-card.enabled {

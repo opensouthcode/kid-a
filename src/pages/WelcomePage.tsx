@@ -1,48 +1,20 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
-import { useConferenceData } from '../contexts/DataLayerContext';
+import {
+  useConferenceData,
+  useSetCurrentUser,
+  useUsersData,
+  type UserData,
+} from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
-import type { MessageKey } from '../i18n/messages';
-
-type AccessRole = {
-  id: string;
-  labelKey: MessageKey;
-  isEnabled: boolean;
-};
-
-const accessRoles: AccessRole[] = [
-  {
-    id: 'kid',
-    labelKey: 'access.role.kid',
-    isEnabled: true,
-  },
-  {
-    id: 'desk',
-    labelKey: 'access.role.desk',
-    isEnabled: false,
-  },
-  {
-    id: 'wheel',
-    labelKey: 'access.role.wheel',
-    isEnabled: false,
-  },
-  {
-    id: 'lead',
-    labelKey: 'access.role.lead',
-    isEnabled: false,
-  },
-  {
-    id: 'parent',
-    labelKey: 'access.role.parent',
-    isEnabled: false,
-  },
-];
 
 export function WelcomePage() {
   const conference = useConferenceData();
   const navigate = useNavigate();
+  const setCurrentUser = useSetCurrentUser();
   const { t } = useI18n();
+  const users = useUsersData();
   const [isAccessDialogOpen, setIsAccessDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -61,7 +33,8 @@ export function WelcomePage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAccessDialogOpen]);
 
-  const openKidPage = () => {
+  const openKidPage = (user: UserData) => {
+    setCurrentUser(user.id);
     setIsAccessDialogOpen(false);
     navigate('/passport');
   };
@@ -88,17 +61,18 @@ export function WelcomePage() {
             <section className="access-popover" aria-label={t('access.title')}>
               <h2>{t('access.title')}</h2>
               <div className="role-list">
-                {accessRoles.map((role) => (
+                {users.map((user) => (
                   <button
-                    className={
-                      role.isEnabled ? 'role-card enabled' : 'role-card'
-                    }
-                    disabled={!role.isEnabled}
-                    key={role.id}
+                    className={user.role === 'kid' ? 'role-card enabled' : 'role-card'}
+                    disabled={user.role !== 'kid'}
+                    key={user.id}
                     type="button"
-                    onClick={role.isEnabled ? openKidPage : undefined}
+                    onClick={
+                      user.role === 'kid' ? () => openKidPage(user) : undefined
+                    }
                   >
-                    {t(role.labelKey)}
+                    <strong>{user.name}</strong>
+                    <small>{user.role}</small>
                   </button>
                 ))}
               </div>
