@@ -10,6 +10,7 @@ import conferenceJson from '../data/conference.json';
 import kidsJson from '../data/kids.json';
 import passportActivitiesJson from '../data/passportActivities.json';
 import usersJson from '../data/users.json';
+import { createKidQrIdData, getNextKidId } from '../utils/kid-id';
 import type { KidGender, RegistrationInput } from '../utils/kid-registration';
 import type { Locale } from '../i18n/messages';
 
@@ -146,19 +147,6 @@ const emptyPassportTemplate =
     id: activity.id,
   })) ?? [];
 
-function getNextKidId(existingKids: Kid[], kidIdPrefix: string) {
-  const existingIds = new Set(existingKids.map((kid) => kid.id.toLowerCase()));
-  let sequence = existingKids.length + 1;
-  let nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
-
-  while (existingIds.has(nextId.toLowerCase())) {
-    sequence += 1;
-    nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
-  }
-
-  return nextId;
-}
-
 const DataLayerContext = createContext<DataLayerContextValue | undefined>(
   undefined,
 );
@@ -206,7 +194,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       id: kidId,
       language: registration.language,
       name: registration.nickname.trim(),
-      qrIdData: `kid-a:${kidId}`,
+      qrIdData: createKidQrIdData(kidId),
     };
 
     setKidList((currentKids) => [...currentKids, registeredKid]);

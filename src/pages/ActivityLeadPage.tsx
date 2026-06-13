@@ -15,13 +15,7 @@ import {
   type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
-
-function getKidSequenceNumber(kidId: string) {
-  const numericId = kidId.replace(/\D/g, '');
-  const sequenceDigits = numericId.slice(-4);
-
-  return sequenceDigits ? Number(sequenceDigits) : undefined;
-}
+import { getKidSequenceNumber } from '../utils/kid-id';
 
 function findKidByManualNumber(kids: Kid[], rawSearchValue: string) {
   const searchedNumber = Number(rawSearchValue);
