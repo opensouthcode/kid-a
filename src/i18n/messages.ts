@@ -45,7 +45,6 @@ export const messages = {
     'registration.error.nickname': 'Enter a nickname.',
     'registration.error.age': 'Enter age as a whole number.',
     'registration.error.gender': 'Choose a gender option.',
-    'registration.error.language': 'Choose a supported language.',
     'registration.error.qr': 'The registration QR could not be generated.',
     'desk.eyebrow': 'Desk role',
     'desk.title': 'Registration desk',
@@ -82,9 +81,6 @@ export const messages = {
     'user.menu': 'User profile',
     'user.nameLabel': 'Name',
     'user.logout': 'Log out',
-    'user.kid.menu': 'Kid profile',
-    'user.kid.nameLabel': 'Name',
-    'user.kid.logout': 'Log out',
   },
   es: {
     'app.titlePrefix': 'Bienvenida a',
@@ -122,7 +118,6 @@ export const messages = {
     'registration.error.nickname': 'Introduce un nickname.',
     'registration.error.age': 'Introduce la edad como un número entero.',
     'registration.error.gender': 'Elige una opción de género.',
-    'registration.error.language': 'Elige un idioma disponible.',
     'registration.error.qr': 'No se pudo generar el QR de registro.',
     'desk.eyebrow': 'Rol de mesa',
     'desk.title': 'Mesa de registro',
@@ -159,9 +154,6 @@ export const messages = {
     'user.menu': 'Perfil de usuario',
     'user.nameLabel': 'Nombre',
     'user.logout': 'Cerrar sesión',
-    'user.kid.menu': 'Perfil infantil',
-    'user.kid.nameLabel': 'Nombre',
-    'user.kid.logout': 'Cerrar sesión',
   },
 } as const;
 
