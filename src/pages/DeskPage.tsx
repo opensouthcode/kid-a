@@ -32,6 +32,7 @@ export function DeskPage() {
   const [gender, setGender] = useState<KidGender>('preferNotToSay');
   const [languagePreference, setLanguagePreference] = useState<Locale>(locale);
   const [formError, setFormError] = useState('');
+  const [invalidQrPreview, setInvalidQrPreview] = useState('');
   const [registeredKid, setRegisteredKid] = useState<UserData>();
 
   useEffect(() => {
@@ -66,6 +67,7 @@ export function DeskPage() {
 
       if (!registration) {
         setFormError(t('desk.error.invalidQr'));
+        setInvalidQrPreview(qrPayload);
         return;
       }
 
@@ -74,8 +76,10 @@ export function DeskPage() {
       setGender(registration.gender);
       setLanguagePreference(registration.languagePreference);
       setFormError('');
+      setInvalidQrPreview('');
     } catch {
       setFormError(t('desk.error.invalidQr'));
+      setInvalidQrPreview(qrPayload);
     }
   };
 
@@ -133,6 +137,7 @@ export function DeskPage() {
 
     try {
       setFormError('');
+      setInvalidQrPreview('');
       const stream = await getCameraStream();
 
       streamRef.current = stream;
@@ -163,16 +168,19 @@ export function DeskPage() {
 
     if (!nickname.trim()) {
       setFormError(t('registration.error.nickname'));
+      setInvalidQrPreview('');
       return;
     }
 
     if (!isValidKidAge(nextAge)) {
       setFormError(t('registration.error.age'));
+      setInvalidQrPreview('');
       return;
     }
 
     if (!isKidGender(gender)) {
       setFormError(t('registration.error.gender'));
+      setInvalidQrPreview('');
       return;
     }
 
@@ -185,6 +193,7 @@ export function DeskPage() {
 
     setRegisteredKid(nextRegisteredKid);
     setFormError('');
+    setInvalidQrPreview('');
   };
 
   return (
@@ -207,11 +216,7 @@ export function DeskPage() {
         <form className="desk-registration" onSubmit={confirmRegistration}>
           <div className="desk-registration-layout">
             <section className="scanner-panel" aria-label={t('desk.scanQr')}>
-              <p>
-                {isScannerActive
-                  ? t('desk.scanner.active')
-                  : t('desk.scanner.idle')}
-              </p>
+              {isScannerActive ? <p>{t('desk.scanner.active')}</p> : null}
               <div
                 className={isScannerActive ? 'scanner-view' : 'scanner-view hidden'}
               >
@@ -260,7 +265,14 @@ export function DeskPage() {
               setNickname={setNickname}
             />
           </div>
-          {formError ? <p className="form-error">{formError}</p> : null}
+          {formError ? (
+            <div className="form-error">
+              <p>{formError}</p>
+              {invalidQrPreview ? (
+                <pre className="invalid-qr-preview">{invalidQrPreview}</pre>
+              ) : null}
+            </div>
+          ) : null}
           <button className="access-button desk-submit-button" type="submit">
             {t('desk.confirm')}
           </button>

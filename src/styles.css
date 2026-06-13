@@ -647,6 +647,23 @@ h2 {
   font-weight: 800;
 }
 
+.form-error p {
+  margin-bottom: 0;
+}
+
+.invalid-qr-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 8px 0 0;
+  color: #5a4228;
+  font: 0.86rem ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-weight: 700;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 .desk-registration {
   margin-top: 24px;
 }
