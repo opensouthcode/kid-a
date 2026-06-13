@@ -1,0 +1,83 @@
+[
+  {
+    "id": "1",
+    "title": "Micro:bit Luces",
+    "details": "Let's learn about Micro:bit.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/38"
+  },
+  {
+    "id": "2",
+    "title": "Hackea el Zombie",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/31"
+  },
+  {
+    "id": "3",
+    "title": "Desenchufao",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+  },
+  {
+    "id": "4",
+    "title": "Makey Makey Dance Dance",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+  },
+  {
+    "id": "5",
+    "title": "Anima tu dibujo",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+  },
+  {
+    "id": "6",
+    "title": "Aprende Git",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+  },
+  {
+    "id": "7",
+    "title": "Magnific workflow",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/11"
+  },
+  {
+    "id": "8",
+    "title": "Comic AI - Elige tu aventura",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+  },
+  {
+    "id": "9",
+    "title": "NFC Cinexin",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/9"
+  },
+  {
+    "id": "10",
+    "title": "TinkerCAD",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+  },
+  {
+    "id": "11",
+    "title": "YWT 1 y 2",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+  },
+  {
+    "id": "12",
+    "title": "YWT 3 y 4",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+  },
+  {
+    "id": "13",
+    "title": "Mural digital",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/6"
+  },
+  {
+    "id": "14",
+    "title": "Si fueras un Octogato",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/7"
+  },
+  {
+    "id": "15",
+    "title": "Ada & Zangemann: Manualidades",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/3"
+  },
+  {
+    "id": "16",
+    "title": "Ada & Zangemann: Cine",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/3"
+  }
+]

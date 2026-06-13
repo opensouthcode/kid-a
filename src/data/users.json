@@ -1,5 +1,5 @@
 [
   { "id": "cia", "name": "Cia", "role": "desk" },
   { "id": "flash", "name": "Flash", "role": "wheel" },
-  { "id": "beny", "name": "Beny", "role": "lead" }
+  { "id": "beny", "name": "Beny", "role": "lead", "activityId": 1 }
 ]

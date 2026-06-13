@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { BackHomeButton } from '../components/BackHomeButton';
 import { RegisterKidForm } from '../components/RegisterKidForm';
 import { TopBar } from '../components/TopBar';
 import { useI18n } from '../i18n/I18nProvider';
@@ -13,7 +13,6 @@ import {
 } from '../utils/kid-registration';
 
 export function RegistrationRequestPage() {
-  const navigate = useNavigate();
   const { locale, t } = useI18n();
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState('');
@@ -75,13 +74,7 @@ export function RegistrationRequestPage() {
     <>
       <TopBar showLanguageSwitcher />
       <section className="registration-content" aria-labelledby="register-title">
-        <button
-          className="link-button"
-          type="button"
-          onClick={() => navigate('/')}
-        >
-          {t('navigation.home')}
-        </button>
+        <BackHomeButton />
         <p className="eyebrow">{t('registration.eyebrow')}</p>
         <h1 id="register-title">{t('registration.title')}</h1>
         <p className="site-description">{t('registration.description')}</p>

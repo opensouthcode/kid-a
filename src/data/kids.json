@@ -2,6 +2,7 @@
   {
     "id": "26OSK0001",
     "name": "Barbie",
+    "qrIdData": "kid-a:26OSK0001",
     "age": 9,
     "gender": "girl",
     "language": "en"
@@ -9,6 +10,7 @@
   {
     "id": "26OSK0002",
     "name": "Ken",
+    "qrIdData": "kid-a:26OSK0002",
     "age": 10,
     "gender": "boy",
     "language": "en"

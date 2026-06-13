@@ -1,0 +1,220 @@
+import { AlertIcon } from '@primer/octicons-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ActivityHero } from '../components/ActivityHero';
+import { KidFinder } from '../components/KidFinder';
+import { KidList } from '../components/KidList';
+import { ProgressCounter } from '../components/ProgressCounter';
+import { TopBar } from '../components/TopBar';
+import {
+  useActivitiesData,
+  useCurrentUser,
+  useGetPassportForKid,
+  useKidsData,
+  useMarkPassportActivityDone,
+  type Kid,
+} from '../contexts/DataLayerContext';
+import { useI18n } from '../i18n/I18nProvider';
+
+export function ActivityLeadPage() {
+  const currentUser = useCurrentUser();
+  const activities = useActivitiesData();
+  const getPassportForKid = useGetPassportForKid();
+  const kids = useKidsData();
+  const markPassportActivityDone = useMarkPassportActivityDone();
+  const navigate = useNavigate();
+  const { locale, t } = useI18n();
+  const leadActivityId = currentUser.role === 'lead' ? currentUser.activityId : undefined;
+  const activityId = leadActivityId ?? 1;
+  const [confirmedKidId, setConfirmedKidId] = useState('');
+  const [lastCompletedKidId, setLastCompletedKidId] = useState('');
+  const confirmedKid = kids.find((kid) => kid.id === confirmedKidId);
+  const passport = confirmedKid
+    ? getPassportForKid(confirmedKid.id)
+    : { activities: [] };
+  const leadActivity = passport.activities.find(
+    (activity) => activity.id === activityId,
+  );
+  const activity = activities.find((entry) => entry.id === String(activityId));
+  const completedActivities = passport.activities.filter(
+    (activity) => activity.completedAt,
+  ).length;
+  const shouldShowWheelReminder =
+    Boolean(leadActivity) &&
+    !leadActivity?.completedAt &&
+    (completedActivities + 1) % 4 === 0;
+  const formatCompletionTime = (completedAt: string) =>
+    new Intl.DateTimeFormat(locale, {
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(completedAt));
+  const getKidActivity = (kid: Kid) =>
+    getPassportForKid(kid.id).activities.find(
+      (activity) => activity.id === activityId,
+    );
+  const activityCompletedKids = kids
+    .map((kid) => ({
+      completedAt: getKidActivity(kid)?.completedAt,
+      kid,
+    }))
+    .filter(
+      (entry): entry is { completedAt: string; kid: Kid } =>
+        typeof entry.completedAt === 'string',
+    )
+    .sort(
+      (firstEntry, secondEntry) =>
+        new Date(secondEntry.completedAt).getTime() -
+        new Date(firstEntry.completedAt).getTime(),
+    );
+  const lastCompletedKids = activityCompletedKids
+    .slice(0, 3)
+    .map((entry) => entry.kid);
+  const completedAtByKidId = Object.fromEntries(
+    activityCompletedKids.map((entry) => [
+      entry.kid.id,
+      formatCompletionTime(entry.completedAt),
+    ]),
+  );
+  const leadActivityCompletedTime = leadActivity?.completedAt
+    ? formatCompletionTime(leadActivity.completedAt)
+    : '';
+
+  useEffect(() => {
+    if (currentUser.role !== 'lead') {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser.role, navigate]);
+
+  if (currentUser.role !== 'lead') {
+    return null;
+  }
+
+  const confirmKid = (kid: Kid) => {
+    setConfirmedKidId(kid.id);
+    setLastCompletedKidId('');
+  };
+  const clearConfirmedKid = () => {
+    setConfirmedKidId('');
+    setLastCompletedKidId('');
+  };
+  const returnToKidScan = () => {
+    setConfirmedKidId('');
+  };
+
+  const markActivity = () => {
+    if (!confirmedKid || !leadActivity) {
+      return;
+    }
+
+    if (leadActivity.completedAt) {
+      return;
+    }
+
+    markPassportActivityDone(confirmedKid.id, leadActivity.id);
+    setLastCompletedKidId(confirmedKid.id);
+    returnToKidScan();
+  };
+
+  return (
+    <>
+      <TopBar showUserMenu onLogout={() => navigate('/')} />
+      <section className="lead-content" aria-labelledby="lead-activity-title">
+        {activity ? (
+          <ActivityHero
+            activity={activity}
+            eyebrow={t('activity.detail.eyebrow')}
+            headingId="lead-activity-title"
+          />
+        ) : null}
+
+        <div className="lead-controls-panel">
+          <section
+            className={
+              confirmedKid
+                ? 'lead-card lead-kid-card lead-selected-kid-card'
+                : 'lead-card lead-kid-card lead-kid-search-card'
+            }
+            aria-live="polite"
+          >
+            {confirmedKid ? (
+              <>
+                <div className="selected-kid-summary">
+                  <div>
+                    <span className="selected-kid-label">{t('lead.selectedKid')}</span>
+                    <strong>{confirmedKid.name}</strong>
+                    <code>{confirmedKid.id}</code>
+                  </div>
+                  <ProgressCounter
+                    completed={completedActivities}
+                    total={passport.activities.length}
+                  />
+                </div>
+                <div className="selected-kid-actions">
+                  {shouldShowWheelReminder ? (
+                    <p className="wheel-reminder">{t('lead.wheelReminder')}</p>
+                  ) : null}
+                  {leadActivity?.completedAt ? (
+                    <p className="activity-done-warning" role="status">
+                      <AlertIcon size={18} aria-hidden="true" />
+                      {leadActivityCompletedTime
+                        ? t('lead.mark.completedAt').replace(
+                            '{time}',
+                            leadActivityCompletedTime,
+                          )
+                        : t('lead.mark.completed')}
+                    </p>
+                  ) : null}
+                  {lastCompletedKidId === confirmedKidId ? (
+                    <p className="completion-message" role="status">
+                      {t('lead.mark.success')}
+                    </p>
+                  ) : null}
+                  {leadActivity?.completedAt ? (
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={clearConfirmedKid}
+                    >
+                      {t('lead.closeKid')}
+                    </button>
+                  ) : (
+                    <button
+                      className="access-button"
+                      type="button"
+                      disabled={!leadActivity}
+                      onClick={markActivity}
+                    >
+                      {t('lead.mark.submit')}
+                    </button>
+                  )}
+                </div>
+              </>
+            ) : (
+              <KidFinder onKidSelected={confirmKid} />
+            )}
+          </section>
+        </div>
+
+        <section className="lead-summary-card" aria-label={t('lead.summary.title')}>
+          <div className="lead-summary-header">
+            <h2>{t('lead.summary.title')}</h2>
+            <p className="lead-total-counter">
+              <strong>{activityCompletedKids.length}</strong>
+            </p>
+          </div>
+          {lastCompletedKids.length > 0 ? (
+            <KidList
+              animatedKidId={lastCompletedKidId}
+              detailsByKidId={completedAtByKidId}
+              kids={lastCompletedKids}
+              onAnimatedKidDone={() => setLastCompletedKidId('')}
+            />
+          ) : (
+            <p className="lead-empty-summary">{t('lead.summary.empty')}</p>
+          )}
+        </section>
+
+      </section>
+    </>
+  );
+}

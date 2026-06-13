@@ -1,18 +1,29 @@
 import jsQR from 'jsqr';
 import { useEffect, useRef, useState } from 'react';
-import { useI18n } from '../i18n/I18nProvider';
+
+export type QrReaderMessages = {
+  cameraPermissionError: string;
+  cameraPreview: string;
+  cameraStartError: string;
+  cameraUnsupportedError: string;
+  scanApproved: string;
+  scannerActive: string;
+  scanQr: string;
+  scanQrShort: string;
+  stopScanner: string;
+};
 
 type QrReaderProps = {
+  messages: QrReaderMessages;
   onError: (message: string) => void;
   onRead: (value: string) => void;
 };
 
-export function QrReader({ onError, onRead }: QrReaderProps) {
+export function QrReader({ messages, onError, onRead }: QrReaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number>(undefined);
   const streamRef = useRef<MediaStream>(undefined);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { t } = useI18n();
   const [hasApprovedScan, setHasApprovedScan] = useState(false);
   const [isScannerActive, setIsScannerActive] = useState(false);
 
@@ -95,7 +106,7 @@ export function QrReader({ onError, onRead }: QrReaderProps) {
 
   const startScanner = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
-      onError(t('desk.error.cameraUnsupported'));
+      onError(messages.cameraUnsupportedError);
       return;
     }
 
@@ -118,27 +129,27 @@ export function QrReader({ onError, onRead }: QrReaderProps) {
       stopScanner();
       onError(
         error instanceof DOMException && error.name === 'NotAllowedError'
-          ? t('desk.error.cameraPermission')
-          : t('desk.error.cameraStart'),
+          ? messages.cameraPermissionError
+          : messages.cameraStartError,
       );
     }
   };
 
   return (
-    <section className="scanner-panel" aria-label={t('desk.scanQr')}>
-      {isScannerActive ? <p>{t('desk.scanner.active')}</p> : null}
+    <section className="scanner-panel" aria-label={messages.scanQr}>
+      {isScannerActive ? <p>{messages.scannerActive}</p> : null}
       <div className={isScannerActive ? 'scanner-view' : 'scanner-view hidden'}>
         <video
           ref={videoRef}
           muted
           playsInline
-          aria-label={t('desk.cameraPreview')}
+          aria-label={messages.cameraPreview}
         />
         <canvas ref={canvasRef} hidden />
       </div>
       {isScannerActive ? (
         <button className="secondary-button" type="button" onClick={stopScanner}>
-          {t('desk.stopScanner')}
+          {messages.stopScanner}
         </button>
       ) : (
         <button
@@ -148,8 +159,8 @@ export function QrReader({ onError, onRead }: QrReaderProps) {
               : 'scanner-toggle-button'
           }
           type="button"
-          aria-label={t('desk.scanQr')}
-          title={t('desk.scanQr')}
+          aria-label={messages.scanQr}
+          title={messages.scanQr}
           onClick={startScanner}
         >
           {hasApprovedScan ? (
@@ -163,7 +174,9 @@ export function QrReader({ onError, onRead }: QrReaderProps) {
               <span />
             </span>
           )}
-          <span>{hasApprovedScan ? t('desk.scanApproved') : t('desk.scanQrShort')}</span>
+          <span>
+            {hasApprovedScan ? messages.scanApproved : messages.scanQrShort}
+          </span>
         </button>
       )}
     </section>
