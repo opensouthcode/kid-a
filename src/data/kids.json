@@ -1,0 +1,16 @@
+[
+  {
+    "id": "barbie",
+    "name": "Barbie",
+    "age": 9,
+    "gender": "girl",
+    "languagePreference": "en"
+  },
+  {
+    "id": "ken",
+    "name": "Ken",
+    "age": 10,
+    "gender": "boy",
+    "languagePreference": "en"
+  }
+]

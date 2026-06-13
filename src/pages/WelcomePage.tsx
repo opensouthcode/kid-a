@@ -3,8 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
 import {
   useConferenceData,
+  useKidsData,
+  useSetCurrentKid,
   useSetCurrentUser,
   useUsersData,
+  type KidData,
   type UserData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
@@ -12,7 +15,9 @@ import type { MessageKey } from '../i18n/messages';
 
 export function WelcomePage() {
   const conference = useConferenceData();
+  const kids = useKidsData();
   const navigate = useNavigate();
+  const setCurrentKid = useSetCurrentKid();
   const setCurrentUser = useSetCurrentUser();
   const { t } = useI18n();
   const users = useUsersData();
@@ -36,17 +41,21 @@ export function WelcomePage() {
 
   const roleLabelKeys: Record<UserData['role'], MessageKey> = {
     desk: 'access.role.desk',
-    kid: 'access.role.kid',
     lead: 'access.role.lead',
-    parent: 'access.role.parent',
     wheel: 'access.role.wheel',
   };
-  const enabledRoles = new Set<UserData['role']>(['desk', 'kid']);
+  const enabledRoles = new Set<UserData['role']>(['desk']);
+
+  const openKidPage = (kid: KidData) => {
+    setCurrentKid(kid.id);
+    setIsAccessDialogOpen(false);
+    navigate('/passport');
+  };
 
   const openRolePage = (user: UserData) => {
     setCurrentUser(user.id);
     setIsAccessDialogOpen(false);
-    navigate(user.role === 'desk' ? '/desk' : '/passport');
+    navigate('/desk');
   };
 
   return (
@@ -78,6 +87,17 @@ export function WelcomePage() {
             <section className="access-popover" aria-label={t('access.title')}>
               <h2>{t('access.title')}</h2>
               <div className="role-list">
+                {kids.map((kid) => (
+                  <button
+                    className="role-card enabled"
+                    key={kid.id}
+                    type="button"
+                    onClick={() => openKidPage(kid)}
+                  >
+                    <strong>{kid.name}</strong>
+                    <small>{t('access.role.kid')}</small>
+                  </button>
+                ))}
                 {users.map((user) => (
                   <button
                     className={

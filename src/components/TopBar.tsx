@@ -7,6 +7,7 @@ import { isSupportedLocale, supportedLocales } from '../i18n/messages';
 type TopBarProps = {
   customButtons?: ReactNode;
   onLogout?: () => void;
+  profile?: { name: string };
   showGuestAvatar?: boolean;
   showLanguageSwitcher?: boolean;
   showUserMenu?: boolean;
@@ -41,12 +42,14 @@ function LanguageSwitcher() {
 export function TopBar({
   customButtons,
   onLogout,
+  profile,
   showGuestAvatar = false,
   showLanguageSwitcher = false,
   showUserMenu = false,
 }: TopBarProps) {
   const { t } = useI18n();
   const user = useUserData();
+  const menuProfile = profile ?? user;
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -99,13 +102,13 @@ export function TopBar({
             onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
           >
             <SmileyGrinIcon size={22} aria-hidden="true" />
-            <span>{user.name}</span>
+            <span>{menuProfile.name}</span>
           </button>
           {isUserMenuOpen ? (
             <section className="user-menu" aria-label={t('user.menu')}>
               <div className="user-menu-name">
                 <span>{t('user.nameLabel')}</span>
-                <strong>{user.name}</strong>
+                <strong>{menuProfile.name}</strong>
               </div>
               <div className="user-menu-language">
                 <span>{t('language.label')}</span>

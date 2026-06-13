@@ -5,8 +5,8 @@ import { RegistrationFields } from '../components/RegistrationFields';
 import { TopBar } from '../components/TopBar';
 import {
   useAddRegisteredKid,
+  useKidsData,
   useUserData,
-  useUsersData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import type { Locale } from '../i18n/messages';
@@ -24,7 +24,7 @@ export function DeskPage() {
   const navigate = useNavigate();
   const streamRef = useRef<MediaStream>(undefined);
   const user = useUserData();
-  const users = useUsersData();
+  const kids = useKidsData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const { locale, t } = useI18n();
   const [isScannerActive, setIsScannerActive] = useState(false);
@@ -34,7 +34,6 @@ export function DeskPage() {
   const [languagePreference, setLanguagePreference] = useState<Locale>(locale);
   const [formError, setFormError] = useState('');
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
-  const kids = users.filter((availableUser) => availableUser.role === 'kid');
   const lastRegisteredKids = [...kids].reverse().slice(0, 3);
   const kidCount = kids.length;
 
