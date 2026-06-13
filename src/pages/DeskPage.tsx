@@ -36,6 +36,7 @@ export function DeskPage() {
   const [formError, setFormError] = useState('');
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
   const [registeredKid, setRegisteredKid] = useState<UserData>();
+  const [lastRegisteredKids, setLastRegisteredKids] = useState<UserData[]>([]);
   const kidCount = users.filter((availableUser) => availableUser.role === 'kid').length;
 
   useEffect(() => {
@@ -195,6 +196,9 @@ export function DeskPage() {
     });
 
     setRegisteredKid(nextRegisteredKid);
+    setLastRegisteredKids((currentKids) =>
+      [nextRegisteredKid, ...currentKids].slice(0, 3),
+    );
     setFormError('');
     setInvalidQrPreview('');
   };
@@ -285,10 +289,26 @@ export function DeskPage() {
         <section className="desk-summary" aria-label={t('desk.summary.title')}>
           <article>
             <span>{t('desk.summary.lastKid')}</span>
-            <strong>{registeredKid?.name ?? t('desk.summary.none')}</strong>
+            {lastRegisteredKids.length > 0 ? (
+              <ul className="last-kids-list">
+                {lastRegisteredKids.map((kid) => (
+                  <li key={kid.id}>
+                    {kid.gender === 'boy' || kid.gender === 'girl' ? (
+                      <span
+                        className={`kid-gender-icon ${kid.gender}`}
+                        aria-label={t(`registration.gender.${kid.gender}`)}
+                        role="img"
+                      />
+                    ) : null}
+                    <strong>{kid.name}</strong>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <strong>{t('desk.summary.none')}</strong>
+            )}
           </article>
           <article className="kid-count-card">
-            <span>{t('desk.summary.kidCount')}</span>
             <strong>{kidCount}</strong>
           </article>
         </section>
