@@ -68,7 +68,6 @@ const initialKids: Kid[] = kidsJson as Kid[];
 const initialUsers: User[] = usersJson as User[];
 const initialPassportActivitiesByUser =
   passportActivitiesJson as PassportActivitiesByKid;
-const currentUserStorageKey = 'kid-a.currentUser';
 
 function getDefaultUser() {
   const defaultUser =
@@ -116,35 +115,6 @@ function wrapKid(kid: Kid): CurrentUser {
   };
 }
 
-function getCurrentUserStorageValue(currentUser: CurrentUser) {
-  return currentUser.role === 'kid'
-    ? `kid:${currentUser.id}`
-    : `user:${currentUser.id}`;
-}
-
-function getStoredCurrentUser() {
-  const storedCurrentUser = window.localStorage.getItem(currentUserStorageKey);
-  const [type, id] = storedCurrentUser?.split(':') ?? [];
-
-  if (type === 'kid') {
-    const storedKid = initialKids.find((kid) => kid.id === id);
-
-    if (storedKid) {
-      return wrapKid(storedKid);
-    }
-  }
-
-  if (type === 'user') {
-    const storedUser = initialUsers.find((user) => user.id === id);
-
-    if (storedUser) {
-      return storedUser;
-    }
-  }
-
-  return wrapKid(defaultKid);
-}
-
 const emptyPassportTemplate =
   Object.values(initialPassportActivitiesByUser)[0]?.map((activity) => ({
     id: activity.id,
@@ -175,7 +145,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     initialPassportActivitiesByUser,
   );
   const [selectedCurrentUser, setSelectedCurrentUser] =
-    useState(getStoredCurrentUser);
+    useState<CurrentUser>(wrapKid(defaultKid));
   const currentUser =
     selectedCurrentUser.role === 'kid'
       ? wrapKid(
@@ -201,10 +171,6 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       throw new Error(`Unknown user: ${nextCurrentUser.id}`);
     }
 
-    window.localStorage.setItem(
-      currentUserStorageKey,
-      getCurrentUserStorageValue(nextCurrentUser),
-    );
     setSelectedCurrentUser(nextCurrentUser);
   };
   const addRegisteredKid = (registration: RegistrationInput) => {

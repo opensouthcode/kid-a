@@ -23,15 +23,7 @@ type I18nContextValue = {
 
 const I18nContext = createContext<I18nContextValue | undefined>(undefined);
 
-const localeStorageKey = 'kid-a.locale';
-
 function getInitialLocale(): Locale {
-  const storedLocale = window.localStorage.getItem(localeStorageKey);
-
-  if (isSupportedLocale(storedLocale)) {
-    return storedLocale;
-  }
-
   const browserLocale = window.navigator.language.split('-')[0] ?? defaultLocale;
 
   if (isSupportedLocale(browserLocale)) {
@@ -47,9 +39,7 @@ export function I18nProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     document.documentElement.lang = locale;
   }, [locale]);
-
   const setLocale = useCallback((nextLocale: Locale) => {
-    window.localStorage.setItem(localeStorageKey, nextLocale);
     setSelectedLocale(nextLocale);
   }, []);
 
