@@ -1,8 +1,5 @@
 [
-  { "id": "barbie", "name": "Barbie", "role": "kid" },
-  { "id": "ken", "name": "Ken", "role": "kid" },
   { "id": "cia", "name": "Cia", "role": "desk" },
   { "id": "flash", "name": "Flash", "role": "wheel" },
-  { "id": "beny", "name": "Beny", "role": "lead" },
-  { "id": "peter", "name": "Peter", "role": "parent" }
+  { "id": "beny", "name": "Beny", "role": "lead" }
 ]

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { PersonIcon, SmileyGrinIcon } from '@primer/octicons-react';
-import { useUserData } from '../contexts/DataLayerContext';
+import { useCurrentUser } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { isSupportedLocale, supportedLocales } from '../i18n/messages';
 
@@ -46,7 +46,7 @@ export function TopBar({
   showUserMenu = false,
 }: TopBarProps) {
   const { t } = useI18n();
-  const user = useUserData();
+  const currentUser = useCurrentUser();
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -92,27 +92,31 @@ export function TopBar({
         <div className="user-menu-wrapper" ref={userMenuRef}>
           <button
             className="user-avatar kid-avatar"
-            title={t('user.kid.menu')}
-            aria-label={t('user.kid.menu')}
+            title={t('user.menu')}
+            aria-label={t('user.menu')}
             aria-expanded={isUserMenuOpen}
             type="button"
             onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
           >
             <SmileyGrinIcon size={22} aria-hidden="true" />
-            <span>{user.name}</span>
+            <span>{currentUser.name}</span>
           </button>
           {isUserMenuOpen ? (
-            <section className="user-menu" aria-label={t('user.kid.menu')}>
+            <section className="user-menu" aria-label={t('user.menu')}>
               <div className="user-menu-name">
-                <span>{t('user.kid.nameLabel')}</span>
-                <strong>{user.name}</strong>
+                <span>{t('user.nameLabel')}</span>
+                <strong>{currentUser.name}</strong>
+              </div>
+              <div className="user-menu-name">
+                <span>{t('user.idLabel')}</span>
+                <strong>{currentUser.id}</strong>
               </div>
               <div className="user-menu-language">
                 <span>{t('language.label')}</span>
                 <LanguageSwitcher />
               </div>
               <button className="logout-button" type="button" onClick={logOut}>
-                {t('user.kid.logout')}
+                {t('user.logout')}
               </button>
             </section>
           ) : null}

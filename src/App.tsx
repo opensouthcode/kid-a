@@ -1,5 +1,7 @@
-import { useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { DeskPage } from './pages/DeskPage';
 import { PassportPage } from './pages/PassportPage';
+import { RegistrationRequestPage } from './pages/RegistrationRequestPage';
 import { WelcomePage } from './pages/WelcomePage';
 
 function App() {
@@ -9,7 +11,13 @@ function App() {
   return (
     <div className={isKidPage ? 'app-shell kid-shell' : 'app-shell'}>
       <main className={isKidPage ? 'kid-page' : 'welcome-card'}>
-        {isKidPage ? <PassportPage /> : <WelcomePage />}
+        <Routes>
+          <Route path="/" element={<WelcomePage />} />
+          <Route path="/desk" element={<DeskPage />} />
+          <Route path="/passport" element={<PassportPage />} />
+          <Route path="/register" element={<RegistrationRequestPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
     </div>
   );

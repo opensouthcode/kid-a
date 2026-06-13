@@ -103,7 +103,7 @@ h2 {
   position: absolute;
   top: clamp(20px, 4vw, 36px);
   right: clamp(20px, 4vw, 36px);
-  z-index: 1;
+  z-index: 20;
   display: flex;
   gap: 10px;
   align-items: center;
@@ -170,7 +170,7 @@ h2 {
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  z-index: 2;
+  z-index: 30;
   display: grid;
   gap: 16px;
   width: 240px;
@@ -245,6 +245,33 @@ h2 {
   box-shadow: 0 10px 24px rgb(61 85 35 / 22%);
 }
 
+.secondary-button,
+.link-button {
+  border: 1px solid #8c6b3f;
+  border-radius: 999px;
+  padding: 12px 20px;
+  background: #fbf7ec;
+  color: #2d2418;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.secondary-button {
+  margin-top: 24px;
+  margin-left: 12px;
+}
+
+.link-button {
+  margin-bottom: 24px;
+}
+
+.secondary-button:hover,
+.secondary-button:focus-visible,
+.link-button:hover,
+.link-button:focus-visible {
+  background: #e5f0d0;
+}
+
 .access-button:hover,
 .access-button:focus-visible {
   background: #3f5d21;
@@ -259,7 +286,7 @@ h2 {
   position: fixed;
   top: 50%;
   left: 50%;
-  z-index: 2;
+  z-index: 30;
   width: 220px;
   border: 1px solid #8c6b3f;
   border-radius: 22px;
@@ -452,6 +479,493 @@ h2 {
   color: #4e6f2b;
 }
 
+.registration-content {
+  position: relative;
+  z-index: 1;
+  max-width: none;
+}
+
+.registration-layout {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(260px, 340px);
+  gap: 24px;
+  align-items: start;
+  margin-top: 28px;
+}
+
+.registration-notice {
+  width: fit-content;
+  margin: 18px 0 0;
+  border: 1px solid #c9ac77;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #fffaf0;
+  color: #8c5a18;
+  font-weight: 800;
+}
+
+.registration-form,
+.desk-registration,
+.qr-panel {
+  border: 1px solid #c9ac77;
+  border-radius: 26px;
+  padding: 22px;
+  background: rgb(255 250 240 / 76%);
+}
+
+.registration-form,
+.desk-registration {
+  display: grid;
+  gap: 16px;
+}
+
+.register-kid-form {
+  display: grid;
+  gap: 16px;
+}
+
+.register-kid-form label,
+.desk-registration label {
+  display: grid;
+  gap: 8px;
+  color: #5a4228;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.register-kid-form input,
+.register-kid-form select,
+.desk-registration textarea {
+  width: 100%;
+  border: 1px solid #8c6b3f;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fffaf0;
+  color: #2d2418;
+  font: inherit;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.age-control {
+  display: grid;
+  grid-template-columns: minmax(76px, 96px) minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.age-control input[type="number"] {
+  grid-row: 1 / 3;
+}
+
+.age-control input[type="range"] {
+  accent-color: #4e6f2b;
+  cursor: pointer;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.age-gauge-labels {
+  display: flex;
+  grid-column: 2;
+  justify-content: space-between;
+  color: #8c5a18;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.segmented-toggle {
+  display: grid;
+  overflow: hidden;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid #8c6b3f;
+  border-radius: 14px;
+  background: #fffaf0;
+}
+
+.segmented-toggle.language-toggle {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.segmented-toggle button {
+  border: 0;
+  border-right: 1px solid #8c6b3f;
+  padding: 12px 14px;
+  background: transparent;
+  color: #2d2418;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.segmented-toggle button:last-child {
+  border-right: 0;
+}
+
+.segmented-toggle button.active {
+  background: #4e6f2b;
+  color: #fbf7ec;
+}
+
+.desk-registration textarea,
+.qr-panel textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.qr-panel {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+  text-align: center;
+}
+
+.qr-panel img {
+  width: 240px;
+  max-width: 100%;
+  border: 10px solid #fff;
+  border-radius: 20px;
+}
+
+.qr-panel textarea {
+  width: 100%;
+  border: 1px solid #c9ac77;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fffaf0;
+  color: #5a4228;
+  font: inherit;
+}
+
+.form-error {
+  margin: 0;
+  color: #9a3412;
+  font-weight: 800;
+}
+
+.form-error p {
+  margin-bottom: 0;
+}
+
+.invalid-qr-preview {
+  display: -webkit-box;
+  overflow: hidden;
+  margin: 8px 0 0;
+  color: #5a4228;
+  font: 0.86rem ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-weight: 700;
+  line-clamp: 2;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.desk-registration {
+  margin-top: 24px;
+}
+
+.desk-submit-button {
+  justify-self: end;
+  min-width: 240px;
+}
+
+.desk-submit-button.attention {
+  animation: confirm-next 2600ms ease-in-out 2;
+}
+
+@keyframes confirm-next {
+  0%,
+  100% {
+    box-shadow: 0 10px 24px rgb(61 85 35 / 22%);
+    transform: scale(1);
+  }
+
+  35% {
+    box-shadow: 0 0 0 8px rgb(78 111 43 / 18%);
+    transform: scale(1.04);
+  }
+}
+
+.desk-registration-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(320px, 1fr);
+  gap: 24px;
+  align-items: stretch;
+}
+
+.scanner-panel {
+  display: grid;
+  gap: 12px;
+  align-content: center;
+  justify-items: center;
+  min-height: 100%;
+}
+
+.scanner-view {
+  overflow: hidden;
+  border: 1px solid #8c6b3f;
+  border-radius: 20px;
+  background: #2d2418;
+}
+
+.scanner-view.hidden {
+  display: none;
+}
+
+.scanner-panel video {
+  display: block;
+  width: 100%;
+  min-height: 220px;
+}
+
+.scanner-panel p {
+  margin: 0;
+  color: #5a4228;
+  font-weight: 800;
+  justify-self: stretch;
+}
+
+.scanner-toggle-button {
+  display: grid;
+  width: 156px;
+  height: 156px;
+  gap: 12px;
+  border: 0;
+  border-radius: 32px;
+  background: #4e6f2b;
+  color: #fbf7ec;
+  cursor: pointer;
+  font-weight: 900;
+  place-items: center;
+  box-shadow: 0 16px 32px rgb(61 85 35 / 20%);
+}
+
+.scanner-toggle-button:hover,
+.scanner-toggle-button:focus-visible {
+  background: #3f5d21;
+}
+
+.scanner-toggle-button.approved {
+  background: #2f8f46;
+}
+
+.scanner-toggle-button.approved:hover,
+.scanner-toggle-button.approved:focus-visible {
+  background: #26773a;
+}
+
+.scan-approved-icon {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border: 6px solid currentColor;
+  border-radius: 50%;
+}
+
+.scan-approved-icon::after {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 30px;
+  height: 17px;
+  border-bottom: 7px solid currentColor;
+  border-left: 7px solid currentColor;
+  content: "";
+  transform: rotate(-45deg);
+}
+
+.qr-icon {
+  display: grid;
+  grid-template-columns: repeat(3, 18px);
+  grid-template-rows: repeat(3, 18px);
+  gap: 8px;
+}
+
+.qr-icon span {
+  border: 4px solid currentColor;
+  border-radius: 4px;
+}
+
+.qr-icon span:nth-child(1) {
+  grid-area: 1 / 1;
+}
+
+.qr-icon span:nth-child(2) {
+  grid-area: 1 / 3;
+}
+
+.qr-icon span:nth-child(3) {
+  grid-area: 3 / 1;
+}
+
+.qr-icon span:nth-child(4) {
+  grid-area: 2 / 2;
+  border-width: 0;
+  background: currentColor;
+}
+
+.qr-icon span:nth-child(5) {
+  grid-area: 3 / 3;
+  border-top-width: 0;
+  border-left-width: 0;
+}
+
+.desk-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.4fr);
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.desk-summary article {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #c9ac77;
+  border-radius: 26px;
+  padding: 22px;
+  background: rgb(255 250 240 / 76%);
+}
+
+.desk-summary span {
+  color: #5a4228;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.desk-summary strong {
+  color: #2d2418;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1;
+}
+
+.last-kids-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  color: #2d2418;
+  font-size: clamp(1.05rem, 1.7vw, 1.45rem);
+  font-weight: 700;
+  list-style: none;
+}
+
+.last-kids-list li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  border-radius: 999px;
+}
+
+.last-kids-list li.just-added {
+  animation: recent-kid-added 900ms ease-out;
+}
+
+@keyframes recent-kid-added {
+  0% {
+    background: rgb(78 111 43 / 24%);
+    transform: translateY(-10px) scale(1.04);
+  }
+
+  60% {
+    background: rgb(78 111 43 / 14%);
+  }
+
+  100% {
+    background: transparent;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.last-kids-list strong {
+  font-size: inherit;
+}
+
+.last-kids-list code {
+  color: #5a4228;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.86em;
+  font-weight: 800;
+}
+
+.kid-gender-icon {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 auto;
+  transform: translateY(6px);
+  overflow: hidden;
+  border: 2px solid #4e6f2b;
+  border-radius: 50%;
+  background: #e5f0d0;
+}
+
+.kid-gender-icon::before {
+  position: absolute;
+  z-index: 1;
+  right: 6px;
+  bottom: 3px;
+  left: 6px;
+  height: 19px;
+  border-radius: 50% 50% 45% 45%;
+  background: #ccefb8;
+  content: "";
+}
+
+.kid-gender-icon::after {
+  position: absolute;
+  content: "";
+}
+
+.kid-gender-icon.boy::after {
+  top: 4px;
+  right: 6px;
+  left: 6px;
+  height: 9px;
+  border-radius: 12px 12px 5px 5px;
+  background:
+    radial-gradient(circle at 28% 80%, #d9482f 0 3px, transparent 4px),
+    radial-gradient(circle at 50% 82%, #d9482f 0 3px, transparent 4px),
+    radial-gradient(circle at 72% 80%, #d9482f 0 3px, transparent 4px),
+    #d9482f;
+}
+
+.kid-gender-icon.girl::after {
+  top: 3px;
+  right: 4px;
+  bottom: 2px;
+  left: 4px;
+  border-radius: 14px 14px 9px 9px;
+  background:
+    radial-gradient(ellipse at 18% 58%, #ffd84d 0 5px, transparent 6px),
+    radial-gradient(ellipse at 82% 58%, #ffd84d 0 5px, transparent 6px),
+    linear-gradient(#ffd84d 0 48%, transparent 49%);
+}
+
+.kid-gender-icon.preferNotToSay {
+  background: transparent;
+}
+
+.kid-gender-icon.preferNotToSay::before,
+.kid-gender-icon.preferNotToSay::after {
+  display: none;
+}
+
+.kid-count-card {
+  align-content: center;
+  text-align: center;
+}
+
+.kid-count-card strong {
+  color: #4e6f2b;
+  font-size: clamp(4rem, 10vw, 7rem);
+}
+
 @media (max-width: 720px) {
   .user-toolbar {
     top: 18px;
@@ -464,6 +978,12 @@ h2 {
 
   .activity-grid {
     width: 100%;
+  }
+
+  .registration-layout,
+  .desk-registration-layout,
+  .desk-summary {
+    grid-template-columns: 1fr;
   }
 }
 

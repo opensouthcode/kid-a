@@ -4,10 +4,12 @@ import {
   LocationIcon,
   PeopleIcon,
 } from '@primer/octicons-react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
 import {
   useConferenceData,
+  useCurrentUser,
   usePassportData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
@@ -31,12 +33,23 @@ const kidOptions: KidOption[] = [
 
 export function PassportPage() {
   const conference = useConferenceData();
+  const currentUser = useCurrentUser();
   const passport = usePassportData();
   const navigate = useNavigate();
   const { t } = useI18n();
   const completedActivities = passport.activities.filter(
     (activity) => activity.isCompleted,
   ).length;
+
+  useEffect(() => {
+    if (currentUser.role !== 'kid') {
+      navigate('/', { replace: true });
+    }
+  }, [currentUser.role, navigate]);
+
+  if (currentUser.role !== 'kid') {
+    return null;
+  }
 
   return (
     <>
