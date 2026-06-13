@@ -30,13 +30,13 @@ type PassportActivitiesByKid = Record<string, PassportActivity[]>;
 
 export type UserRole = 'desk' | 'wheel' | 'lead';
 
-export type UserData = {
+export type User = {
   id: string;
   name: string;
   role: UserRole;
 };
 
-export type KidData = {
+export type Kid = {
   age: number;
   gender: KidGender;
   id: string;
@@ -47,24 +47,24 @@ export type KidData = {
 export type CurrentUser =
   | {
       id: string;
-      kid: KidData;
+      kid: Kid;
       name: string;
       role: 'kid';
     }
-  | UserData;
+  | User;
 
 type DataLayerContextValue = {
-  addRegisteredKid: (registration: RegistrationInput) => KidData;
+  addRegisteredKid: (registration: RegistrationInput) => Kid;
   conference: ConferenceData;
   currentUser: CurrentUser;
-  kids: KidData[];
+  kids: Kid[];
   passport: PassportData;
-  users: UserData[];
-  setCurrentUser: (user: KidData | UserData) => void;
+  users: User[];
+  setCurrentUser: (user: Kid | User) => void;
 };
 
-const initialKids: KidData[] = kidsJson as KidData[];
-const initialUsers: UserData[] = usersJson as UserData[];
+const initialKids: Kid[] = kidsJson as Kid[];
+const initialUsers: User[] = usersJson as User[];
 const initialPassportActivitiesByUser =
   passportActivitiesJson as PassportActivitiesByKid;
 const currentUserStorageKey = 'kid-a.currentUser';
@@ -106,7 +106,7 @@ if (missingKidPassportUsers.length > 0) {
   );
 }
 
-function wrapKid(kid: KidData): CurrentUser {
+function wrapKid(kid: Kid): CurrentUser {
   return {
     id: kid.id,
     kid,
@@ -152,7 +152,7 @@ const emptyPassportTemplate =
 
 const generatedKidIdPrefix = '26OSK';
 
-function getNextKidId(existingKids: KidData[]) {
+function getNextKidId(existingKids: Kid[]) {
   const existingIds = new Set(existingKids.map((kid) => kid.id.toLowerCase()));
   let sequence = existingKids.length + 1;
   let nextId = `${generatedKidIdPrefix}${sequence.toString().padStart(4, '0')}`;
@@ -184,7 +184,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
         )
       : (userList.find((user) => user.id === selectedCurrentUser.id) ??
         defaultUser);
-  const setCurrentUser = (nextUser: KidData | UserData) => {
+  const setCurrentUser = (nextUser: Kid | User) => {
     const nextCurrentUser =
       'role' in nextUser ? nextUser : wrapKid(nextUser);
 
@@ -209,7 +209,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     setSelectedCurrentUser(nextCurrentUser);
   };
   const addRegisteredKid = (registration: RegistrationInput) => {
-    const registeredKid: KidData = {
+    const registeredKid: Kid = {
       age: registration.age,
       gender: registration.gender,
       id: getNextKidId(kidList),

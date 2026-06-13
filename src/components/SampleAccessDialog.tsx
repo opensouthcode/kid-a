@@ -4,8 +4,8 @@ import {
   useKidsData,
   useSetCurrentUser,
   useUsersData,
-  type KidData,
-  type UserData,
+  type Kid,
+  type User,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import type { MessageKey } from '../i18n/messages';
@@ -34,20 +34,20 @@ export function SampleAccessDialog() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isAccessDialogOpen]);
 
-  const roleLabelKeys: Record<UserData['role'], MessageKey> = {
+  const roleLabelKeys: Record<User['role'], MessageKey> = {
     desk: 'access.role.desk',
     lead: 'access.role.lead',
     wheel: 'access.role.wheel',
   };
-  const enabledRoles = new Set<UserData['role']>(['desk']);
+  const enabledRoles = new Set<User['role']>(['desk']);
 
-  const openKidPage = (kid: KidData) => {
+  const openKidPage = (kid: Kid) => {
     setCurrentUser(kid);
     setIsAccessDialogOpen(false);
     navigate('/passport');
   };
 
-  const openRolePage = (user: UserData) => {
+  const openRolePage = (user: User) => {
     setCurrentUser(user);
     setIsAccessDialogOpen(false);
     navigate('/desk');
