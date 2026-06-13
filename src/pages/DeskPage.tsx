@@ -157,16 +157,19 @@ export function DeskPage() {
               </label>
               <label>
                 <span>{t('registration.gender')}</span>
-                <select
-                  value={gender}
-                  onChange={(event) => setGender(event.target.value as KidGender)}
-                >
+                <div className="segmented-toggle" role="group">
                   {kidGenderOptions.map((option) => (
-                    <option key={option} value={option}>
+                    <button
+                      className={gender === option ? 'active' : undefined}
+                      key={option}
+                      type="button"
+                      aria-pressed={gender === option}
+                      onClick={() => setGender(option)}
+                    >
                       {t(`registration.gender.${option}`)}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                </div>
               </label>
               <label>
                 <span>{t('registration.languagePreference')}</span>

@@ -561,6 +561,34 @@ h2 {
   text-transform: none;
 }
 
+.segmented-toggle {
+  display: grid;
+  overflow: hidden;
+  grid-template-columns: repeat(3, 1fr);
+  border: 1px solid #8c6b3f;
+  border-radius: 14px;
+  background: #fffaf0;
+}
+
+.segmented-toggle button {
+  border: 0;
+  border-right: 1px solid #8c6b3f;
+  padding: 12px 14px;
+  background: transparent;
+  color: #2d2418;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.segmented-toggle button:last-child {
+  border-right: 0;
+}
+
+.segmented-toggle button.active {
+  background: #4e6f2b;
+  color: #fbf7ec;
+}
+
 .language-display {
   display: flex;
   min-height: 46px;

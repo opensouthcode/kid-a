@@ -1,9 +1,8 @@
 import { isSupportedLocale, type Locale } from './i18n/messages';
 
 export const kidGenderOptions = [
-  'girl',
   'boy',
-  'nonBinary',
+  'girl',
   'preferNotToSay',
 ] as const;
 
