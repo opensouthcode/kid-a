@@ -75,6 +75,7 @@ type DataLayerContextValue = {
   conference: ConferenceData;
   currentUser: CurrentUser;
   findKidByManualNumber: (rawSearchValue: string) => Kid | undefined;
+  findKidByQrIdData: (qrIdData: string) => Kid | undefined;
   getPassportForKid: (kidId: string) => PassportData;
   kids: Kid[];
   markPassportActivityDone: (kidId: string, activityId: number) => number;
@@ -222,6 +223,8 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     return kidList.find((kid) => getKidSequenceNumber(kid.id) === searchedNumber);
   };
+  const findKidByQrIdData = (qrIdData: string) =>
+    kidList.find((kid) => kid.qrIdData === qrIdData);
   const reloadPassportActivities = () => {
     setPassportActivitiesByUser((currentPassportActivities) =>
       clonePassportActivities(currentPassportActivities),
@@ -264,6 +267,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       conference: conferenceJson,
       currentUser,
       findKidByManualNumber,
+      findKidByQrIdData,
       getPassportForKid,
       kids: kidList,
       markPassportActivityDone,
@@ -309,6 +313,10 @@ export function useCurrentUser() {
 
 export function useFindKidByManualNumber() {
   return useDataLayer().findKidByManualNumber;
+}
+
+export function useFindKidByQrIdData() {
+  return useDataLayer().findKidByQrIdData;
 }
 
 export function useKidsData() {

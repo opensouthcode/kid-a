@@ -2,14 +2,13 @@ import { AlertIcon } from '@primer/octicons-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ActivityHero } from '../components/ActivityHero';
+import { KidFinder } from '../components/KidFinder';
 import { KidList } from '../components/KidList';
 import { ProgressCounter } from '../components/ProgressCounter';
-import { QrReader } from '../components/QrReader';
 import { TopBar } from '../components/TopBar';
 import {
   useActivitiesData,
   useCurrentUser,
-  useFindKidByManualNumber,
   useGetPassportForKid,
   useKidsData,
   useMarkPassportActivityDone,
@@ -20,7 +19,6 @@ import { useI18n } from '../i18n/I18nProvider';
 export function ActivityLeadPage() {
   const currentUser = useCurrentUser();
   const activities = useActivitiesData();
-  const findKidByManualNumber = useFindKidByManualNumber();
   const getPassportForKid = useGetPassportForKid();
   const kids = useKidsData();
   const markPassportActivityDone = useMarkPassportActivityDone();
@@ -29,12 +27,8 @@ export function ActivityLeadPage() {
   const leadActivityId = currentUser.role === 'lead' ? currentUser.activityId : undefined;
   const activityId = leadActivityId ?? 1;
   const [confirmedKidId, setConfirmedKidId] = useState('');
-  const [manualKidNumber, setManualKidNumber] = useState('');
-  const [pendingKidId, setPendingKidId] = useState('');
-  const [formError, setFormError] = useState('');
   const [lastCompletedKidId, setLastCompletedKidId] = useState('');
   const confirmedKid = kids.find((kid) => kid.id === confirmedKidId);
-  const pendingKid = kids.find((kid) => kid.id === pendingKidId);
   const passport = confirmedKid
     ? getPassportForKid(confirmedKid.id)
     : { activities: [] };
@@ -97,57 +91,22 @@ export function ActivityLeadPage() {
 
   const confirmKid = (kid: Kid) => {
     setConfirmedKidId(kid.id);
-    setPendingKidId('');
-    setFormError('');
     setLastCompletedKidId('');
   };
   const clearConfirmedKid = () => {
     setConfirmedKidId('');
-    setPendingKidId('');
-    setFormError('');
     setLastCompletedKidId('');
   };
   const returnToKidScan = () => {
     setConfirmedKidId('');
-    setPendingKidId('');
-    setManualKidNumber('');
-    setFormError('');
-  };
-
-  const readKidQrPayload = (qrPayload: string) => {
-    const matchingKid = kids.find((kid) => kid.qrIdData === qrPayload);
-
-    if (!matchingKid) {
-      setFormError(t('lead.error.invalidKidQr'));
-      return;
-    }
-
-    confirmKid(matchingKid);
-  };
-
-  const searchManualKid = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-
-    const matchingKid = findKidByManualNumber(manualKidNumber);
-
-    if (!matchingKid) {
-      setPendingKidId('');
-      setFormError(t('lead.error.kidNotFound'));
-      return;
-    }
-
-    setPendingKidId(matchingKid.id);
-    setFormError('');
   };
 
   const markActivity = () => {
     if (!confirmedKid || !leadActivity) {
-      setFormError(t('lead.error.selectKid'));
       return;
     }
 
     if (leadActivity.completedAt) {
-      setFormError(t('lead.error.activityCompleted'));
       return;
     }
 
@@ -231,59 +190,7 @@ export function ActivityLeadPage() {
                 </div>
               </>
             ) : (
-              <div className="kid-acquisition-layout">
-                <QrReader
-                  messages={{
-                    cameraPermissionError: t('scanner.error.cameraPermission'),
-                    cameraPreview: t('scanner.cameraPreview'),
-                    cameraStartError: t('scanner.error.cameraStart'),
-                    cameraUnsupportedError: t('scanner.error.cameraUnsupported'),
-                    scanApproved: t('lead.scan.approved'),
-                    scannerActive: t('lead.scan.active'),
-                    scanQr: t('lead.scan.title'),
-                    scanQrShort: t('lead.scan.short'),
-                    stopScanner: t('scanner.stopScanner'),
-                  }}
-                  onError={(message) => setFormError(message)}
-                  onRead={readKidQrPayload}
-                />
-                <div className="manual-kid-panel">
-                  <form className="manual-kid-search" onSubmit={searchManualKid}>
-                    <label>
-                      {t('lead.manualKid')}
-                      <input
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        value={manualKidNumber}
-                        onChange={(event) => {
-                          setManualKidNumber(event.target.value);
-                          setPendingKidId('');
-                        }}
-                      />
-                    </label>
-                    <button className="secondary-button" type="submit">
-                      {t('lead.manualKid.search')}
-                    </button>
-                  </form>
-                  {pendingKid ? (
-                    <div className="kid-confirmation" role="status">
-                      <p>
-                        {t('lead.manualKid.confirm').replace(
-                          '{nickname}',
-                          pendingKid.name,
-                        )}
-                      </p>
-                      <button
-                        className="access-button"
-                        type="button"
-                        onClick={() => confirmKid(pendingKid)}
-                      >
-                        {t('lead.manualKid.confirmButton')}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </div>
+              <KidFinder onKidSelected={confirmKid} />
             )}
           </section>
         </div>
@@ -307,7 +214,6 @@ export function ActivityLeadPage() {
           )}
         </section>
 
-        {formError ? <p className="form-error">{formError}</p> : null}
       </section>
     </>
   );
