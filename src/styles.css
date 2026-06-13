@@ -777,6 +777,45 @@ h2 {
   margin-bottom: 0;
 }
 
+.desk-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.4fr);
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.desk-summary article {
+  display: grid;
+  gap: 10px;
+  border: 1px solid #c9ac77;
+  border-radius: 26px;
+  padding: 22px;
+  background: rgb(255 250 240 / 76%);
+}
+
+.desk-summary span {
+  color: #5a4228;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.desk-summary strong {
+  color: #2d2418;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1;
+}
+
+.kid-count-card {
+  text-align: center;
+}
+
+.kid-count-card strong {
+  color: #4e6f2b;
+  font-size: clamp(4rem, 10vw, 7rem);
+}
+
 @media (max-width: 720px) {
   .user-toolbar {
     top: 18px;
@@ -792,7 +831,8 @@ h2 {
   }
 
   .registration-layout,
-  .desk-registration-layout {
+  .desk-registration-layout,
+  .desk-summary {
     grid-template-columns: 1fr;
   }
 }

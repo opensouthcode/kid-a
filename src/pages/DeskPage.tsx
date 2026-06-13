@@ -6,6 +6,7 @@ import { TopBar } from '../components/TopBar';
 import {
   useAddRegisteredKid,
   useUserData,
+  useUsersData,
   type UserData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
@@ -24,6 +25,7 @@ export function DeskPage() {
   const navigate = useNavigate();
   const streamRef = useRef<MediaStream>(undefined);
   const user = useUserData();
+  const users = useUsersData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const { locale, t } = useI18n();
   const [isScannerActive, setIsScannerActive] = useState(false);
@@ -34,6 +36,7 @@ export function DeskPage() {
   const [formError, setFormError] = useState('');
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
   const [registeredKid, setRegisteredKid] = useState<UserData>();
+  const kidCount = users.filter((availableUser) => availableUser.role === 'kid').length;
 
   useEffect(() => {
     if (user.role !== 'desk') {
@@ -278,6 +281,17 @@ export function DeskPage() {
             {t('desk.confirm')}
           </button>
         </form>
+
+        <section className="desk-summary" aria-label={t('desk.summary.title')}>
+          <article>
+            <span>{t('desk.summary.lastKid')}</span>
+            <strong>{registeredKid?.name ?? t('desk.summary.none')}</strong>
+          </article>
+          <article className="kid-count-card">
+            <span>{t('desk.summary.kidCount')}</span>
+            <strong>{kidCount}</strong>
+          </article>
+        </section>
       </section>
     </>
   );
