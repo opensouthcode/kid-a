@@ -9,27 +9,18 @@ import { TopBar } from '../components/TopBar';
 import {
   useActivitiesData,
   useCurrentUser,
+  useFindKidByManualNumber,
   useGetPassportForKid,
   useKidsData,
   useMarkPassportActivityDone,
   type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
-import { getKidSequenceNumber } from '../utils/kid-id';
-
-function findKidByManualNumber(kids: Kid[], rawSearchValue: string) {
-  const searchedNumber = Number(rawSearchValue);
-
-  if (!Number.isInteger(searchedNumber)) {
-    return undefined;
-  }
-
-  return kids.find((kid) => getKidSequenceNumber(kid.id) === searchedNumber);
-}
 
 export function ActivityLeadPage() {
   const currentUser = useCurrentUser();
   const activities = useActivitiesData();
+  const findKidByManualNumber = useFindKidByManualNumber();
   const getPassportForKid = useGetPassportForKid();
   const kids = useKidsData();
   const markPassportActivityDone = useMarkPassportActivityDone();
@@ -137,7 +128,7 @@ export function ActivityLeadPage() {
   const searchManualKid = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const matchingKid = findKidByManualNumber(kids, manualKidNumber);
+    const matchingKid = findKidByManualNumber(manualKidNumber);
 
     if (!matchingKid) {
       setPendingKidId('');

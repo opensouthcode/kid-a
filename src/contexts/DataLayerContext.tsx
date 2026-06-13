@@ -10,7 +10,11 @@ import conferenceJson from '../data/conference.json';
 import kidsJson from '../data/kids.json';
 import passportActivitiesJson from '../data/passportActivities.json';
 import usersJson from '../data/users.json';
-import { createKidQrIdData, getNextKidId } from '../utils/kid-id';
+import {
+  createKidQrIdData,
+  getKidSequenceNumber,
+  getNextKidId,
+} from '../utils/kid-id';
 import type { KidGender, RegistrationInput } from '../utils/kid-registration';
 import type { Locale } from '../i18n/messages';
 
@@ -70,6 +74,7 @@ type DataLayerContextValue = {
   addRegisteredKid: (registration: RegistrationInput) => Kid;
   conference: ConferenceData;
   currentUser: CurrentUser;
+  findKidByManualNumber: (rawSearchValue: string) => Kid | undefined;
   getPassportForKid: (kidId: string) => PassportData;
   kids: Kid[];
   markPassportActivityDone: (kidId: string, activityId: number) => number;
@@ -208,6 +213,15 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   const getPassportForKid = (kidId: string): PassportData => ({
     activities: passportActivitiesByUser[kidId] ?? [],
   });
+  const findKidByManualNumber = (rawSearchValue: string) => {
+    const searchedNumber = Number(rawSearchValue);
+
+    if (!Number.isInteger(searchedNumber)) {
+      return undefined;
+    }
+
+    return kidList.find((kid) => getKidSequenceNumber(kid.id) === searchedNumber);
+  };
   const reloadPassportActivities = () => {
     setPassportActivitiesByUser((currentPassportActivities) =>
       clonePassportActivities(currentPassportActivities),
@@ -249,6 +263,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       addRegisteredKid,
       conference: conferenceJson,
       currentUser,
+      findKidByManualNumber,
       getPassportForKid,
       kids: kidList,
       markPassportActivityDone,
@@ -290,6 +305,10 @@ export function useActivitiesData() {
 
 export function useCurrentUser() {
   return useDataLayer().currentUser;
+}
+
+export function useFindKidByManualNumber() {
+  return useDataLayer().findKidByManualNumber;
 }
 
 export function useKidsData() {
