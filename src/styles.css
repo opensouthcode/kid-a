@@ -811,7 +811,7 @@ h2 {
 .last-kids-list li {
   display: flex;
   gap: 10px;
-  align-items: center;
+  align-items: baseline;
 }
 
 .last-kids-list strong {
@@ -831,6 +831,7 @@ h2 {
   width: 30px;
   height: 30px;
   flex: 0 0 auto;
+  transform: translateY(6px);
   overflow: hidden;
   border: 2px solid #4e6f2b;
   border-radius: 50%;
