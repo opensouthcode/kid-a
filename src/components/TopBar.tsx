@@ -92,8 +92,8 @@ export function TopBar({
         <div className="user-menu-wrapper" ref={userMenuRef}>
           <button
             className="user-avatar kid-avatar"
-            title={t('user.kid.menu')}
-            aria-label={t('user.kid.menu')}
+            title={t('user.menu')}
+            aria-label={t('user.menu')}
             aria-expanded={isUserMenuOpen}
             type="button"
             onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
@@ -102,9 +102,9 @@ export function TopBar({
             <span>{user.name}</span>
           </button>
           {isUserMenuOpen ? (
-            <section className="user-menu" aria-label={t('user.kid.menu')}>
+            <section className="user-menu" aria-label={t('user.menu')}>
               <div className="user-menu-name">
-                <span>{t('user.kid.nameLabel')}</span>
+                <span>{t('user.nameLabel')}</span>
                 <strong>{user.name}</strong>
               </div>
               <div className="user-menu-language">
@@ -112,7 +112,7 @@ export function TopBar({
                 <LanguageSwitcher />
               </div>
               <button className="logout-button" type="button" onClick={logOut}>
-                {t('user.kid.logout')}
+                {t('user.logout')}
               </button>
             </section>
           ) : null}

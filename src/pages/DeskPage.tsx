@@ -104,15 +104,8 @@ export function DeskPage() {
 
   return (
     <>
-      <TopBar showLanguageSwitcher />
+      <TopBar showUserMenu onLogout={() => navigate('/')} />
       <section className="registration-content" aria-labelledby="desk-title">
-        <button
-          className="link-button"
-          type="button"
-          onClick={() => navigate('/')}
-        >
-          {t('navigation.home')}
-        </button>
         <p className="eyebrow">{t('desk.eyebrow')}</p>
         <h1 id="desk-title">{t('desk.title')}</h1>
         <p className="site-description">{t('desk.description')}</p>
