@@ -107,6 +107,24 @@ export function DeskPage() {
     frameRef.current = window.requestAnimationFrame(scanVideoFrame);
   };
 
+  const getCameraStream = async () => {
+    try {
+      return await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: 'environment' },
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'NotAllowedError') {
+        throw error;
+      }
+
+      return navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: true,
+      });
+    }
+  };
+
   const startScanner = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
       setFormError(t('desk.error.cameraUnsupported'));
@@ -115,10 +133,7 @@ export function DeskPage() {
 
     try {
       setFormError('');
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: 'environment' },
-      });
+      const stream = await getCameraStream();
 
       streamRef.current = stream;
 
@@ -127,12 +142,17 @@ export function DeskPage() {
       }
 
       videoRef.current.srcObject = stream;
-      await videoRef.current.play();
       setIsScannerActive(true);
+      await new Promise((resolve) => window.requestAnimationFrame(resolve));
+      await videoRef.current.play();
       frameRef.current = window.requestAnimationFrame(scanVideoFrame);
-    } catch {
+    } catch (error) {
       stopScanner();
-      setFormError(t('desk.error.cameraPermission'));
+      setFormError(
+        error instanceof DOMException && error.name === 'NotAllowedError'
+          ? t('desk.error.cameraPermission')
+          : t('desk.error.cameraStart'),
+      );
     }
   };
 
@@ -187,37 +207,46 @@ export function DeskPage() {
         <form className="desk-registration" onSubmit={confirmRegistration}>
           <div className="desk-registration-layout">
             <section className="scanner-panel" aria-label={t('desk.scanQr')}>
+              <p>
+                {isScannerActive
+                  ? t('desk.scanner.active')
+                  : t('desk.scanner.idle')}
+              </p>
+              <div
+                className={isScannerActive ? 'scanner-view' : 'scanner-view hidden'}
+              >
+                <video
+                  ref={videoRef}
+                  muted
+                  playsInline
+                  aria-label={t('desk.cameraPreview')}
+                />
+                <canvas ref={canvasRef} hidden />
+              </div>
               {isScannerActive ? (
-                <>
-                  <p>{t('desk.scanner.active')}</p>
-                  <div className="scanner-view">
-                    <video
-                      ref={videoRef}
-                      muted
-                      playsInline
-                      aria-label={t('desk.cameraPreview')}
-                    />
-                    <canvas ref={canvasRef} hidden />
-                  </div>
-                  <button
-                    className="secondary-button"
-                    type="button"
-                    onClick={stopScanner}
-                  >
-                    {t('desk.stopScanner')}
-                  </button>
-                </>
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={stopScanner}
+                >
+                  {t('desk.stopScanner')}
+                </button>
               ) : (
-                <>
-                  <p>{t('desk.scanner.idle')}</p>
-                  <button
-                    className="access-button"
-                    type="button"
-                    onClick={startScanner}
-                  >
-                    {t('desk.scanQr')}
-                  </button>
-                </>
+                <button
+                  className="scanner-toggle-button"
+                  type="button"
+                  aria-label={t('desk.scanQr')}
+                  title={t('desk.scanQr')}
+                  onClick={startScanner}
+                >
+                  <span className="qr-icon" aria-hidden="true">
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                    <span />
+                  </span>
+                </button>
               )}
             </section>
             <RegistrationFields
@@ -232,7 +261,7 @@ export function DeskPage() {
             />
           </div>
           {formError ? <p className="form-error">{formError}</p> : null}
-          <button className="access-button" type="submit">
+          <button className="access-button desk-submit-button" type="submit">
             {t('desk.confirm')}
           </button>
         </form>

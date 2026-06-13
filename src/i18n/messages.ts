@@ -59,7 +59,9 @@ export const messages = {
     'desk.confirm': 'Confirm registration',
     'desk.error.invalidQr': 'The QR data is not a valid registration.',
     'desk.error.cameraPermission':
-      'The camera could not be opened. Check browser permissions and try again.',
+      'Camera permission was denied. Allow camera access and try again.',
+    'desk.error.cameraStart':
+      'The camera started, but the scanner preview could not be opened. Try again or use another camera.',
     'desk.error.cameraUnsupported':
       'This browser does not support camera scanning.',
     'desk.confirmed.title': 'Kid registered',
@@ -133,7 +135,9 @@ export const messages = {
     'desk.confirm': 'Confirmar registro',
     'desk.error.invalidQr': 'Los datos del QR no son un registro válido.',
     'desk.error.cameraPermission':
-      'No se pudo abrir la cámara. Revisa los permisos del navegador e inténtalo de nuevo.',
+      'El permiso de cámara se ha denegado. Permite el acceso a la cámara e inténtalo de nuevo.',
+    'desk.error.cameraStart':
+      'La cámara se inició, pero no se pudo abrir la vista previa del escáner. Inténtalo de nuevo o usa otra cámara.',
     'desk.error.cameraUnsupported':
       'Este navegador no permite escanear con la cámara.',
     'desk.confirmed.title': 'Kid registrado',
