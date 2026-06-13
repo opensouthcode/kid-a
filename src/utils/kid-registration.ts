@@ -1,4 +1,4 @@
-import { isSupportedLocale, type Locale } from './i18n/messages';
+import { isSupportedLocale, type Locale } from '../i18n/messages';
 
 export const kidGenderOptions = [
   'boy',

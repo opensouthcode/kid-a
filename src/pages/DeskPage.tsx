@@ -15,7 +15,7 @@ import {
   isValidKidAge,
   parseRegistrationPayload,
   type KidGender,
-} from '../registration';
+} from '../utils/kid-registration';
 
 export function DeskPage() {
   const addRegisteredKid = useAddRegisteredKid();

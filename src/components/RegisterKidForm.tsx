@@ -6,7 +6,7 @@ import {
   ageGaugeMinimum,
   kidGenderOptions,
   type KidGender,
-} from '../registration';
+} from '../utils/kid-registration';
 
 type RegisterKidFormProps = {
   age: string;

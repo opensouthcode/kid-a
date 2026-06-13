@@ -10,7 +10,7 @@ import {
   isKidGender,
   isValidKidAge,
   type KidGender,
-} from '../registration';
+} from '../utils/kid-registration';
 
 export function RegistrationRequestPage() {
   const navigate = useNavigate();

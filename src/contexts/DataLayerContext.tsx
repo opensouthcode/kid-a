@@ -9,7 +9,7 @@ import conferenceJson from '../data/conference.json';
 import kidsJson from '../data/kids.json';
 import passportActivitiesJson from '../data/passportActivities.json';
 import usersJson from '../data/users.json';
-import type { KidGender, RegistrationInput } from '../registration';
+import type { KidGender, RegistrationInput } from '../utils/kid-registration';
 import type { Locale } from '../i18n/messages';
 
 export type ConferenceData = {
