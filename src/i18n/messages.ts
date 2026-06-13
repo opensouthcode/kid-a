@@ -26,6 +26,7 @@ export const messages = {
     'registration.title': 'Tell us who you are',
     'registration.description':
       'Fill in your local registration data and show the QR at the desk.',
+    'registration.deskOnly': "Do this only when you're at the desk.",
     'registration.nickname': 'Nickname',
     'registration.age': 'Age',
     'registration.gender': 'Gender',
@@ -90,6 +91,7 @@ export const messages = {
     'registration.title': 'Cuéntanos quién eres',
     'registration.description':
       'Rellena tus datos de registro local y enseña el QR en la mesa.',
+    'registration.deskOnly': 'Haz esto solo cuando estés en la mesa.',
     'registration.nickname': 'Apodo',
     'registration.age': 'Edad',
     'registration.gender': 'Género',

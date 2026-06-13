@@ -7,7 +7,7 @@ import {
   type UserData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
-import { isSupportedLocale, supportedLocales, type Locale } from '../i18n/messages';
+import type { Locale } from '../i18n/messages';
 import {
   isKidGender,
   isValidKidAge,
@@ -22,13 +22,13 @@ export function DeskPage() {
   const addRegisteredKid = useAddRegisteredKid();
   const navigate = useNavigate();
   const user = useUserData();
-  const { t } = useI18n();
+  const { locale, t } = useI18n();
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [qrPayload, setQrPayload] = useState('');
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<KidGender>('preferNotToSay');
-  const [languagePreference, setLanguagePreference] = useState<Locale>('en');
+  const [languagePreference, setLanguagePreference] = useState<Locale>(locale);
   const [formError, setFormError] = useState('');
   const [registeredKid, setRegisteredKid] = useState<UserData>();
 
@@ -74,11 +74,6 @@ export function DeskPage() {
 
     if (!isKidGender(gender)) {
       setFormError(t('registration.error.gender'));
-      return;
-    }
-
-    if (!isSupportedLocale(languagePreference)) {
-      setFormError(t('registration.error.language'));
       return;
     }
 
@@ -175,18 +170,9 @@ export function DeskPage() {
               </label>
               <label>
                 <span>{t('registration.languagePreference')}</span>
-                <select
-                  value={languagePreference}
-                  onChange={(event) =>
-                    setLanguagePreference(event.target.value as Locale)
-                  }
-                >
-                  {supportedLocales.map((availableLocale) => (
-                    <option key={availableLocale} value={availableLocale}>
-                      {t(`language.${availableLocale}`)}
-                    </option>
-                  ))}
-                </select>
+                <output className="language-display">
+                  {t(`language.${languagePreference}`)}
+                </output>
               </label>
             </div>
             {formError ? <p className="form-error">{formError}</p> : null}

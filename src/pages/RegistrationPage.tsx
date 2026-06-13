@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
 import { useI18n } from '../i18n/I18nProvider';
-import { supportedLocales, type Locale } from '../i18n/messages';
 import {
   createRegistrationPayload,
   isKidGender,
@@ -20,7 +19,6 @@ export function RegistrationPage() {
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<KidGender>('preferNotToSay');
-  const [languagePreference, setLanguagePreference] = useState<Locale>(locale);
   const [registrationPayload, setRegistrationPayload] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [formError, setFormError] = useState('');
@@ -66,7 +64,7 @@ export function RegistrationPage() {
         createRegistrationPayload({
           age: nextAge,
           gender,
-          languagePreference,
+          languagePreference: locale,
           nickname,
         }),
       ),
@@ -87,6 +85,7 @@ export function RegistrationPage() {
         <p className="eyebrow">{t('registration.eyebrow')}</p>
         <h1 id="register-title">{t('registration.title')}</h1>
         <p className="site-description">{t('registration.description')}</p>
+        <p className="registration-notice">{t('registration.deskOnly')}</p>
 
         <div className="registration-layout">
           <form className="registration-form" onSubmit={submitRegistration}>
@@ -126,18 +125,7 @@ export function RegistrationPage() {
             </label>
             <label>
               <span>{t('registration.languagePreference')}</span>
-              <select
-                value={languagePreference}
-                onChange={(event) =>
-                  setLanguagePreference(event.target.value as Locale)
-                }
-              >
-                {supportedLocales.map((availableLocale) => (
-                  <option key={availableLocale} value={availableLocale}>
-                    {t(`language.${availableLocale}`)}
-                  </option>
-                ))}
-              </select>
+              <output className="language-display">{t(`language.${locale}`)}</output>
             </label>
             {formError ? <p className="form-error">{formError}</p> : null}
             <button className="access-button" type="submit">

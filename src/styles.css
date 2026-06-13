@@ -493,6 +493,17 @@ h2 {
   margin-top: 28px;
 }
 
+.registration-notice {
+  width: fit-content;
+  margin: 18px 0 0;
+  border: 1px solid #c9ac77;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #fffaf0;
+  color: #8c5a18;
+  font-weight: 800;
+}
+
 .registration-form,
 .desk-registration,
 .qr-panel,
@@ -529,7 +540,8 @@ h2 {
 
 .registration-form input,
 .registration-form select,
-.desk-registration textarea {
+.desk-registration textarea,
+.language-display {
   width: 100%;
   border: 1px solid #8c6b3f;
   border-radius: 14px;
@@ -539,6 +551,13 @@ h2 {
   font: inherit;
   letter-spacing: normal;
   text-transform: none;
+}
+
+.language-display {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  font-weight: 800;
 }
 
 .desk-registration textarea,
