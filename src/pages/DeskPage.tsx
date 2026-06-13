@@ -1,6 +1,7 @@
 import jsQR from 'jsqr';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { RegistrationFields } from '../components/RegistrationFields';
 import { TopBar } from '../components/TopBar';
 import {
   useAddRegisteredKid,
@@ -8,29 +9,13 @@ import {
   type UserData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
-import { supportedLocales, type Locale } from '../i18n/messages';
+import type { Locale } from '../i18n/messages';
 import {
-  ageGaugeMaximum,
-  ageGaugeMiddle,
-  ageGaugeMinimum,
   isKidGender,
   isValidKidAge,
-  kidGenderOptions,
   parseRegistrationPayload,
   type KidGender,
 } from '../registration';
-
-const fallbackAgeGaugeValue = Math.round((ageGaugeMinimum + ageGaugeMaximum) / 2);
-
-function getAgeGaugeValue(age: string) {
-  const ageNumber = Number(age);
-
-  if (!Number.isInteger(ageNumber)) {
-    return fallbackAgeGaugeValue;
-  }
-
-  return Math.min(Math.max(ageNumber, ageGaugeMinimum), ageGaugeMaximum);
-}
 
 export function DeskPage() {
   const addRegisteredKid = useAddRegisteredKid();
@@ -235,75 +220,16 @@ export function DeskPage() {
                 </>
               )}
             </section>
-            <div className="registration-form compact">
-              <label>
-                <span>{t('registration.nickname')}</span>
-                <input
-                  type="text"
-                  value={nickname}
-                  onChange={(event) => setNickname(event.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                <span>{t('registration.age')}</span>
-                <div className="age-control">
-                  <input
-                    type="number"
-                    value={age}
-                    onChange={(event) => setAge(event.target.value)}
-                    required
-                  />
-                  <input
-                    type="range"
-                    min={ageGaugeMinimum}
-                    max={ageGaugeMaximum}
-                    value={getAgeGaugeValue(age)}
-                    aria-label={t('registration.ageGauge')}
-                    onChange={(event) => setAge(event.target.value)}
-                  />
-                  <div className="age-gauge-labels" aria-hidden="true">
-                    <span>{ageGaugeMinimum}</span>
-                    <span>{ageGaugeMiddle}</span>
-                    <span>{ageGaugeMaximum}</span>
-                  </div>
-                </div>
-              </label>
-              <label>
-                <span>{t('registration.gender')}</span>
-                <div className="segmented-toggle" role="group">
-                  {kidGenderOptions.map((option) => (
-                    <button
-                      className={gender === option ? 'active' : undefined}
-                      key={option}
-                      type="button"
-                      aria-pressed={gender === option}
-                      onClick={() => setGender(option)}
-                    >
-                      {t(`registration.gender.${option}`)}
-                    </button>
-                  ))}
-                </div>
-              </label>
-              <label>
-                <span>{t('registration.languagePreference')}</span>
-                <div className="segmented-toggle language-toggle" role="group">
-                  {supportedLocales.map((availableLocale) => (
-                    <button
-                      className={
-                        languagePreference === availableLocale ? 'active' : undefined
-                      }
-                      key={availableLocale}
-                      type="button"
-                      aria-pressed={languagePreference === availableLocale}
-                      onClick={() => setLanguagePreference(availableLocale)}
-                    >
-                      {t(`language.${availableLocale}`)}
-                    </button>
-                  ))}
-                </div>
-              </label>
-            </div>
+            <RegistrationFields
+              age={age}
+              gender={gender}
+              languagePreference={languagePreference}
+              nickname={nickname}
+              setAge={setAge}
+              setGender={setGender}
+              setLanguagePreference={setLanguagePreference}
+              setNickname={setNickname}
+            />
           </div>
           {formError ? <p className="form-error">{formError}</p> : null}
           <button className="access-button" type="submit">
