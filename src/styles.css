@@ -673,7 +673,7 @@ h2 {
 }
 
 .desk-submit-button.attention {
-  animation: confirm-next 1200ms ease-out;
+  animation: confirm-next 2600ms ease-in-out 2;
 }
 
 @keyframes confirm-next {
