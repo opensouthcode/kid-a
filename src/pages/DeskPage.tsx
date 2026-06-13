@@ -44,6 +44,13 @@ export function DeskPage() {
     }
   }, [navigate, user.role]);
 
+  const clearRegistrationForm = () => {
+    setNickname('');
+    setAge('');
+    setGender('preferNotToSay');
+    setLanguagePreference(locale);
+  };
+
   const stopScanner = () => {
     if (frameRef.current) {
       window.cancelAnimationFrame(frameRef.current);
@@ -195,6 +202,7 @@ export function DeskPage() {
     });
 
     setLastAnimatedKidId(registeredKid.id);
+    clearRegistrationForm();
     setFormError('');
     setInvalidQrPreview('');
   };
