@@ -822,7 +822,7 @@ h2 {
 @keyframes recent-kid-added {
   0% {
     background: rgb(78 111 43 / 24%);
-    transform: translateX(-10px) scale(1.04);
+    transform: translateY(-10px) scale(1.04);
   }
 
   60% {
@@ -831,7 +831,7 @@ h2 {
 
   100% {
     background: transparent;
-    transform: translateX(0) scale(1);
+    transform: translateY(0) scale(1);
   }
 }
 
@@ -899,6 +899,15 @@ h2 {
     radial-gradient(ellipse at 18% 58%, #ffd84d 0 5px, transparent 6px),
     radial-gradient(ellipse at 82% 58%, #ffd84d 0 5px, transparent 6px),
     linear-gradient(#ffd84d 0 48%, transparent 49%);
+}
+
+.kid-gender-icon.preferNotToSay {
+  background: transparent;
+}
+
+.kid-gender-icon.preferNotToSay::before,
+.kid-gender-icon.preferNotToSay::after {
+  display: none;
 }
 
 .kid-count-card {

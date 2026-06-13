@@ -288,13 +288,11 @@ export function DeskPage() {
                       }
                     }}
                   >
-                    {kid.gender === 'boy' || kid.gender === 'girl' ? (
-                      <span
-                        className={`kid-gender-icon ${kid.gender}`}
-                        aria-label={t(`registration.gender.${kid.gender}`)}
-                        role="img"
-                      />
-                    ) : null}
+                    <span
+                      className={`kid-gender-icon ${kid.gender}`}
+                      aria-label={t(`registration.gender.${kid.gender}`)}
+                      role="img"
+                    />
                     <code>{kid.id}</code>
                     <strong>{kid.name}</strong>
                   </li>
