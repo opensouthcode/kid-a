@@ -832,6 +832,7 @@ h2 {
 
 .kid-gender-icon::before {
   position: absolute;
+  z-index: 1;
   right: 6px;
   bottom: 3px;
   left: 6px;
@@ -856,14 +857,15 @@ h2 {
 }
 
 .kid-gender-icon.girl::after {
-  top: 4px;
-  right: 3px;
-  bottom: 1px;
-  left: 3px;
-  border-radius: 12px 12px 10px 10px;
+  top: 3px;
+  right: 4px;
+  bottom: 2px;
+  left: 4px;
+  border-radius: 14px 14px 9px 9px;
   background:
-    radial-gradient(circle at 50% 42%, #f2c894 0 9px, transparent 10px),
-    #5a4228;
+    radial-gradient(ellipse at 18% 58%, #f2c14e 0 5px, transparent 6px),
+    radial-gradient(ellipse at 82% 58%, #f2c14e 0 5px, transparent 6px),
+    linear-gradient(#f2c14e 0 48%, transparent 49%);
 }
 
 .kid-count-card {
