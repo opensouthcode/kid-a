@@ -1,39 +1,29 @@
 import jsQR from 'jsqr';
 import { useEffect, useRef, useState } from 'react';
-import { useI18n } from '../i18n/I18nProvider';
-import type { MessageKey } from '../i18n/messages';
 
-type QrReaderLabel = {
-  cameraPreview: MessageKey;
-  scanApproved: MessageKey;
-  scannerActive: MessageKey;
-  scanQr: MessageKey;
-  scanQrShort: MessageKey;
-  stopScanner: MessageKey;
+export type QrReaderMessages = {
+  cameraPermissionError: string;
+  cameraPreview: string;
+  cameraStartError: string;
+  cameraUnsupportedError: string;
+  scanApproved: string;
+  scannerActive: string;
+  scanQr: string;
+  scanQrShort: string;
+  stopScanner: string;
 };
 
 type QrReaderProps = {
-  labelKeys?: Partial<QrReaderLabel>;
+  messages: QrReaderMessages;
   onError: (message: string) => void;
   onRead: (value: string) => void;
 };
 
-const defaultLabelKeys: QrReaderLabel = {
-  cameraPreview: 'scanner.cameraPreview',
-  scanApproved: 'scanner.scanApproved',
-  scannerActive: 'scanner.active',
-  scanQr: 'scanner.scanQr',
-  scanQrShort: 'scanner.scanQrShort',
-  stopScanner: 'scanner.stopScanner',
-};
-
-export function QrReader({ labelKeys, onError, onRead }: QrReaderProps) {
+export function QrReader({ messages, onError, onRead }: QrReaderProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef<number>(undefined);
   const streamRef = useRef<MediaStream>(undefined);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { t } = useI18n();
-  const labels = { ...defaultLabelKeys, ...labelKeys };
   const [hasApprovedScan, setHasApprovedScan] = useState(false);
   const [isScannerActive, setIsScannerActive] = useState(false);
 
@@ -116,7 +106,7 @@ export function QrReader({ labelKeys, onError, onRead }: QrReaderProps) {
 
   const startScanner = async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
-      onError(t('scanner.error.cameraUnsupported'));
+      onError(messages.cameraUnsupportedError);
       return;
     }
 
@@ -139,27 +129,27 @@ export function QrReader({ labelKeys, onError, onRead }: QrReaderProps) {
       stopScanner();
       onError(
         error instanceof DOMException && error.name === 'NotAllowedError'
-          ? t('scanner.error.cameraPermission')
-          : t('scanner.error.cameraStart'),
+          ? messages.cameraPermissionError
+          : messages.cameraStartError,
       );
     }
   };
 
   return (
-    <section className="scanner-panel" aria-label={t(labels.scanQr)}>
-      {isScannerActive ? <p>{t(labels.scannerActive)}</p> : null}
+    <section className="scanner-panel" aria-label={messages.scanQr}>
+      {isScannerActive ? <p>{messages.scannerActive}</p> : null}
       <div className={isScannerActive ? 'scanner-view' : 'scanner-view hidden'}>
         <video
           ref={videoRef}
           muted
           playsInline
-          aria-label={t(labels.cameraPreview)}
+          aria-label={messages.cameraPreview}
         />
         <canvas ref={canvasRef} hidden />
       </div>
       {isScannerActive ? (
         <button className="secondary-button" type="button" onClick={stopScanner}>
-          {t(labels.stopScanner)}
+          {messages.stopScanner}
         </button>
       ) : (
         <button
@@ -169,8 +159,8 @@ export function QrReader({ labelKeys, onError, onRead }: QrReaderProps) {
               : 'scanner-toggle-button'
           }
           type="button"
-          aria-label={t(labels.scanQr)}
-          title={t(labels.scanQr)}
+          aria-label={messages.scanQr}
+          title={messages.scanQr}
           onClick={startScanner}
         >
           {hasApprovedScan ? (
@@ -185,7 +175,7 @@ export function QrReader({ labelKeys, onError, onRead }: QrReaderProps) {
             </span>
           )}
           <span>
-            {hasApprovedScan ? t(labels.scanApproved) : t(labels.scanQrShort)}
+            {hasApprovedScan ? messages.scanApproved : messages.scanQrShort}
           </span>
         </button>
       )}

@@ -248,11 +248,16 @@ export function ActivityLeadPage() {
             ) : (
               <div className="kid-acquisition-layout">
                 <QrReader
-                  labelKeys={{
-                    scanApproved: 'lead.scan.approved',
-                    scannerActive: 'lead.scan.active',
-                    scanQr: 'lead.scan.title',
-                    scanQrShort: 'lead.scan.short',
+                  messages={{
+                    cameraPermissionError: t('scanner.error.cameraPermission'),
+                    cameraPreview: t('scanner.cameraPreview'),
+                    cameraStartError: t('scanner.error.cameraStart'),
+                    cameraUnsupportedError: t('scanner.error.cameraUnsupported'),
+                    scanApproved: t('lead.scan.approved'),
+                    scannerActive: t('lead.scan.active'),
+                    scanQr: t('lead.scan.title'),
+                    scanQrShort: t('lead.scan.short'),
+                    stopScanner: t('scanner.stopScanner'),
                   }}
                   onError={(message) => setFormError(message)}
                   onRead={readKidQrPayload}

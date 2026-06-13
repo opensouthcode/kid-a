@@ -123,9 +123,16 @@ export function DeskPage() {
         <form className="desk-registration" onSubmit={confirmRegistration}>
           <div className="desk-registration-layout">
             <QrReader
-              labelKeys={{
-                scanQr: 'desk.scanQr',
-                scanQrShort: 'desk.scanQrShort',
+              messages={{
+                cameraPermissionError: t('scanner.error.cameraPermission'),
+                cameraPreview: t('scanner.cameraPreview'),
+                cameraStartError: t('scanner.error.cameraStart'),
+                cameraUnsupportedError: t('scanner.error.cameraUnsupported'),
+                scanApproved: t('scanner.scanApproved'),
+                scannerActive: t('scanner.active'),
+                scanQr: t('desk.scanQr'),
+                scanQrShort: t('desk.scanQrShort'),
+                stopScanner: t('scanner.stopScanner'),
               }}
               onError={(message) => {
                 setFormError(message);
