@@ -525,10 +525,6 @@ h2 {
   gap: 16px;
 }
 
-.desk-registration .registration-fields {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
 .registration-fields label,
 .desk-registration label {
   display: grid;
@@ -721,8 +717,7 @@ h2 {
   }
 
   .registration-layout,
-  .desk-registration-layout,
-  .registration-form.compact {
+  .desk-registration-layout {
     grid-template-columns: 1fr;
   }
 }
