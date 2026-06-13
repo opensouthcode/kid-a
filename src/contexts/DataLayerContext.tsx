@@ -13,6 +13,7 @@ import type { KidGender, RegistrationInput } from '../registration';
 import type { Locale } from '../i18n/messages';
 
 export type ConferenceData = {
+  kidIdPrefix: string;
   shortName: string;
   title: string;
 };
@@ -150,16 +151,14 @@ const emptyPassportTemplate =
     isCompleted: false,
   })) ?? [];
 
-const generatedKidIdPrefix = '26OSK';
-
-function getNextKidId(existingKids: Kid[]) {
+function getNextKidId(existingKids: Kid[], kidIdPrefix: string) {
   const existingIds = new Set(existingKids.map((kid) => kid.id.toLowerCase()));
   let sequence = existingKids.length + 1;
-  let nextId = `${generatedKidIdPrefix}${sequence.toString().padStart(4, '0')}`;
+  let nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
 
   while (existingIds.has(nextId.toLowerCase())) {
     sequence += 1;
-    nextId = `${generatedKidIdPrefix}${sequence.toString().padStart(4, '0')}`;
+    nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
   }
 
   return nextId;
@@ -212,7 +211,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     const registeredKid: Kid = {
       age: registration.age,
       gender: registration.gender,
-      id: getNextKidId(kidList),
+      id: getNextKidId(kidList, conferenceJson.kidIdPrefix),
       language: registration.language,
       name: registration.nickname.trim(),
     };
