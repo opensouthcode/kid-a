@@ -285,6 +285,7 @@ export function DeskPage() {
                         role="img"
                       />
                     ) : null}
+                    <code>{kid.id}</code>
                     <strong>{kid.name}</strong>
                   </li>
                 ))}

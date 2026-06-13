@@ -818,6 +818,13 @@ h2 {
   font-size: inherit;
 }
 
+.last-kids-list code {
+  color: #5a4228;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.86em;
+  font-weight: 800;
+}
+
 .kid-gender-icon {
   position: relative;
   display: inline-block;
