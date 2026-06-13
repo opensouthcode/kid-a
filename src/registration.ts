@@ -21,6 +21,7 @@ export type RegistrationPayload = RegistrationInput & {
 };
 
 export const ageGaugeMinimum = 5;
+export const ageGaugeMiddle = 10;
 export const ageGaugeMaximum = 15;
 
 export function isKidGender(value: string): value is KidGender {

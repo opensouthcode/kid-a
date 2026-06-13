@@ -3,8 +3,10 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
 import { useI18n } from '../i18n/I18nProvider';
+import { supportedLocales, type Locale } from '../i18n/messages';
 import {
   ageGaugeMaximum,
+  ageGaugeMiddle,
   ageGaugeMinimum,
   createRegistrationPayload,
   isKidGender,
@@ -31,6 +33,7 @@ export function RegistrationPage() {
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<KidGender>('preferNotToSay');
+  const [languagePreference, setLanguagePreference] = useState<Locale>(locale);
   const [registrationPayload, setRegistrationPayload] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [formError, setFormError] = useState('');
@@ -76,7 +79,7 @@ export function RegistrationPage() {
         createRegistrationPayload({
           age: nextAge,
           gender,
-          languagePreference: locale,
+          languagePreference,
           nickname,
         }),
       ),
@@ -130,6 +133,7 @@ export function RegistrationPage() {
                 />
                 <div className="age-gauge-labels" aria-hidden="true">
                   <span>{ageGaugeMinimum}</span>
+                  <span>{ageGaugeMiddle}</span>
                   <span>{ageGaugeMaximum}</span>
                 </div>
               </div>
@@ -152,8 +156,21 @@ export function RegistrationPage() {
             </label>
             <label>
               <span>{t('registration.languagePreference')}</span>
-              <output className="language-display">{t(`language.${locale}`)}</output>
-              <small>{t('registration.languageGlobalHint')}</small>
+              <div className="segmented-toggle language-toggle" role="group">
+                {supportedLocales.map((availableLocale) => (
+                  <button
+                    className={
+                      languagePreference === availableLocale ? 'active' : undefined
+                    }
+                    key={availableLocale}
+                    type="button"
+                    aria-pressed={languagePreference === availableLocale}
+                    onClick={() => setLanguagePreference(availableLocale)}
+                  >
+                    {t(`language.${availableLocale}`)}
+                  </button>
+                ))}
+              </div>
             </label>
             {formError ? <p className="form-error">{formError}</p> : null}
             <button className="access-button" type="submit">

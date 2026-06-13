@@ -7,9 +7,10 @@ import {
   type UserData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
-import type { Locale } from '../i18n/messages';
+import { supportedLocales, type Locale } from '../i18n/messages';
 import {
   ageGaugeMaximum,
+  ageGaugeMiddle,
   ageGaugeMinimum,
   isKidGender,
   isValidKidAge,
@@ -175,6 +176,7 @@ export function DeskPage() {
                   />
                   <div className="age-gauge-labels" aria-hidden="true">
                     <span>{ageGaugeMinimum}</span>
+                    <span>{ageGaugeMiddle}</span>
                     <span>{ageGaugeMaximum}</span>
                   </div>
                 </div>
@@ -197,9 +199,21 @@ export function DeskPage() {
               </label>
               <label>
                 <span>{t('registration.languagePreference')}</span>
-                <output className="language-display">
-                  {t(`language.${languagePreference}`)}
-                </output>
+                <div className="segmented-toggle language-toggle" role="group">
+                  {supportedLocales.map((availableLocale) => (
+                    <button
+                      className={
+                        languagePreference === availableLocale ? 'active' : undefined
+                      }
+                      key={availableLocale}
+                      type="button"
+                      aria-pressed={languagePreference === availableLocale}
+                      onClick={() => setLanguagePreference(availableLocale)}
+                    >
+                      {t(`language.${availableLocale}`)}
+                    </button>
+                  ))}
+                </div>
               </label>
             </div>
             {formError ? <p className="form-error">{formError}</p> : null}

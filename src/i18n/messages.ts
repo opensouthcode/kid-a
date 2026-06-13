@@ -36,8 +36,6 @@ export const messages = {
     'registration.gender.girl': 'Girl',
     'registration.gender.preferNotToSay': 'NR',
     'registration.languagePreference': 'Language preference',
-    'registration.languageGlobalHint':
-      'Change it globally from the language selector in the navbar.',
     'registration.generateQr': 'Generate registration QR',
     'registration.qr.title': 'Registration QR',
     'registration.qr.alt': 'Registration QR code',
@@ -104,8 +102,6 @@ export const messages = {
     'registration.gender.girl': 'Niña',
     'registration.gender.preferNotToSay': 'NC',
     'registration.languagePreference': 'Idioma preferido',
-    'registration.languageGlobalHint':
-      'Cámbialo globalmente desde el selector de idioma de la barra superior.',
     'registration.generateQr': 'Generar QR de registro',
     'registration.qr.title': 'QR de registro',
     'registration.qr.alt': 'Código QR de registro',
