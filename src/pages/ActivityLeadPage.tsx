@@ -58,11 +58,11 @@ export function ActivityLeadPage() {
   );
   const activity = activities.find((entry) => entry.id === String(activityId));
   const completedActivities = passport.activities.filter(
-    (activity) => activity.isCompleted,
+    (activity) => activity.completedAt,
   ).length;
   const shouldShowWheelReminder =
     Boolean(leadActivity) &&
-    !leadActivity?.isCompleted &&
+    !leadActivity?.completedAt &&
     (completedActivities + 1) % 4 === 0;
   const formatCompletionTime = (completedAt: string) =>
     new Intl.DateTimeFormat(locale, {
@@ -161,7 +161,7 @@ export function ActivityLeadPage() {
       return;
     }
 
-    if (leadActivity.isCompleted) {
+    if (leadActivity.completedAt) {
       setFormError(t('lead.error.activityCompleted'));
       return;
     }
@@ -209,7 +209,7 @@ export function ActivityLeadPage() {
                   {shouldShowWheelReminder ? (
                     <p className="wheel-reminder">{t('lead.wheelReminder')}</p>
                   ) : null}
-                  {leadActivity?.isCompleted ? (
+                  {leadActivity?.completedAt ? (
                     <p className="activity-done-warning" role="status">
                       <AlertIcon size={18} aria-hidden="true" />
                       {leadActivityCompletedTime
@@ -225,7 +225,7 @@ export function ActivityLeadPage() {
                       {t('lead.mark.success')}
                     </p>
                   ) : null}
-                  {leadActivity?.isCompleted ? (
+                  {leadActivity?.completedAt ? (
                     <button
                       className="secondary-button"
                       type="button"

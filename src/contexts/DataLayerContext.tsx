@@ -29,7 +29,6 @@ export type Activity = {
 export type PassportActivity = {
   completedAt?: string;
   id: number;
-  isCompleted: boolean;
 };
 
 export type PassportData = {
@@ -145,7 +144,6 @@ function wrapKid(kid: Kid): CurrentUser {
 const emptyPassportTemplate =
   Object.values(initialPassportActivitiesByUser)[0]?.map((activity) => ({
     id: activity.id,
-    isCompleted: false,
   })) ?? [];
 
 function getNextKidId(existingKids: Kid[], kidIdPrefix: string) {
@@ -242,11 +240,10 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       return {
         ...activity,
         completedAt: activity.completedAt ?? new Date().toISOString(),
-        isCompleted: true,
       };
     });
     const completedActivities = nextActivities.filter(
-      (activity) => activity.isCompleted,
+      (activity) => activity.completedAt,
     ).length;
 
     const nextPassportActivities = {

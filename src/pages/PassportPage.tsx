@@ -48,7 +48,7 @@ export function PassportPage() {
   const [qrError, setQrError] = useState('');
   const [isQrExpanded, setIsQrExpanded] = useState(false);
   const completedActivities = passport.activities.filter(
-    (activity) => activity.isCompleted,
+    (activity) => activity.completedAt,
   ).length;
   const kidPassportPayload =
     currentUser.role === 'kid' ? currentUser.kid.qrIdData : '';
@@ -197,7 +197,7 @@ export function PassportPage() {
             {passport.activities.map((activity) => (
               <article
                 className={
-                  activity.isCompleted
+                  activity.completedAt
                     ? 'activity-card completed'
                     : 'activity-card'
                 }
@@ -210,7 +210,7 @@ export function PassportPage() {
                   {activities.find((entry) => entry.id === String(activity.id))
                     ?.title ?? ''}
                 </span>
-                {activity.isCompleted ? (
+                {activity.completedAt ? (
                   <CheckCircleFillIcon
                     aria-label={t('kid.activity.completed')}
                     className="activity-completed-icon"
