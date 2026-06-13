@@ -561,6 +561,28 @@ h2 {
   text-transform: none;
 }
 
+.age-control {
+  display: grid;
+  gap: 8px;
+}
+
+.age-control input[type="range"] {
+  accent-color: #4e6f2b;
+  cursor: pointer;
+  padding-right: 0;
+  padding-left: 0;
+}
+
+.age-gauge-labels {
+  display: flex;
+  justify-content: space-between;
+  color: #8c5a18;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .segmented-toggle {
   display: grid;
   overflow: hidden;

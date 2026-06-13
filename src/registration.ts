@@ -20,17 +20,15 @@ export type RegistrationPayload = RegistrationInput & {
   v: 1;
 };
 
-export const minimumKidAge = 3;
-export const maximumKidAge = 17;
+export const ageGaugeMinimum = 5;
+export const ageGaugeMaximum = 15;
 
 export function isKidGender(value: string): value is KidGender {
   return kidGenderOptions.some((gender) => gender === value);
 }
 
 export function isValidKidAge(age: number) {
-  return (
-    Number.isInteger(age) && age >= minimumKidAge && age <= maximumKidAge
-  );
+  return Number.isInteger(age);
 }
 
 export function createRegistrationPayload({

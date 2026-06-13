@@ -9,14 +9,26 @@ import {
 import { useI18n } from '../i18n/I18nProvider';
 import type { Locale } from '../i18n/messages';
 import {
+  ageGaugeMaximum,
+  ageGaugeMinimum,
   isKidGender,
   isValidKidAge,
   kidGenderOptions,
-  maximumKidAge,
-  minimumKidAge,
   parseRegistrationPayload,
   type KidGender,
 } from '../registration';
+
+const fallbackAgeGaugeValue = Math.round((ageGaugeMinimum + ageGaugeMaximum) / 2);
+
+function getAgeGaugeValue(age: string) {
+  const ageNumber = Number(age);
+
+  if (!Number.isInteger(ageNumber)) {
+    return fallbackAgeGaugeValue;
+  }
+
+  return Math.min(Math.max(ageNumber, ageGaugeMinimum), ageGaugeMaximum);
+}
 
 export function DeskPage() {
   const addRegisteredKid = useAddRegisteredKid();
@@ -146,14 +158,26 @@ export function DeskPage() {
               </label>
               <label>
                 <span>{t('registration.age')}</span>
-                <input
-                  type="number"
-                  min={minimumKidAge}
-                  max={maximumKidAge}
-                  value={age}
-                  onChange={(event) => setAge(event.target.value)}
-                  required
-                />
+                <div className="age-control">
+                  <input
+                    type="number"
+                    value={age}
+                    onChange={(event) => setAge(event.target.value)}
+                    required
+                  />
+                  <input
+                    type="range"
+                    min={ageGaugeMinimum}
+                    max={ageGaugeMaximum}
+                    value={getAgeGaugeValue(age)}
+                    aria-label={t('registration.ageGauge')}
+                    onChange={(event) => setAge(event.target.value)}
+                  />
+                  <div className="age-gauge-labels" aria-hidden="true">
+                    <span>{ageGaugeMinimum}</span>
+                    <span>{ageGaugeMaximum}</span>
+                  </div>
+                </div>
               </label>
               <label>
                 <span>{t('registration.gender')}</span>
