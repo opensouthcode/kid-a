@@ -52,11 +52,17 @@ export const messages = {
     'desk.description':
       'Read a kid registration QR, review the data, and confirm registration.',
     'desk.registerKid': 'Register kid',
-    'desk.qrData': 'Registration QR data',
-    'desk.qrData.placeholder': 'Paste the scanned QR data here',
-    'desk.readQr': 'Read QR',
+    'desk.scanQr': 'Scan registration QR',
+    'desk.stopScanner': 'Stop camera',
+    'desk.cameraPreview': 'Camera preview',
+    'desk.scanner.idle': 'Open the camera and point it at the registration QR.',
+    'desk.scanner.active': 'Looking for a registration QR...',
     'desk.confirm': 'Confirm registration',
     'desk.error.invalidQr': 'The QR data is not a valid registration.',
+    'desk.error.cameraPermission':
+      'The camera could not be opened. Check browser permissions and try again.',
+    'desk.error.cameraUnsupported':
+      'This browser does not support camera scanning.',
     'desk.confirmed.title': 'Kid registered',
     'desk.confirmed.description': 'was added to users in memory.',
     'kid.title': 'Passport',
@@ -121,11 +127,17 @@ export const messages = {
     'desk.description':
       'Lee un QR de registro infantil, revisa los datos y confirma el registro.',
     'desk.registerKid': 'Registrar kid',
-    'desk.qrData': 'Datos del QR de registro',
-    'desk.qrData.placeholder': 'Pega aquí los datos del QR escaneado',
-    'desk.readQr': 'Leer QR',
+    'desk.scanQr': 'Escanear QR de registro',
+    'desk.stopScanner': 'Parar cámara',
+    'desk.cameraPreview': 'Vista previa de la cámara',
+    'desk.scanner.idle': 'Abre la cámara y apunta al QR de registro.',
+    'desk.scanner.active': 'Buscando un QR de registro...',
     'desk.confirm': 'Confirmar registro',
     'desk.error.invalidQr': 'Los datos del QR no son un registro válido.',
+    'desk.error.cameraPermission':
+      'No se pudo abrir la cámara. Revisa los permisos del navegador e inténtalo de nuevo.',
+    'desk.error.cameraUnsupported':
+      'Este navegador no permite escanear con la cámara.',
     'desk.confirmed.title': 'Kid registrado',
     'desk.confirmed.description': 'se ha añadido a usuarios en memoria.',
     'kid.title': 'Pasaporte',

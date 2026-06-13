@@ -653,6 +653,35 @@ h2 {
   margin-top: 24px;
 }
 
+.scanner-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.scanner-panel video {
+  width: min(420px, 100%);
+  min-height: 220px;
+  border: 1px solid #8c6b3f;
+  border-radius: 20px;
+  background: #2d2418;
+}
+
+.scanner-panel p {
+  margin: 0;
+  color: #5a4228;
+  font-weight: 800;
+}
+
+.scanner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.scanner-actions .secondary-button {
+  margin: 0;
+}
+
 .confirmation-card {
   max-width: 560px;
   margin-top: 24px;

@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import jsQR from 'jsqr';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
 import {
@@ -33,11 +34,15 @@ function getAgeGaugeValue(age: string) {
 
 export function DeskPage() {
   const addRegisteredKid = useAddRegisteredKid();
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const frameRef = useRef<number>(undefined);
   const navigate = useNavigate();
+  const streamRef = useRef<MediaStream>(undefined);
   const user = useUserData();
+  const videoRef = useRef<HTMLVideoElement>(null);
   const { locale, t } = useI18n();
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
-  const [qrPayload, setQrPayload] = useState('');
+  const [isScannerActive, setIsScannerActive] = useState(false);
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<KidGender>('preferNotToSay');
@@ -51,7 +56,27 @@ export function DeskPage() {
     }
   }, [navigate, user.role]);
 
-  const readQrPayload = () => {
+  const stopScanner = () => {
+    if (frameRef.current) {
+      window.cancelAnimationFrame(frameRef.current);
+      frameRef.current = undefined;
+    }
+
+    streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = undefined;
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+
+    setIsScannerActive(false);
+  };
+
+  useEffect(() => {
+    return stopScanner;
+  }, []);
+
+  const readQrPayload = (qrPayload: string) => {
     try {
       const registration = parseRegistrationPayload(qrPayload);
 
@@ -67,6 +92,63 @@ export function DeskPage() {
       setFormError('');
     } catch {
       setFormError(t('desk.error.invalidQr'));
+    }
+  };
+
+  const scanVideoFrame = () => {
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    const context = canvas?.getContext('2d', { willReadFrequently: true });
+
+    if (!canvas || !context || !video) {
+      frameRef.current = window.requestAnimationFrame(scanVideoFrame);
+      return;
+    }
+
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
+
+      if (qrCode?.data) {
+        stopScanner();
+        readQrPayload(qrCode.data);
+        return;
+      }
+    }
+
+    frameRef.current = window.requestAnimationFrame(scanVideoFrame);
+  };
+
+  const startScanner = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setFormError(t('desk.error.cameraUnsupported'));
+      return;
+    }
+
+    try {
+      setFormError('');
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: 'environment' },
+      });
+
+      streamRef.current = stream;
+
+      if (!videoRef.current) {
+        throw new Error('Video element is not available');
+      }
+
+      videoRef.current.srcObject = stream;
+      await videoRef.current.play();
+      setIsScannerActive(true);
+      frameRef.current = window.requestAnimationFrame(scanVideoFrame);
+    } catch {
+      stopScanner();
+      setFormError(t('desk.error.cameraPermission'));
     }
   };
 
@@ -129,17 +211,39 @@ export function DeskPage() {
 
         {isRegistrationOpen ? (
           <form className="desk-registration" onSubmit={confirmRegistration}>
-            <label>
-              <span>{t('desk.qrData')}</span>
-              <textarea
-                value={qrPayload}
-                onChange={(event) => setQrPayload(event.target.value)}
-                placeholder={t('desk.qrData.placeholder')}
+            <section className="scanner-panel" aria-label={t('desk.scanQr')}>
+              <video
+                ref={videoRef}
+                muted
+                playsInline
+                aria-label={t('desk.cameraPreview')}
               />
-            </label>
-            <button className="secondary-button" type="button" onClick={readQrPayload}>
-              {t('desk.readQr')}
-            </button>
+              <canvas ref={canvasRef} hidden />
+              <p>
+                {isScannerActive
+                  ? t('desk.scanner.active')
+                  : t('desk.scanner.idle')}
+              </p>
+              <div className="scanner-actions">
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={startScanner}
+                  disabled={isScannerActive}
+                >
+                  {t('desk.scanQr')}
+                </button>
+                {isScannerActive ? (
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={stopScanner}
+                  >
+                    {t('desk.stopScanner')}
+                  </button>
+                ) : null}
+              </div>
+            </section>
             <div className="registration-form compact">
               <label>
                 <span>{t('registration.nickname')}</span>
