@@ -94,7 +94,7 @@ export const messages = {
       'Rellena tus datos de registro local y enseña el QR en la mesa.',
     'registration.deskOnly':
       'Rellena estos datos sólo cuando estés en la conferencia.',
-    'registration.nickname': 'Apodo',
+    'registration.nickname': 'Nickname',
     'registration.age': 'Edad',
     'registration.ageGauge': 'Medidor de edad de 5 a 15',
     'registration.gender': 'Género',
