@@ -36,8 +36,9 @@ export function DeskPage() {
   const [formError, setFormError] = useState('');
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
   const [registeredKid, setRegisteredKid] = useState<UserData>();
-  const [lastRegisteredKids, setLastRegisteredKids] = useState<UserData[]>([]);
-  const kidCount = users.filter((availableUser) => availableUser.role === 'kid').length;
+  const kids = users.filter((availableUser) => availableUser.role === 'kid');
+  const lastRegisteredKids = [...kids].reverse().slice(0, 3);
+  const kidCount = kids.length;
 
   useEffect(() => {
     if (user.role !== 'desk') {
@@ -196,9 +197,6 @@ export function DeskPage() {
     });
 
     setRegisteredKid(nextRegisteredKid);
-    setLastRegisteredKids((currentKids) =>
-      [nextRegisteredKid, ...currentKids].slice(0, 3),
-    );
     setFormError('');
     setInvalidQrPreview('');
   };
