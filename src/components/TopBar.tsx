@@ -47,8 +47,7 @@ export function TopBar({
 }: TopBarProps) {
   const { t } = useI18n();
   const currentUser = useCurrentUser();
-  const menuProfile =
-    currentUser.role === 'kid' ? currentUser.kid : currentUser.user;
+  const menuProfile = currentUser.role === 'kid' ? currentUser.kid : currentUser;
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 

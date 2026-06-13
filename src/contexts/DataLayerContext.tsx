@@ -49,10 +49,7 @@ export type CurrentUser =
       kid: KidData;
       role: 'kid';
     }
-  | {
-      role: UserRole;
-      user: UserData;
-    };
+  | UserData;
 
 type DataLayerContextValue = {
   addRegisteredKid: (registration: RegistrationInput) => KidData;
@@ -115,17 +112,10 @@ function wrapKid(kid: KidData): CurrentUser {
   };
 }
 
-function wrapUser(user: UserData): CurrentUser {
-  return {
-    role: user.role,
-    user,
-  };
-}
-
 function getCurrentUserStorageValue(currentUser: CurrentUser) {
   return currentUser.role === 'kid'
     ? `kid:${currentUser.kid.id}`
-    : `user:${currentUser.user.id}`;
+    : `user:${currentUser.id}`;
 }
 
 function getStoredCurrentUser() {
@@ -144,7 +134,7 @@ function getStoredCurrentUser() {
     const storedUser = initialUsers.find((user) => user.id === id);
 
     if (storedUser) {
-      return wrapUser(storedUser);
+      return storedUser;
     }
   }
 
@@ -190,14 +180,12 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
           kidList.find((kid) => kid.id === selectedCurrentUser.kid.id) ??
             defaultKid,
         )
-      : wrapUser(
-          userList.find((user) => user.id === selectedCurrentUser.user.id) ??
-            defaultUser,
-        );
+      : (userList.find((user) => user.id === selectedCurrentUser.id) ??
+        defaultUser);
   const currentKid = currentUser.role === 'kid' ? currentUser.kid : defaultKid;
   const setCurrentUser = (nextUser: KidData | UserData) => {
     const nextCurrentUser =
-      'role' in nextUser ? wrapUser(nextUser) : wrapKid(nextUser);
+      'role' in nextUser ? nextUser : wrapKid(nextUser);
 
     if (
       nextCurrentUser.role === 'kid' &&
@@ -208,9 +196,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     if (
       nextCurrentUser.role !== 'kid' &&
-      !userList.some((user) => user.id === nextCurrentUser.user.id)
+      !userList.some((user) => user.id === nextCurrentUser.id)
     ) {
-      throw new Error(`Unknown user: ${nextCurrentUser.user.id}`);
+      throw new Error(`Unknown user: ${nextCurrentUser.id}`);
     }
 
     window.localStorage.setItem(
