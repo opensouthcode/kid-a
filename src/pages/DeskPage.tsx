@@ -34,6 +34,7 @@ export function DeskPage() {
   const [languagePreference, setLanguagePreference] = useState<Locale>(locale);
   const [formError, setFormError] = useState('');
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
+  const [lastAnimatedKidId, setLastAnimatedKidId] = useState('');
   const lastRegisteredKids = [...kids].reverse().slice(0, 3);
   const kidCount = kids.length;
 
@@ -186,13 +187,14 @@ export function DeskPage() {
       return;
     }
 
-    addRegisteredKid({
+    const registeredKid = addRegisteredKid({
       age: nextAge,
       gender,
       languagePreference,
       nickname,
     });
 
+    setLastAnimatedKidId(registeredKid.id);
     setFormError('');
     setInvalidQrPreview('');
   };
@@ -277,7 +279,15 @@ export function DeskPage() {
             {lastRegisteredKids.length > 0 ? (
               <ul className="last-kids-list">
                 {lastRegisteredKids.map((kid) => (
-                  <li key={kid.id}>
+                  <li
+                    className={kid.id === lastAnimatedKidId ? 'just-added' : undefined}
+                    key={kid.id}
+                    onAnimationEnd={() => {
+                      if (kid.id === lastAnimatedKidId) {
+                        setLastAnimatedKidId('');
+                      }
+                    }}
+                  >
                     {kid.gender === 'boy' || kid.gender === 'girl' ? (
                       <span
                         className={`kid-gender-icon ${kid.gender}`}

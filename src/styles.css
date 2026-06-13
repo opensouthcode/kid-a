@@ -812,6 +812,27 @@ h2 {
   display: flex;
   gap: 10px;
   align-items: baseline;
+  border-radius: 999px;
+}
+
+.last-kids-list li.just-added {
+  animation: recent-kid-added 900ms ease-out;
+}
+
+@keyframes recent-kid-added {
+  0% {
+    background: rgb(78 111 43 / 24%);
+    transform: translateX(-10px) scale(1.04);
+  }
+
+  60% {
+    background: rgb(78 111 43 / 14%);
+  }
+
+  100% {
+    background: transparent;
+    transform: translateX(0) scale(1);
+  }
 }
 
 .last-kids-list strong {
