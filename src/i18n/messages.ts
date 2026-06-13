@@ -36,6 +36,8 @@ export const messages = {
     'registration.gender.nonBinary': 'Non-binary',
     'registration.gender.preferNotToSay': 'Prefer not to say',
     'registration.languagePreference': 'Language preference',
+    'registration.languageGlobalHint':
+      'Change it globally from the language selector in the navbar.',
     'registration.generateQr': 'Generate registration QR',
     'registration.qr.title': 'Registration QR',
     'registration.qr.alt': 'Registration QR code',
@@ -102,6 +104,8 @@ export const messages = {
     'registration.gender.nonBinary': 'No binario',
     'registration.gender.preferNotToSay': 'Prefiero no decirlo',
     'registration.languagePreference': 'Idioma preferido',
+    'registration.languageGlobalHint':
+      'Cámbialo globalmente desde el selector de idioma de la barra superior.',
     'registration.generateQr': 'Generar QR de registro',
     'registration.qr.title': 'QR de registro',
     'registration.qr.alt': 'Código QR de registro',

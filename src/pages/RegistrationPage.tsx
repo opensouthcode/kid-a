@@ -126,6 +126,7 @@ export function RegistrationPage() {
             <label>
               <span>{t('registration.languagePreference')}</span>
               <output className="language-display">{t(`language.${locale}`)}</output>
+              <small>{t('registration.languageGlobalHint')}</small>
             </label>
             {formError ? <p className="form-error">{formError}</p> : null}
             <button className="access-button" type="submit">

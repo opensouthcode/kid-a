@@ -538,6 +538,14 @@ h2 {
   text-transform: uppercase;
 }
 
+.registration-form label small {
+  color: #8c5a18;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
 .registration-form input,
 .registration-form select,
 .desk-registration textarea,
