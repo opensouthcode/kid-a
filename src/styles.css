@@ -829,25 +829,51 @@ h2 {
 }
 
 .kid-gender-icon {
-  display: inline-grid;
+  position: relative;
+  display: inline-block;
   width: 30px;
   height: 30px;
   flex: 0 0 auto;
+  overflow: hidden;
+  border: 2px solid #4e6f2b;
   border-radius: 50%;
-  background: #4e6f2b;
-  color: #fbf7ec;
-  font-size: 1.05rem;
-  font-weight: 900;
-  line-height: 1;
-  place-items: center;
+  background: #e5f0d0;
 }
 
-.kid-gender-icon.boy::before {
-  content: "♂";
+.kid-gender-icon::before {
+  position: absolute;
+  right: 6px;
+  bottom: 3px;
+  left: 6px;
+  height: 19px;
+  border-radius: 50% 50% 45% 45%;
+  background: #f2c894;
+  content: "";
 }
 
-.kid-gender-icon.girl::before {
-  content: "♀";
+.kid-gender-icon::after {
+  position: absolute;
+  content: "";
+}
+
+.kid-gender-icon.boy::after {
+  top: 5px;
+  right: 6px;
+  left: 6px;
+  height: 8px;
+  border-radius: 10px 10px 4px 4px;
+  background: #5a4228;
+}
+
+.kid-gender-icon.girl::after {
+  top: 4px;
+  right: 3px;
+  bottom: 1px;
+  left: 3px;
+  border-radius: 12px 12px 10px 10px;
+  background:
+    radial-gradient(circle at 50% 42%, #f2c894 0 9px, transparent 10px),
+    #5a4228;
 }
 
 .kid-count-card {

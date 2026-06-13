@@ -1,6 +1,6 @@
 [
-  { "id": "barbie", "name": "Barbie", "role": "kid" },
-  { "id": "ken", "name": "Ken", "role": "kid" },
+  { "id": "barbie", "name": "Barbie", "role": "kid", "age": 9, "gender": "girl" },
+  { "id": "ken", "name": "Ken", "role": "kid", "age": 10, "gender": "boy" },
   { "id": "cia", "name": "Cia", "role": "desk" },
   { "id": "flash", "name": "Flash", "role": "wheel" },
   { "id": "beny", "name": "Beny", "role": "lead" },
