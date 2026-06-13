@@ -40,7 +40,7 @@ export type KidData = {
   age: number;
   gender: KidGender;
   id: string;
-  languagePreference: Locale;
+  language: Locale;
   name: string;
 };
 
@@ -177,7 +177,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       age: registration.age,
       gender: registration.gender,
       id: getNextKidId(kidList),
-      languagePreference: registration.languagePreference,
+      language: registration.language,
       name: registration.nickname.trim(),
     };
 

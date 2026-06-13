@@ -1,7 +1,7 @@
 import jsQR from 'jsqr';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RegistrationFields } from '../components/RegistrationFields';
+import { RegisterKidForm } from '../components/RegisterKidForm';
 import { TopBar } from '../components/TopBar';
 import {
   useAddRegisteredKid,
@@ -31,7 +31,7 @@ export function DeskPage() {
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<KidGender>('preferNotToSay');
-  const [languagePreference, setLanguagePreference] = useState<Locale>(locale);
+  const [language, setLanguage] = useState<Locale>(locale);
   const [formError, setFormError] = useState('');
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
   const [lastAnimatedKidId, setLastAnimatedKidId] = useState('');
@@ -48,7 +48,7 @@ export function DeskPage() {
     setNickname('');
     setAge('');
     setGender('preferNotToSay');
-    setLanguagePreference(locale);
+    setLanguage(locale);
   };
 
   const stopScanner = () => {
@@ -84,7 +84,7 @@ export function DeskPage() {
       setNickname(registration.nickname);
       setAge(String(registration.age));
       setGender(registration.gender);
-      setLanguagePreference(registration.languagePreference);
+      setLanguage(registration.language);
       setFormError('');
       setInvalidQrPreview('');
     } catch {
@@ -197,7 +197,7 @@ export function DeskPage() {
     const registeredKid = addRegisteredKid({
       age: nextAge,
       gender,
-      languagePreference,
+      language,
       nickname,
     });
 
@@ -257,14 +257,14 @@ export function DeskPage() {
                 </button>
               )}
             </section>
-            <RegistrationFields
+            <RegisterKidForm
               age={age}
               gender={gender}
-              languagePreference={languagePreference}
+              language={language}
               nickname={nickname}
               setAge={setAge}
               setGender={setGender}
-              setLanguagePreference={setLanguagePreference}
+              setLanguage={setLanguage}
               setNickname={setNickname}
             />
           </div>

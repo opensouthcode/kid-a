@@ -519,12 +519,12 @@ h2 {
   gap: 16px;
 }
 
-.registration-fields {
+.register-kid-form {
   display: grid;
   gap: 16px;
 }
 
-.registration-fields label,
+.register-kid-form label,
 .desk-registration label {
   display: grid;
   gap: 8px;
@@ -535,8 +535,8 @@ h2 {
   text-transform: uppercase;
 }
 
-.registration-fields input,
-.registration-fields select,
+.register-kid-form input,
+.register-kid-form select,
 .desk-registration textarea {
   width: 100%;
   border: 1px solid #8c6b3f;

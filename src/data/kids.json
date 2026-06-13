@@ -4,13 +4,13 @@
     "name": "Barbie",
     "age": 9,
     "gender": "girl",
-    "languagePreference": "en"
+    "language": "en"
   },
   {
     "id": "26OSK0002",
     "name": "Ken",
     "age": 10,
     "gender": "boy",
-    "languagePreference": "en"
+    "language": "en"
   }
 ]

@@ -1,7 +1,7 @@
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RegistrationFields } from '../components/RegistrationFields';
+import { RegisterKidForm } from '../components/RegisterKidForm';
 import { TopBar } from '../components/TopBar';
 import { useI18n } from '../i18n/I18nProvider';
 import type { Locale } from '../i18n/messages';
@@ -18,7 +18,7 @@ export function RegistrationPage() {
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<KidGender>('preferNotToSay');
-  const [languagePreference, setLanguagePreference] = useState<Locale>(locale);
+  const [language, setLanguage] = useState<Locale>(locale);
   const [registrationPayload, setRegistrationPayload] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [formError, setFormError] = useState('');
@@ -64,7 +64,7 @@ export function RegistrationPage() {
         createRegistrationPayload({
           age: nextAge,
           gender,
-          languagePreference,
+          language,
           nickname,
         }),
       ),
@@ -89,14 +89,14 @@ export function RegistrationPage() {
 
         <div className="registration-layout">
           <form className="registration-form" onSubmit={submitRegistration}>
-            <RegistrationFields
+            <RegisterKidForm
               age={age}
               gender={gender}
-              languagePreference={languagePreference}
+              language={language}
               nickname={nickname}
               setAge={setAge}
               setGender={setGender}
-              setLanguagePreference={setLanguagePreference}
+              setLanguage={setLanguage}
               setNickname={setNickname}
             />
             {formError ? <p className="form-error">{formError}</p> : null}

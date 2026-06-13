@@ -12,7 +12,7 @@ export type RegistrationInput = {
   nickname: string;
   age: number;
   gender: KidGender;
-  languagePreference: Locale;
+  language: Locale;
 };
 
 export type RegistrationPayload = RegistrationInput & {
@@ -35,13 +35,13 @@ export function isValidKidAge(age: number) {
 export function createRegistrationPayload({
   age,
   gender,
-  languagePreference,
+  language,
   nickname,
 }: RegistrationInput): RegistrationPayload {
   return {
     age,
     gender,
-    languagePreference,
+    language,
     nickname: nickname.trim(),
     type: 'kid-a.registration',
     v: 1,
@@ -64,8 +64,8 @@ function isRegistrationPayload(value: unknown): value is RegistrationPayload {
     isValidKidAge(payload.age) &&
     typeof payload.gender === 'string' &&
     isKidGender(payload.gender) &&
-    typeof payload.languagePreference === 'string' &&
-    isSupportedLocale(payload.languagePreference)
+    typeof payload.language === 'string' &&
+    isSupportedLocale(payload.language)
   );
 }
 

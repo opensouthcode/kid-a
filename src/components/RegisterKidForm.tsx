@@ -8,14 +8,14 @@ import {
   type KidGender,
 } from '../registration';
 
-type RegistrationFieldsProps = {
+type RegisterKidFormProps = {
   age: string;
   gender: KidGender;
-  languagePreference: Locale;
+  language: Locale;
   nickname: string;
   setAge: (age: string) => void;
   setGender: (gender: KidGender) => void;
-  setLanguagePreference: (languagePreference: Locale) => void;
+  setLanguage: (language: Locale) => void;
   setNickname: (nickname: string) => void;
 };
 
@@ -31,20 +31,20 @@ function getAgeGaugeValue(age: string) {
   return Math.min(Math.max(ageNumber, ageGaugeMinimum), ageGaugeMaximum);
 }
 
-export function RegistrationFields({
+export function RegisterKidForm({
   age,
   gender,
-  languagePreference,
+  language,
   nickname,
   setAge,
   setGender,
-  setLanguagePreference,
+  setLanguage,
   setNickname,
-}: RegistrationFieldsProps) {
+}: RegisterKidFormProps) {
   const { t } = useI18n();
 
   return (
-    <div className="registration-fields">
+    <div className="register-kid-form">
       <label>
         <span>{t('registration.nickname')}</span>
         <input
@@ -96,17 +96,17 @@ export function RegistrationFields({
         </div>
       </label>
       <label>
-        <span>{t('registration.languagePreference')}</span>
+        <span>{t('registration.language')}</span>
         <div className="segmented-toggle language-toggle" role="group">
           {supportedLocales.map((availableLocale) => (
             <button
               className={
-                languagePreference === availableLocale ? 'active' : undefined
+                language === availableLocale ? 'active' : undefined
               }
               key={availableLocale}
               type="button"
-              aria-pressed={languagePreference === availableLocale}
-              onClick={() => setLanguagePreference(availableLocale)}
+              aria-pressed={language === availableLocale}
+              onClick={() => setLanguage(availableLocale)}
             >
               {t(`language.${availableLocale}`)}
             </button>
