@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { PersonIcon, SmileyGrinIcon } from '@primer/octicons-react';
-import { useUserData } from '../contexts/DataLayerContext';
+import { useCurrentUser } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { isSupportedLocale, supportedLocales } from '../i18n/messages';
 
 type TopBarProps = {
   customButtons?: ReactNode;
   onLogout?: () => void;
-  profile?: { id?: string; name: string };
-  showProfileId?: boolean;
   showGuestAvatar?: boolean;
   showLanguageSwitcher?: boolean;
   showUserMenu?: boolean;
@@ -43,15 +41,14 @@ function LanguageSwitcher() {
 export function TopBar({
   customButtons,
   onLogout,
-  profile,
-  showProfileId = false,
   showGuestAvatar = false,
   showLanguageSwitcher = false,
   showUserMenu = false,
 }: TopBarProps) {
   const { t } = useI18n();
-  const user = useUserData();
-  const menuProfile = profile ?? user;
+  const currentUser = useCurrentUser();
+  const menuProfile =
+    currentUser.role === 'kid' ? currentUser.kid : currentUser.user;
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -112,7 +109,7 @@ export function TopBar({
                 <span>{t('user.nameLabel')}</span>
                 <strong>{menuProfile.name}</strong>
               </div>
-              {showProfileId && menuProfile.id ? (
+              {currentUser.role === 'kid' ? (
                 <div className="user-menu-name">
                   <span>{t('user.idLabel')}</span>
                   <strong>{menuProfile.id}</strong>

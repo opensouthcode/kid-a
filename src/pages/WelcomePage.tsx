@@ -4,7 +4,6 @@ import { TopBar } from '../components/TopBar';
 import {
   useConferenceData,
   useKidsData,
-  useSetCurrentKid,
   useSetCurrentUser,
   useUsersData,
   type KidData,
@@ -17,7 +16,6 @@ export function WelcomePage() {
   const conference = useConferenceData();
   const kids = useKidsData();
   const navigate = useNavigate();
-  const setCurrentKid = useSetCurrentKid();
   const setCurrentUser = useSetCurrentUser();
   const { t } = useI18n();
   const users = useUsersData();
@@ -47,13 +45,13 @@ export function WelcomePage() {
   const enabledRoles = new Set<UserData['role']>(['desk']);
 
   const openKidPage = (kid: KidData) => {
-    setCurrentKid(kid.id);
+    setCurrentUser(kid);
     setIsAccessDialogOpen(false);
     navigate('/passport');
   };
 
   const openRolePage = (user: UserData) => {
-    setCurrentUser(user.id);
+    setCurrentUser(user);
     setIsAccessDialogOpen(false);
     navigate('/desk');
   };

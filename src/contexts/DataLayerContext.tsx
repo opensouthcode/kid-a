@@ -44,24 +44,32 @@ export type KidData = {
   name: string;
 };
 
+export type CurrentUser =
+  | {
+      kid: KidData;
+      role: 'kid';
+    }
+  | {
+      role: UserRole;
+      user: UserData;
+    };
+
 type DataLayerContextValue = {
   addRegisteredKid: (registration: RegistrationInput) => KidData;
   conference: ConferenceData;
+  currentUser: CurrentUser;
   kid: KidData;
   kids: KidData[];
   passport: PassportData;
-  user: UserData;
   users: UserData[];
-  setCurrentKidId: (kidId: string) => void;
-  setCurrentUserId: (userId: string) => void;
+  setCurrentUser: (user: KidData | UserData) => void;
 };
 
 const initialKids: KidData[] = kidsJson as KidData[];
 const initialUsers: UserData[] = usersJson as UserData[];
 const initialPassportActivitiesByUser =
   passportActivitiesJson as PassportActivitiesByKid;
-const currentKidStorageKey = 'kid-a.currentKidId';
-const currentUserStorageKey = 'kid-a.currentUserId';
+const currentUserStorageKey = 'kid-a.currentUser';
 
 function getDefaultUser() {
   const defaultUser =
@@ -100,24 +108,47 @@ if (missingKidPassportUsers.length > 0) {
   );
 }
 
-function getStoredUserId() {
-  const storedUserId = window.localStorage.getItem(currentUserStorageKey);
-
-  if (initialUsers.some((user) => user.id === storedUserId)) {
-    return storedUserId;
-  }
-
-  return defaultUser.id;
+function wrapKid(kid: KidData): CurrentUser {
+  return {
+    kid,
+    role: 'kid',
+  };
 }
 
-function getStoredKidId() {
-  const storedKidId = window.localStorage.getItem(currentKidStorageKey);
+function wrapUser(user: UserData): CurrentUser {
+  return {
+    role: user.role,
+    user,
+  };
+}
 
-  if (initialKids.some((kid) => kid.id === storedKidId)) {
-    return storedKidId;
+function getCurrentUserStorageValue(currentUser: CurrentUser) {
+  return currentUser.role === 'kid'
+    ? `kid:${currentUser.kid.id}`
+    : `user:${currentUser.user.id}`;
+}
+
+function getStoredCurrentUser() {
+  const storedCurrentUser = window.localStorage.getItem(currentUserStorageKey);
+  const [type, id] = storedCurrentUser?.split(':') ?? [];
+
+  if (type === 'kid') {
+    const storedKid = initialKids.find((kid) => kid.id === id);
+
+    if (storedKid) {
+      return wrapKid(storedKid);
+    }
   }
 
-  return defaultKid.id;
+  if (type === 'user') {
+    const storedUser = initialUsers.find((user) => user.id === id);
+
+    if (storedUser) {
+      return wrapUser(storedUser);
+    }
+  }
+
+  return wrapKid(defaultKid);
 }
 
 const emptyPassportTemplate =
@@ -151,26 +182,42 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   const [passportActivitiesByUser, setPassportActivitiesByUser] = useState(
     initialPassportActivitiesByUser,
   );
-  const [currentKidId, setSelectedKidId] = useState(getStoredKidId);
-  const [currentUserId, setSelectedUserId] = useState(getStoredUserId);
-  const currentKid = kidList.find((kid) => kid.id === currentKidId) ?? defaultKid;
+  const [selectedCurrentUser, setSelectedCurrentUser] =
+    useState(getStoredCurrentUser);
   const currentUser =
-    userList.find((user) => user.id === currentUserId) ?? defaultUser;
-  const setCurrentKidId = (kidId: string) => {
-    if (!kidList.some((kid) => kid.id === kidId)) {
-      throw new Error(`Unknown kid: ${kidId}`);
+    selectedCurrentUser.role === 'kid'
+      ? wrapKid(
+          kidList.find((kid) => kid.id === selectedCurrentUser.kid.id) ??
+            defaultKid,
+        )
+      : wrapUser(
+          userList.find((user) => user.id === selectedCurrentUser.user.id) ??
+            defaultUser,
+        );
+  const currentKid = currentUser.role === 'kid' ? currentUser.kid : defaultKid;
+  const setCurrentUser = (nextUser: KidData | UserData) => {
+    const nextCurrentUser =
+      'role' in nextUser ? wrapUser(nextUser) : wrapKid(nextUser);
+
+    if (
+      nextCurrentUser.role === 'kid' &&
+      !kidList.some((kid) => kid.id === nextCurrentUser.kid.id)
+    ) {
+      throw new Error(`Unknown kid: ${nextCurrentUser.kid.id}`);
     }
 
-    window.localStorage.setItem(currentKidStorageKey, kidId);
-    setSelectedKidId(kidId);
-  };
-  const setCurrentUserId = (userId: string) => {
-    if (!userList.some((user) => user.id === userId)) {
-      throw new Error(`Unknown user: ${userId}`);
+    if (
+      nextCurrentUser.role !== 'kid' &&
+      !userList.some((user) => user.id === nextCurrentUser.user.id)
+    ) {
+      throw new Error(`Unknown user: ${nextCurrentUser.user.id}`);
     }
 
-    window.localStorage.setItem(currentUserStorageKey, userId);
-    setSelectedUserId(userId);
+    window.localStorage.setItem(
+      currentUserStorageKey,
+      getCurrentUserStorageValue(nextCurrentUser),
+    );
+    setSelectedCurrentUser(nextCurrentUser);
   };
   const addRegisteredKid = (registration: RegistrationInput) => {
     const registeredKid: KidData = {
@@ -193,14 +240,13 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     () => ({
       addRegisteredKid,
       conference: conferenceJson,
+      currentUser,
       kid: currentKid,
       kids: kidList,
       passport: {
         activities: passportActivitiesByUser[currentKid.id] ?? [],
       },
-      setCurrentKidId,
-      setCurrentUserId,
-      user: currentUser,
+      setCurrentUser,
       users: userList,
     }),
     [currentKid, currentUser, kidList, passportActivitiesByUser, userList],
@@ -225,6 +271,10 @@ export function useConferenceData() {
   return useDataLayer().conference;
 }
 
+export function useCurrentUser() {
+  return useDataLayer().currentUser;
+}
+
 export function useKidData() {
   return useDataLayer().kid;
 }
@@ -237,10 +287,6 @@ export function usePassportData() {
   return useDataLayer().passport;
 }
 
-export function useUserData() {
-  return useDataLayer().user;
-}
-
 export function useUsersData() {
   return useDataLayer().users;
 }
@@ -249,10 +295,6 @@ export function useAddRegisteredKid() {
   return useDataLayer().addRegisteredKid;
 }
 
-export function useSetCurrentKid() {
-  return useDataLayer().setCurrentKidId;
-}
-
 export function useSetCurrentUser() {
-  return useDataLayer().setCurrentUserId;
+  return useDataLayer().setCurrentUser;
 }

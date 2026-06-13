@@ -5,8 +5,8 @@ import { RegisterKidForm } from '../components/RegisterKidForm';
 import { TopBar } from '../components/TopBar';
 import {
   useAddRegisteredKid,
+  useCurrentUser,
   useKidsData,
-  useUserData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import type { Locale } from '../i18n/messages';
@@ -23,7 +23,7 @@ export function DeskPage() {
   const frameRef = useRef<number>(undefined);
   const navigate = useNavigate();
   const streamRef = useRef<MediaStream>(undefined);
-  const user = useUserData();
+  const currentUser = useCurrentUser();
   const kids = useKidsData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const { locale, t } = useI18n();
@@ -39,10 +39,10 @@ export function DeskPage() {
   const kidCount = kids.length;
 
   useEffect(() => {
-    if (user.role !== 'desk') {
+    if (currentUser.role !== 'desk') {
       navigate('/', { replace: true });
     }
-  }, [navigate, user.role]);
+  }, [currentUser.role, navigate]);
 
   const clearRegistrationForm = () => {
     setNickname('');

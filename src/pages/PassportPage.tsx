@@ -8,7 +8,6 @@ import { useNavigate } from 'react-router-dom';
 import { TopBar } from '../components/TopBar';
 import {
   useConferenceData,
-  useKidData,
   usePassportData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
@@ -32,7 +31,6 @@ const kidOptions: KidOption[] = [
 
 export function PassportPage() {
   const conference = useConferenceData();
-  const kid = useKidData();
   const passport = usePassportData();
   const navigate = useNavigate();
   const { t } = useI18n();
@@ -56,8 +54,6 @@ export function PassportPage() {
             </strong>
           </button>
         }
-        profile={kid}
-        showProfileId
         showUserMenu
         onLogout={() => navigate('/')}
       />
