@@ -7,7 +7,6 @@ import {
   useAddRegisteredKid,
   useUserData,
   useUsersData,
-  type UserData,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import type { Locale } from '../i18n/messages';
@@ -35,7 +34,6 @@ export function DeskPage() {
   const [languagePreference, setLanguagePreference] = useState<Locale>(locale);
   const [formError, setFormError] = useState('');
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
-  const [registeredKid, setRegisteredKid] = useState<UserData>();
   const kids = users.filter((availableUser) => availableUser.role === 'kid');
   const lastRegisteredKids = [...kids].reverse().slice(0, 3);
   const kidCount = kids.length;
@@ -189,14 +187,13 @@ export function DeskPage() {
       return;
     }
 
-    const nextRegisteredKid = addRegisteredKid({
+    addRegisteredKid({
       age: nextAge,
       gender,
       languagePreference,
       nickname,
     });
 
-    setRegisteredKid(nextRegisteredKid);
     setFormError('');
     setInvalidQrPreview('');
   };
@@ -208,15 +205,6 @@ export function DeskPage() {
         <p className="eyebrow">{t('desk.eyebrow')}</p>
         <h1 id="desk-title">{t('desk.title')}</h1>
         <p className="site-description">{t('desk.description')}</p>
-
-        {registeredKid ? (
-          <section className="confirmation-card" aria-live="polite">
-            <strong>{t('desk.confirmed.title')}</strong>
-            <p>
-              {registeredKid.name} {t('desk.confirmed.description')}
-            </p>
-          </section>
-        ) : null}
 
         <form className="desk-registration" onSubmit={confirmRegistration}>
           <div className="desk-registration-layout">

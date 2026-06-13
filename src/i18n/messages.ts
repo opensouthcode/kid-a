@@ -64,8 +64,6 @@ export const messages = {
       'The camera started, but the scanner preview could not be opened. Try again or use another camera.',
     'desk.error.cameraUnsupported':
       'This browser does not support camera scanning.',
-    'desk.confirmed.title': 'Kid registered',
-    'desk.confirmed.description': 'was added to users in memory.',
     'desk.summary.title': 'Registration summary',
     'desk.summary.lastKid': 'Last registered kids',
     'desk.summary.none': 'No kids registered yet',
@@ -143,8 +141,6 @@ export const messages = {
       'La cámara se inició, pero no se pudo abrir la vista previa del escáner. Inténtalo de nuevo o usa otra cámara.',
     'desk.error.cameraUnsupported':
       'Este navegador no permite escanear con la cámara.',
-    'desk.confirmed.title': 'Kid registrado',
-    'desk.confirmed.description': 'se ha añadido a usuarios en memoria.',
     'desk.summary.title': 'Resumen de registro',
     'desk.summary.lastKid': 'Últimos kids registrados',
     'desk.summary.none': 'Aún no hay kids registrados',
