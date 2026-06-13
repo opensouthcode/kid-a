@@ -211,107 +211,111 @@ export function DeskPage() {
 
         {isRegistrationOpen ? (
           <form className="desk-registration" onSubmit={confirmRegistration}>
-            <section className="scanner-panel" aria-label={t('desk.scanQr')}>
-              <video
-                ref={videoRef}
-                muted
-                playsInline
-                aria-label={t('desk.cameraPreview')}
-              />
-              <canvas ref={canvasRef} hidden />
-              <p>
-                {isScannerActive
-                  ? t('desk.scanner.active')
-                  : t('desk.scanner.idle')}
-              </p>
-              <div className="scanner-actions">
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={startScanner}
-                  disabled={isScannerActive}
-                >
-                  {t('desk.scanQr')}
-                </button>
-                {isScannerActive ? (
+            <div className="desk-registration-layout">
+              <section className="scanner-panel" aria-label={t('desk.scanQr')}>
+                <video
+                  ref={videoRef}
+                  muted
+                  playsInline
+                  aria-label={t('desk.cameraPreview')}
+                />
+                <canvas ref={canvasRef} hidden />
+                <p>
+                  {isScannerActive
+                    ? t('desk.scanner.active')
+                    : t('desk.scanner.idle')}
+                </p>
+                <div className="scanner-actions">
                   <button
                     className="secondary-button"
                     type="button"
-                    onClick={stopScanner}
+                    onClick={startScanner}
+                    disabled={isScannerActive}
                   >
-                    {t('desk.stopScanner')}
+                    {t('desk.scanQr')}
                   </button>
-                ) : null}
-              </div>
-            </section>
-            <div className="registration-form compact">
-              <label>
-                <span>{t('registration.nickname')}</span>
-                <input
-                  type="text"
-                  value={nickname}
-                  onChange={(event) => setNickname(event.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                <span>{t('registration.age')}</span>
-                <div className="age-control">
+                  {isScannerActive ? (
+                    <button
+                      className="secondary-button"
+                      type="button"
+                      onClick={stopScanner}
+                    >
+                      {t('desk.stopScanner')}
+                    </button>
+                  ) : null}
+                </div>
+              </section>
+              <div className="registration-form compact">
+                <label>
+                  <span>{t('registration.nickname')}</span>
                   <input
-                    type="number"
-                    value={age}
-                    onChange={(event) => setAge(event.target.value)}
+                    type="text"
+                    value={nickname}
+                    onChange={(event) => setNickname(event.target.value)}
                     required
                   />
-                  <input
-                    type="range"
-                    min={ageGaugeMinimum}
-                    max={ageGaugeMaximum}
-                    value={getAgeGaugeValue(age)}
-                    aria-label={t('registration.ageGauge')}
-                    onChange={(event) => setAge(event.target.value)}
-                  />
-                  <div className="age-gauge-labels" aria-hidden="true">
-                    <span>{ageGaugeMinimum}</span>
-                    <span>{ageGaugeMiddle}</span>
-                    <span>{ageGaugeMaximum}</span>
+                </label>
+                <label>
+                  <span>{t('registration.age')}</span>
+                  <div className="age-control">
+                    <input
+                      type="number"
+                      value={age}
+                      onChange={(event) => setAge(event.target.value)}
+                      required
+                    />
+                    <input
+                      type="range"
+                      min={ageGaugeMinimum}
+                      max={ageGaugeMaximum}
+                      value={getAgeGaugeValue(age)}
+                      aria-label={t('registration.ageGauge')}
+                      onChange={(event) => setAge(event.target.value)}
+                    />
+                    <div className="age-gauge-labels" aria-hidden="true">
+                      <span>{ageGaugeMinimum}</span>
+                      <span>{ageGaugeMiddle}</span>
+                      <span>{ageGaugeMaximum}</span>
+                    </div>
                   </div>
-                </div>
-              </label>
-              <label>
-                <span>{t('registration.gender')}</span>
-                <div className="segmented-toggle" role="group">
-                  {kidGenderOptions.map((option) => (
-                    <button
-                      className={gender === option ? 'active' : undefined}
-                      key={option}
-                      type="button"
-                      aria-pressed={gender === option}
-                      onClick={() => setGender(option)}
-                    >
-                      {t(`registration.gender.${option}`)}
-                    </button>
-                  ))}
-                </div>
-              </label>
-              <label>
-                <span>{t('registration.languagePreference')}</span>
-                <div className="segmented-toggle language-toggle" role="group">
-                  {supportedLocales.map((availableLocale) => (
-                    <button
-                      className={
-                        languagePreference === availableLocale ? 'active' : undefined
-                      }
-                      key={availableLocale}
-                      type="button"
-                      aria-pressed={languagePreference === availableLocale}
-                      onClick={() => setLanguagePreference(availableLocale)}
-                    >
-                      {t(`language.${availableLocale}`)}
-                    </button>
-                  ))}
-                </div>
-              </label>
+                </label>
+                <label>
+                  <span>{t('registration.gender')}</span>
+                  <div className="segmented-toggle" role="group">
+                    {kidGenderOptions.map((option) => (
+                      <button
+                        className={gender === option ? 'active' : undefined}
+                        key={option}
+                        type="button"
+                        aria-pressed={gender === option}
+                        onClick={() => setGender(option)}
+                      >
+                        {t(`registration.gender.${option}`)}
+                      </button>
+                    ))}
+                  </div>
+                </label>
+                <label>
+                  <span>{t('registration.languagePreference')}</span>
+                  <div className="segmented-toggle language-toggle" role="group">
+                    {supportedLocales.map((availableLocale) => (
+                      <button
+                        className={
+                          languagePreference === availableLocale
+                            ? 'active'
+                            : undefined
+                        }
+                        key={availableLocale}
+                        type="button"
+                        aria-pressed={languagePreference === availableLocale}
+                        onClick={() => setLanguagePreference(availableLocale)}
+                      >
+                        {t(`language.${availableLocale}`)}
+                      </button>
+                    ))}
+                  </div>
+                </label>
+              </div>
             </div>
             {formError ? <p className="form-error">{formError}</p> : null}
             <button className="access-button" type="submit">

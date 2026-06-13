@@ -653,13 +653,20 @@ h2 {
   margin-top: 24px;
 }
 
+.desk-registration-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(320px, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
 .scanner-panel {
   display: grid;
   gap: 12px;
 }
 
 .scanner-panel video {
-  width: min(420px, 100%);
+  width: 100%;
   min-height: 220px;
   border: 1px solid #8c6b3f;
   border-radius: 20px;
@@ -706,6 +713,7 @@ h2 {
   }
 
   .registration-layout,
+  .desk-registration-layout,
   .registration-form.compact {
     grid-template-columns: 1fr;
   }
