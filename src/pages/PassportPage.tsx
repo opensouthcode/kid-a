@@ -57,6 +57,7 @@ export function PassportPage() {
           </button>
         }
         profile={kid}
+        showProfileId
         showUserMenu
         onLogout={() => navigate('/')}
       />

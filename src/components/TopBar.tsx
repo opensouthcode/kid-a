@@ -7,7 +7,8 @@ import { isSupportedLocale, supportedLocales } from '../i18n/messages';
 type TopBarProps = {
   customButtons?: ReactNode;
   onLogout?: () => void;
-  profile?: { name: string };
+  profile?: { id?: string; name: string };
+  showProfileId?: boolean;
   showGuestAvatar?: boolean;
   showLanguageSwitcher?: boolean;
   showUserMenu?: boolean;
@@ -43,6 +44,7 @@ export function TopBar({
   customButtons,
   onLogout,
   profile,
+  showProfileId = false,
   showGuestAvatar = false,
   showLanguageSwitcher = false,
   showUserMenu = false,
@@ -110,6 +112,12 @@ export function TopBar({
                 <span>{t('user.nameLabel')}</span>
                 <strong>{menuProfile.name}</strong>
               </div>
+              {showProfileId && menuProfile.id ? (
+                <div className="user-menu-name">
+                  <span>{t('user.idLabel')}</span>
+                  <strong>{menuProfile.id}</strong>
+                </div>
+              ) : null}
               <div className="user-menu-language">
                 <span>{t('language.label')}</span>
                 <LanguageSwitcher />

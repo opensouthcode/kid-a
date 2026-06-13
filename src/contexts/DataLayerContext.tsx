@@ -126,25 +126,16 @@ const emptyPassportTemplate =
     isCompleted: false,
   })) ?? [];
 
-function normalizeKidId(nickname: string) {
-  const normalizedId = nickname
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+const generatedKidIdPrefix = '26OSK';
 
-  return normalizedId || `kid-${Date.now().toString(36)}`;
-}
-
-function getAvailableKidId(nickname: string, existingKids: KidData[]) {
-  const baseId = normalizeKidId(nickname);
+function getNextKidId(existingKids: KidData[]) {
   const existingIds = new Set(existingKids.map((kid) => kid.id.toLowerCase()));
-  let nextId = baseId;
-  let suffix = 2;
+  let sequence = existingKids.length + 1;
+  let nextId = `${generatedKidIdPrefix}${sequence.toString().padStart(4, '0')}`;
 
   while (existingIds.has(nextId.toLowerCase())) {
-    nextId = `${baseId}-${suffix}`;
-    suffix += 1;
+    sequence += 1;
+    nextId = `${generatedKidIdPrefix}${sequence.toString().padStart(4, '0')}`;
   }
 
   return nextId;
@@ -185,7 +176,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     const registeredKid: KidData = {
       age: registration.age,
       gender: registration.gender,
-      id: getAvailableKidId(registration.nickname, kidList),
+      id: getNextKidId(kidList),
       languagePreference: registration.languagePreference,
       name: registration.nickname.trim(),
     };
