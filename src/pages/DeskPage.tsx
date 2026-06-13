@@ -251,6 +251,7 @@ export function DeskPage() {
                     <span />
                     <span />
                   </span>
+                  <span>{t('desk.scanQrShort')}</span>
                 </button>
               )}
             </section>

@@ -52,6 +52,7 @@ export const messages = {
     'desk.description':
       'Read a kid registration QR, review the data, and confirm registration.',
     'desk.scanQr': 'Scan registration QR',
+    'desk.scanQrShort': 'Scan QR',
     'desk.stopScanner': 'Stop camera',
     'desk.cameraPreview': 'Camera preview',
     'desk.scanner.active': 'Looking for a registration QR...',
@@ -127,6 +128,7 @@ export const messages = {
     'desk.description':
       'Lee un QR de registro infantil, revisa los datos y confirma el registro.',
     'desk.scanQr': 'Escanear QR de registro',
+    'desk.scanQrShort': 'Escanear QR',
     'desk.stopScanner': 'Parar cámara',
     'desk.cameraPreview': 'Vista previa de la cámara',
     'desk.scanner.active': 'Buscando un QR de registro...',
