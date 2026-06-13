@@ -1,6 +1,6 @@
-import jsQR from 'jsqr';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { QrReader } from '../components/QrReader';
 import { RegisterKidForm } from '../components/RegisterKidForm';
 import { TopBar } from '../components/TopBar';
 import {
@@ -19,15 +19,10 @@ import {
 
 export function DeskPage() {
   const addRegisteredKid = useAddRegisteredKid();
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const frameRef = useRef<number>(undefined);
   const navigate = useNavigate();
-  const streamRef = useRef<MediaStream>(undefined);
   const currentUser = useCurrentUser();
   const kids = useKidsData();
-  const videoRef = useRef<HTMLVideoElement>(null);
   const { locale, t } = useI18n();
-  const [isScannerActive, setIsScannerActive] = useState(false);
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState('');
   const [gender, setGender] = useState<KidGender>('preferNotToSay');
@@ -51,26 +46,6 @@ export function DeskPage() {
     setLanguage(locale);
   };
 
-  const stopScanner = () => {
-    if (frameRef.current) {
-      window.cancelAnimationFrame(frameRef.current);
-      frameRef.current = undefined;
-    }
-
-    streamRef.current?.getTracks().forEach((track) => track.stop());
-    streamRef.current = undefined;
-
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
-    }
-
-    setIsScannerActive(false);
-  };
-
-  useEffect(() => {
-    return stopScanner;
-  }, []);
-
   const readQrPayload = (qrPayload: string) => {
     try {
       const registration = parseRegistrationPayload(qrPayload);
@@ -90,84 +65,6 @@ export function DeskPage() {
     } catch {
       setFormError(t('desk.error.invalidQr'));
       setInvalidQrPreview(qrPayload);
-    }
-  };
-
-  const scanVideoFrame = () => {
-    const canvas = canvasRef.current;
-    const video = videoRef.current;
-    const context = canvas?.getContext('2d', { willReadFrequently: true });
-
-    if (!canvas || !context || !video) {
-      frameRef.current = window.requestAnimationFrame(scanVideoFrame);
-      return;
-    }
-
-    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const qrCode = jsQR(imageData.data, imageData.width, imageData.height);
-
-      if (qrCode?.data) {
-        stopScanner();
-        readQrPayload(qrCode.data);
-        return;
-      }
-    }
-
-    frameRef.current = window.requestAnimationFrame(scanVideoFrame);
-  };
-
-  const getCameraStream = async () => {
-    try {
-      return await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: { facingMode: 'environment' },
-      });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        throw error;
-      }
-
-      return navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: true,
-      });
-    }
-  };
-
-  const startScanner = async () => {
-    if (!navigator.mediaDevices?.getUserMedia) {
-      setFormError(t('desk.error.cameraUnsupported'));
-      return;
-    }
-
-    try {
-      setFormError('');
-      setInvalidQrPreview('');
-      const stream = await getCameraStream();
-
-      streamRef.current = stream;
-
-      if (!videoRef.current) {
-        throw new Error('Video element is not available');
-      }
-
-      videoRef.current.srcObject = stream;
-      setIsScannerActive(true);
-      await new Promise((resolve) => window.requestAnimationFrame(resolve));
-      await videoRef.current.play();
-      frameRef.current = window.requestAnimationFrame(scanVideoFrame);
-    } catch (error) {
-      stopScanner();
-      setFormError(
-        error instanceof DOMException && error.name === 'NotAllowedError'
-          ? t('desk.error.cameraPermission')
-          : t('desk.error.cameraStart'),
-      );
     }
   };
 
@@ -217,46 +114,13 @@ export function DeskPage() {
 
         <form className="desk-registration" onSubmit={confirmRegistration}>
           <div className="desk-registration-layout">
-            <section className="scanner-panel" aria-label={t('desk.scanQr')}>
-              {isScannerActive ? <p>{t('desk.scanner.active')}</p> : null}
-              <div
-                className={isScannerActive ? 'scanner-view' : 'scanner-view hidden'}
-              >
-                <video
-                  ref={videoRef}
-                  muted
-                  playsInline
-                  aria-label={t('desk.cameraPreview')}
-                />
-                <canvas ref={canvasRef} hidden />
-              </div>
-              {isScannerActive ? (
-                <button
-                  className="secondary-button"
-                  type="button"
-                  onClick={stopScanner}
-                >
-                  {t('desk.stopScanner')}
-                </button>
-              ) : (
-                <button
-                  className="scanner-toggle-button"
-                  type="button"
-                  aria-label={t('desk.scanQr')}
-                  title={t('desk.scanQr')}
-                  onClick={startScanner}
-                >
-                  <span className="qr-icon" aria-hidden="true">
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                    <span />
-                  </span>
-                  <span>{t('desk.scanQrShort')}</span>
-                </button>
-              )}
-            </section>
+            <QrReader
+              onError={(message) => {
+                setFormError(message);
+                setInvalidQrPreview('');
+              }}
+              onRead={readQrPayload}
+            />
             <RegisterKidForm
               age={age}
               gender={gender}

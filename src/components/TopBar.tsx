@@ -47,7 +47,6 @@ export function TopBar({
 }: TopBarProps) {
   const { t } = useI18n();
   const currentUser = useCurrentUser();
-  const menuProfile = currentUser.role === 'kid' ? currentUser.kid : currentUser;
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -100,20 +99,18 @@ export function TopBar({
             onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
           >
             <SmileyGrinIcon size={22} aria-hidden="true" />
-            <span>{menuProfile.name}</span>
+            <span>{currentUser.name}</span>
           </button>
           {isUserMenuOpen ? (
             <section className="user-menu" aria-label={t('user.menu')}>
               <div className="user-menu-name">
                 <span>{t('user.nameLabel')}</span>
-                <strong>{menuProfile.name}</strong>
+                <strong>{currentUser.name}</strong>
               </div>
-              {currentUser.role === 'kid' ? (
-                <div className="user-menu-name">
-                  <span>{t('user.idLabel')}</span>
-                  <strong>{menuProfile.id}</strong>
-                </div>
-              ) : null}
+              <div className="user-menu-name">
+                <span>{t('user.idLabel')}</span>
+                <strong>{currentUser.id}</strong>
+              </div>
               <div className="user-menu-language">
                 <span>{t('language.label')}</span>
                 <LanguageSwitcher />

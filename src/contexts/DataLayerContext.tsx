@@ -46,7 +46,9 @@ export type KidData = {
 
 export type CurrentUser =
   | {
+      id: string;
       kid: KidData;
+      name: string;
       role: 'kid';
     }
   | UserData;
@@ -107,14 +109,16 @@ if (missingKidPassportUsers.length > 0) {
 
 function wrapKid(kid: KidData): CurrentUser {
   return {
+    id: kid.id,
     kid,
+    name: kid.name,
     role: 'kid',
   };
 }
 
 function getCurrentUserStorageValue(currentUser: CurrentUser) {
   return currentUser.role === 'kid'
-    ? `kid:${currentUser.kid.id}`
+    ? `kid:${currentUser.id}`
     : `user:${currentUser.id}`;
 }
 
@@ -177,8 +181,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   const currentUser =
     selectedCurrentUser.role === 'kid'
       ? wrapKid(
-          kidList.find((kid) => kid.id === selectedCurrentUser.kid.id) ??
-            defaultKid,
+          kidList.find((kid) => kid.id === selectedCurrentUser.id) ?? defaultKid,
         )
       : (userList.find((user) => user.id === selectedCurrentUser.id) ??
         defaultUser);
@@ -189,9 +192,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     if (
       nextCurrentUser.role === 'kid' &&
-      !kidList.some((kid) => kid.id === nextCurrentUser.kid.id)
+      !kidList.some((kid) => kid.id === nextCurrentUser.id)
     ) {
-      throw new Error(`Unknown kid: ${nextCurrentUser.kid.id}`);
+      throw new Error(`Unknown kid: ${nextCurrentUser.id}`);
     }
 
     if (
