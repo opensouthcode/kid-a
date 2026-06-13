@@ -57,7 +57,6 @@ type DataLayerContextValue = {
   addRegisteredKid: (registration: RegistrationInput) => KidData;
   conference: ConferenceData;
   currentUser: CurrentUser;
-  kid: KidData;
   kids: KidData[];
   passport: PassportData;
   users: UserData[];
@@ -185,7 +184,6 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
         )
       : (userList.find((user) => user.id === selectedCurrentUser.id) ??
         defaultUser);
-  const currentKid = currentUser.role === 'kid' ? currentUser.kid : defaultKid;
   const setCurrentUser = (nextUser: KidData | UserData) => {
     const nextCurrentUser =
       'role' in nextUser ? nextUser : wrapKid(nextUser);
@@ -232,15 +230,17 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       addRegisteredKid,
       conference: conferenceJson,
       currentUser,
-      kid: currentKid,
       kids: kidList,
       passport: {
-        activities: passportActivitiesByUser[currentKid.id] ?? [],
+        activities:
+          currentUser.role === 'kid'
+            ? (passportActivitiesByUser[currentUser.id] ?? [])
+            : [],
       },
       setCurrentUser,
       users: userList,
     }),
-    [currentKid, currentUser, kidList, passportActivitiesByUser, userList],
+    [currentUser, kidList, passportActivitiesByUser, userList],
   );
 
   return (
@@ -264,10 +264,6 @@ export function useConferenceData() {
 
 export function useCurrentUser() {
   return useDataLayer().currentUser;
-}
-
-export function useKidData() {
-  return useDataLayer().kid;
 }
 
 export function useKidsData() {
