@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QrReader } from '../components/QrReader';
+import { KidList } from '../components/KidList';
 import { RegisterKidForm } from '../components/RegisterKidForm';
 import { TopBar } from '../components/TopBar';
 import {
@@ -122,6 +123,10 @@ export function DeskPage() {
         <form className="desk-registration" onSubmit={confirmRegistration}>
           <div className="desk-registration-layout">
             <QrReader
+              labelKeys={{
+                scanQr: 'desk.scanQr',
+                scanQrShort: 'desk.scanQrShort',
+              }}
               onError={(message) => {
                 setFormError(message);
                 setInvalidQrPreview('');
@@ -164,27 +169,11 @@ export function DeskPage() {
           <article>
             <span>{t('desk.summary.lastKid')}</span>
             {lastRegisteredKids.length > 0 ? (
-              <ul className="last-kids-list">
-                {lastRegisteredKids.map((kid) => (
-                  <li
-                    className={kid.id === lastAnimatedKidId ? 'just-added' : undefined}
-                    key={kid.id}
-                    onAnimationEnd={() => {
-                      if (kid.id === lastAnimatedKidId) {
-                        setLastAnimatedKidId('');
-                      }
-                    }}
-                  >
-                    <span
-                      className={`kid-gender-icon ${kid.gender}`}
-                      aria-label={t(`registration.gender.${kid.gender}`)}
-                      role="img"
-                    />
-                    <code>{kid.id}</code>
-                    <strong>{kid.name}</strong>
-                  </li>
-                ))}
-              </ul>
+              <KidList
+                animatedKidId={lastAnimatedKidId}
+                kids={lastRegisteredKids}
+                onAnimatedKidDone={() => setLastAnimatedKidId('')}
+              />
             ) : (
               <strong>{t('desk.summary.none')}</strong>
             )}

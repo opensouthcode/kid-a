@@ -39,7 +39,7 @@ export function SampleAccessDialog() {
     lead: 'access.role.lead',
     wheel: 'access.role.wheel',
   };
-  const enabledRoles = new Set<User['role']>(['desk']);
+  const enabledRoles = new Set<User['role']>(['desk', 'lead']);
 
   const openKidPage = (kid: Kid) => {
     setCurrentUser(kid);
@@ -50,7 +50,7 @@ export function SampleAccessDialog() {
   const openRolePage = (user: User) => {
     setCurrentUser(user);
     setIsAccessDialogOpen(false);
-    navigate('/desk');
+    navigate(user.role === 'lead' ? '/lead' : '/desk');
   };
 
   return (

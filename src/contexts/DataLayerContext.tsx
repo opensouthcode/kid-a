@@ -5,6 +5,7 @@ import {
   useState,
   type PropsWithChildren,
 } from 'react';
+import activitiesJson from '../data/activities.json';
 import conferenceJson from '../data/conference.json';
 import kidsJson from '../data/kids.json';
 import passportActivitiesJson from '../data/passportActivities.json';
@@ -18,7 +19,15 @@ export type ConferenceData = {
   title: string;
 };
 
+export type Activity = {
+  details?: string;
+  id: string;
+  issueUrl: string;
+  title: string;
+};
+
 export type PassportActivity = {
+  completedAt?: string;
   id: number;
   isCompleted: boolean;
 };
@@ -32,6 +41,7 @@ type PassportActivitiesByKid = Record<string, PassportActivity[]>;
 export type UserRole = 'desk' | 'wheel' | 'lead';
 
 export type User = {
+  activityId?: number;
   id: string;
   name: string;
   role: UserRole;
@@ -43,6 +53,7 @@ export type Kid = {
   id: string;
   language: Locale;
   name: string;
+  qrIdData: string;
 };
 
 export type CurrentUser =
@@ -55,19 +66,35 @@ export type CurrentUser =
   | User;
 
 type DataLayerContextValue = {
+  activities: Activity[];
   addRegisteredKid: (registration: RegistrationInput) => Kid;
   conference: ConferenceData;
   currentUser: CurrentUser;
+  getPassportForKid: (kidId: string) => PassportData;
   kids: Kid[];
+  markPassportActivityDone: (kidId: string, activityId: number) => number;
   passport: PassportData;
+  reloadPassportActivities: () => void;
   users: User[];
   setCurrentUser: (user: Kid | User) => void;
 };
 
+const initialActivities: Activity[] = activitiesJson;
 const initialKids: Kid[] = kidsJson as Kid[];
 const initialUsers: User[] = usersJson as User[];
 const initialPassportActivitiesByUser =
   passportActivitiesJson as PassportActivitiesByKid;
+
+function clonePassportActivities(
+  passportActivitiesByKid: PassportActivitiesByKid,
+): PassportActivitiesByKid {
+  return Object.fromEntries(
+    Object.entries(passportActivitiesByKid).map(([kidId, activities]) => [
+      kidId,
+      activities.map((activity) => ({ ...activity })),
+    ]),
+  );
+}
 
 function getDefaultUser() {
   const defaultUser =
@@ -142,7 +169,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   const [kidList, setKidList] = useState(initialKids);
   const [userList] = useState(initialUsers);
   const [passportActivitiesByUser, setPassportActivitiesByUser] = useState(
-    initialPassportActivitiesByUser,
+    () => clonePassportActivities(initialPassportActivitiesByUser),
   );
   const [selectedCurrentUser, setSelectedCurrentUser] =
     useState<CurrentUser>(wrapKid(defaultKid));
@@ -174,12 +201,14 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     setSelectedCurrentUser(nextCurrentUser);
   };
   const addRegisteredKid = (registration: RegistrationInput) => {
+    const kidId = getNextKidId(kidList, conferenceJson.kidIdPrefix);
     const registeredKid: Kid = {
       age: registration.age,
       gender: registration.gender,
-      id: getNextKidId(kidList, conferenceJson.kidIdPrefix),
+      id: kidId,
       language: registration.language,
       name: registration.nickname.trim(),
+      qrIdData: `kid-a:${kidId}`,
     };
 
     setKidList((currentKids) => [...currentKids, registeredKid]);
@@ -190,18 +219,61 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     return registeredKid;
   };
+  const getPassportForKid = (kidId: string): PassportData => ({
+    activities: passportActivitiesByUser[kidId] ?? [],
+  });
+  const reloadPassportActivities = () => {
+    setPassportActivitiesByUser((currentPassportActivities) =>
+      clonePassportActivities(currentPassportActivities),
+    );
+  };
+  const markPassportActivityDone = (kidId: string, activityId: number) => {
+    const kidActivities = passportActivitiesByUser[kidId];
+
+    if (!kidActivities) {
+      throw new Error(`Unknown passport kid: ${kidId}`);
+    }
+
+    const nextActivities = kidActivities.map((activity) => {
+      if (activity.id !== activityId) {
+        return activity;
+      }
+
+      return {
+        ...activity,
+        completedAt: activity.completedAt ?? new Date().toISOString(),
+        isCompleted: true,
+      };
+    });
+    const completedActivities = nextActivities.filter(
+      (activity) => activity.isCompleted,
+    ).length;
+
+    const nextPassportActivities = {
+      ...passportActivitiesByUser,
+      [kidId]: nextActivities,
+    };
+
+    setPassportActivitiesByUser(nextPassportActivities);
+
+    return completedActivities;
+  };
   const value = useMemo<DataLayerContextValue>(
     () => ({
+      activities: initialActivities,
       addRegisteredKid,
       conference: conferenceJson,
       currentUser,
+      getPassportForKid,
       kids: kidList,
+      markPassportActivityDone,
       passport: {
         activities:
           currentUser.role === 'kid'
             ? (passportActivitiesByUser[currentUser.id] ?? [])
             : [],
       },
+      reloadPassportActivities,
       setCurrentUser,
       users: userList,
     }),
@@ -227,6 +299,10 @@ export function useConferenceData() {
   return useDataLayer().conference;
 }
 
+export function useActivitiesData() {
+  return useDataLayer().activities;
+}
+
 export function useCurrentUser() {
   return useDataLayer().currentUser;
 }
@@ -239,12 +315,24 @@ export function usePassportData() {
   return useDataLayer().passport;
 }
 
+export function useReloadPassportActivities() {
+  return useDataLayer().reloadPassportActivities;
+}
+
+export function useGetPassportForKid() {
+  return useDataLayer().getPassportForKid;
+}
+
 export function useUsersData() {
   return useDataLayer().users;
 }
 
 export function useAddRegisteredKid() {
   return useDataLayer().addRegisteredKid;
+}
+
+export function useMarkPassportActivityDone() {
+  return useDataLayer().markPassportActivityDone;
 }
 
 export function useSetCurrentUser() {

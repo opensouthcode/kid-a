@@ -107,10 +107,12 @@ export function TopBar({
                 <span>{t('user.nameLabel')}</span>
                 <strong>{currentUser.name}</strong>
               </div>
-              <div className="user-menu-name">
-                <span>{t('user.idLabel')}</span>
-                <strong>{currentUser.id}</strong>
-              </div>
+              {currentUser.role === 'kid' ? (
+                <div className="user-menu-name">
+                  <span>{t('user.idLabel')}</span>
+                  <strong>{currentUser.id}</strong>
+                </div>
+              ) : null}
               <div className="user-menu-language">
                 <span>{t('language.label')}</span>
                 <LanguageSwitcher />
