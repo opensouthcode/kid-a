@@ -672,6 +672,23 @@ h2 {
   min-width: 240px;
 }
 
+.desk-submit-button.attention {
+  animation: confirm-next 1200ms ease-out;
+}
+
+@keyframes confirm-next {
+  0%,
+  100% {
+    box-shadow: 0 10px 24px rgb(61 85 35 / 22%);
+    transform: scale(1);
+  }
+
+  35% {
+    box-shadow: 0 0 0 8px rgb(78 111 43 / 18%);
+    transform: scale(1.04);
+  }
+}
+
 .desk-registration-layout {
   display: grid;
   grid-template-columns: minmax(280px, 420px) minmax(320px, 1fr);
@@ -729,6 +746,35 @@ h2 {
 .scanner-toggle-button:hover,
 .scanner-toggle-button:focus-visible {
   background: #3f5d21;
+}
+
+.scanner-toggle-button.approved {
+  background: #2f8f46;
+}
+
+.scanner-toggle-button.approved:hover,
+.scanner-toggle-button.approved:focus-visible {
+  background: #26773a;
+}
+
+.scan-approved-icon {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  border: 6px solid currentColor;
+  border-radius: 50%;
+}
+
+.scan-approved-icon::after {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  width: 30px;
+  height: 17px;
+  border-bottom: 7px solid currentColor;
+  border-left: 7px solid currentColor;
+  content: "";
+  transform: rotate(-45deg);
 }
 
 .qr-icon {

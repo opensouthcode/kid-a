@@ -13,6 +13,7 @@ export function QrReader({ onError, onRead }: QrReaderProps) {
   const streamRef = useRef<MediaStream>(undefined);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { t } = useI18n();
+  const [hasApprovedScan, setHasApprovedScan] = useState(false);
   const [isScannerActive, setIsScannerActive] = useState(false);
 
   const stopScanner = () => {
@@ -35,6 +36,16 @@ export function QrReader({ onError, onRead }: QrReaderProps) {
     return stopScanner;
   }, []);
 
+  useEffect(() => {
+    if (!hasApprovedScan) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => setHasApprovedScan(false), 2500);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [hasApprovedScan]);
+
   const scanVideoFrame = () => {
     const canvas = canvasRef.current;
     const video = videoRef.current;
@@ -55,6 +66,7 @@ export function QrReader({ onError, onRead }: QrReaderProps) {
 
       if (qrCode?.data) {
         stopScanner();
+        setHasApprovedScan(true);
         onRead(qrCode.data);
         return;
       }
@@ -88,6 +100,7 @@ export function QrReader({ onError, onRead }: QrReaderProps) {
     }
 
     try {
+      setHasApprovedScan(false);
       const stream = await getCameraStream();
 
       streamRef.current = stream;
@@ -129,20 +142,28 @@ export function QrReader({ onError, onRead }: QrReaderProps) {
         </button>
       ) : (
         <button
-          className="scanner-toggle-button"
+          className={
+            hasApprovedScan
+              ? 'scanner-toggle-button approved'
+              : 'scanner-toggle-button'
+          }
           type="button"
           aria-label={t('desk.scanQr')}
           title={t('desk.scanQr')}
           onClick={startScanner}
         >
-          <span className="qr-icon" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-            <span />
-            <span />
-          </span>
-          <span>{t('desk.scanQrShort')}</span>
+          {hasApprovedScan ? (
+            <span className="scan-approved-icon" aria-hidden="true" />
+          ) : (
+            <span className="qr-icon" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </span>
+          )}
+          <span>{hasApprovedScan ? t('desk.scanApproved') : t('desk.scanQrShort')}</span>
         </button>
       )}
     </section>

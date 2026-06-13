@@ -29,6 +29,7 @@ export function DeskPage() {
   const [language, setLanguage] = useState<Locale>(locale);
   const [formError, setFormError] = useState('');
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
+  const [isConfirmAttentionActive, setIsConfirmAttentionActive] = useState(false);
   const [lastAnimatedKidId, setLastAnimatedKidId] = useState('');
   const lastRegisteredKids = [...kids].reverse().slice(0, 3);
   const kidCount = kids.length;
@@ -60,6 +61,7 @@ export function DeskPage() {
       setAge(String(registration.age));
       setGender(registration.gender);
       setLanguage(registration.language);
+      setIsConfirmAttentionActive(true);
       setFormError('');
       setInvalidQrPreview('');
     } catch {
@@ -99,6 +101,7 @@ export function DeskPage() {
     });
 
     setLastAnimatedKidId(registeredKid.id);
+    setIsConfirmAttentionActive(false);
     clearRegistrationForm();
     setFormError('');
     setInvalidQrPreview('');
@@ -140,7 +143,15 @@ export function DeskPage() {
               ) : null}
             </div>
           ) : null}
-          <button className="access-button desk-submit-button" type="submit">
+          <button
+            className={
+              isConfirmAttentionActive
+                ? 'access-button desk-submit-button attention'
+                : 'access-button desk-submit-button'
+            }
+            type="submit"
+            onAnimationEnd={() => setIsConfirmAttentionActive(false)}
+          >
             {t('desk.confirm')}
           </button>
         </form>
