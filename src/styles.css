@@ -848,12 +848,16 @@ h2 {
 }
 
 .kid-gender-icon.boy::after {
-  top: 5px;
+  top: 4px;
   right: 6px;
   left: 6px;
-  height: 8px;
-  border-radius: 10px 10px 4px 4px;
-  background: #5a4228;
+  height: 9px;
+  border-radius: 12px 12px 5px 5px;
+  background:
+    radial-gradient(circle at 28% 80%, #f2c14e 0 3px, transparent 4px),
+    radial-gradient(circle at 50% 82%, #f2c14e 0 3px, transparent 4px),
+    radial-gradient(circle at 72% 80%, #f2c14e 0 3px, transparent 4px),
+    #f2c14e;
 }
 
 .kid-gender-icon.girl::after {
