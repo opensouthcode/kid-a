@@ -40,6 +40,10 @@ export function DeskPage() {
     }
   }, [currentUser.role, navigate]);
 
+  if (currentUser.role !== 'desk') {
+    return null;
+  }
+
   const clearRegistrationForm = () => {
     setNickname('');
     setAge('');
