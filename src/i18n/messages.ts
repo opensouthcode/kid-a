@@ -51,7 +51,6 @@ export const messages = {
     'desk.title': 'Registration desk',
     'desk.description':
       'Read a kid registration QR, review the data, and confirm registration.',
-    'desk.registerKid': 'Register kid',
     'desk.scanQr': 'Scan registration QR',
     'desk.stopScanner': 'Stop camera',
     'desk.cameraPreview': 'Camera preview',
@@ -117,7 +116,7 @@ export const messages = {
     'registration.qr.instructions':
       'Enseña este QR en la mesa para que el equipo lea tus datos de registro.',
     'registration.qr.empty': 'Tu QR aparecerá aquí cuando rellenes el formulario.',
-    'registration.error.nickname': 'Introduce un apodo.',
+    'registration.error.nickname': 'Introduce un nickname.',
     'registration.error.age': 'Introduce la edad como un número entero.',
     'registration.error.gender': 'Elige una opción de género.',
     'registration.error.language': 'Elige un idioma disponible.',
@@ -126,7 +125,6 @@ export const messages = {
     'desk.title': 'Mesa de registro',
     'desk.description':
       'Lee un QR de registro infantil, revisa los datos y confirma el registro.',
-    'desk.registerKid': 'Registrar kid',
     'desk.scanQr': 'Escanear QR de registro',
     'desk.stopScanner': 'Parar cámara',
     'desk.cameraPreview': 'Vista previa de la cámara',

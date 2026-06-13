@@ -663,14 +663,20 @@ h2 {
 .scanner-panel {
   display: grid;
   gap: 12px;
+  align-content: start;
 }
 
-.scanner-panel video {
-  width: 100%;
-  min-height: 220px;
+.scanner-view {
+  overflow: hidden;
   border: 1px solid #8c6b3f;
   border-radius: 20px;
   background: #2d2418;
+}
+
+.scanner-panel video {
+  display: block;
+  width: 100%;
+  min-height: 220px;
 }
 
 .scanner-panel p {

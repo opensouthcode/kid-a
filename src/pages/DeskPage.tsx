@@ -41,7 +41,6 @@ export function DeskPage() {
   const user = useUserData();
   const videoRef = useRef<HTMLVideoElement>(null);
   const { locale, t } = useI18n();
-  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isScannerActive, setIsScannerActive] = useState(false);
   const [nickname, setNickname] = useState('');
   const [age, setAge] = useState('');
@@ -181,7 +180,6 @@ export function DeskPage() {
 
     setRegisteredKid(nextRegisteredKid);
     setFormError('');
-    setIsRegistrationOpen(false);
   };
 
   return (
@@ -191,14 +189,6 @@ export function DeskPage() {
         <p className="eyebrow">{t('desk.eyebrow')}</p>
         <h1 id="desk-title">{t('desk.title')}</h1>
         <p className="site-description">{t('desk.description')}</p>
-        <button
-          className="access-button"
-          type="button"
-          aria-expanded={isRegistrationOpen}
-          onClick={() => setIsRegistrationOpen((isOpen) => !isOpen)}
-        >
-          {t('desk.registerKid')}
-        </button>
 
         {registeredKid ? (
           <section className="confirmation-card" aria-live="polite">
@@ -209,120 +199,117 @@ export function DeskPage() {
           </section>
         ) : null}
 
-        {isRegistrationOpen ? (
-          <form className="desk-registration" onSubmit={confirmRegistration}>
-            <div className="desk-registration-layout">
-              <section className="scanner-panel" aria-label={t('desk.scanQr')}>
-                <video
-                  ref={videoRef}
-                  muted
-                  playsInline
-                  aria-label={t('desk.cameraPreview')}
-                />
-                <canvas ref={canvasRef} hidden />
-                <p>
-                  {isScannerActive
-                    ? t('desk.scanner.active')
-                    : t('desk.scanner.idle')}
-                </p>
-                <div className="scanner-actions">
+        <form className="desk-registration" onSubmit={confirmRegistration}>
+          <div className="desk-registration-layout">
+            <section className="scanner-panel" aria-label={t('desk.scanQr')}>
+              {isScannerActive ? (
+                <>
+                  <p>{t('desk.scanner.active')}</p>
+                  <div className="scanner-view">
+                    <video
+                      ref={videoRef}
+                      muted
+                      playsInline
+                      aria-label={t('desk.cameraPreview')}
+                    />
+                    <canvas ref={canvasRef} hidden />
+                  </div>
                   <button
                     className="secondary-button"
                     type="button"
+                    onClick={stopScanner}
+                  >
+                    {t('desk.stopScanner')}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p>{t('desk.scanner.idle')}</p>
+                  <button
+                    className="access-button"
+                    type="button"
                     onClick={startScanner}
-                    disabled={isScannerActive}
                   >
                     {t('desk.scanQr')}
                   </button>
-                  {isScannerActive ? (
-                    <button
-                      className="secondary-button"
-                      type="button"
-                      onClick={stopScanner}
-                    >
-                      {t('desk.stopScanner')}
-                    </button>
-                  ) : null}
-                </div>
-              </section>
-              <div className="registration-form compact">
-                <label>
-                  <span>{t('registration.nickname')}</span>
+                </>
+              )}
+            </section>
+            <div className="registration-form compact">
+              <label>
+                <span>{t('registration.nickname')}</span>
+                <input
+                  type="text"
+                  value={nickname}
+                  onChange={(event) => setNickname(event.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                <span>{t('registration.age')}</span>
+                <div className="age-control">
                   <input
-                    type="text"
-                    value={nickname}
-                    onChange={(event) => setNickname(event.target.value)}
+                    type="number"
+                    value={age}
+                    onChange={(event) => setAge(event.target.value)}
                     required
                   />
-                </label>
-                <label>
-                  <span>{t('registration.age')}</span>
-                  <div className="age-control">
-                    <input
-                      type="number"
-                      value={age}
-                      onChange={(event) => setAge(event.target.value)}
-                      required
-                    />
-                    <input
-                      type="range"
-                      min={ageGaugeMinimum}
-                      max={ageGaugeMaximum}
-                      value={getAgeGaugeValue(age)}
-                      aria-label={t('registration.ageGauge')}
-                      onChange={(event) => setAge(event.target.value)}
-                    />
-                    <div className="age-gauge-labels" aria-hidden="true">
-                      <span>{ageGaugeMinimum}</span>
-                      <span>{ageGaugeMiddle}</span>
-                      <span>{ageGaugeMaximum}</span>
-                    </div>
+                  <input
+                    type="range"
+                    min={ageGaugeMinimum}
+                    max={ageGaugeMaximum}
+                    value={getAgeGaugeValue(age)}
+                    aria-label={t('registration.ageGauge')}
+                    onChange={(event) => setAge(event.target.value)}
+                  />
+                  <div className="age-gauge-labels" aria-hidden="true">
+                    <span>{ageGaugeMinimum}</span>
+                    <span>{ageGaugeMiddle}</span>
+                    <span>{ageGaugeMaximum}</span>
                   </div>
-                </label>
-                <label>
-                  <span>{t('registration.gender')}</span>
-                  <div className="segmented-toggle" role="group">
-                    {kidGenderOptions.map((option) => (
-                      <button
-                        className={gender === option ? 'active' : undefined}
-                        key={option}
-                        type="button"
-                        aria-pressed={gender === option}
-                        onClick={() => setGender(option)}
-                      >
-                        {t(`registration.gender.${option}`)}
-                      </button>
-                    ))}
-                  </div>
-                </label>
-                <label>
-                  <span>{t('registration.languagePreference')}</span>
-                  <div className="segmented-toggle language-toggle" role="group">
-                    {supportedLocales.map((availableLocale) => (
-                      <button
-                        className={
-                          languagePreference === availableLocale
-                            ? 'active'
-                            : undefined
-                        }
-                        key={availableLocale}
-                        type="button"
-                        aria-pressed={languagePreference === availableLocale}
-                        onClick={() => setLanguagePreference(availableLocale)}
-                      >
-                        {t(`language.${availableLocale}`)}
-                      </button>
-                    ))}
-                  </div>
-                </label>
-              </div>
+                </div>
+              </label>
+              <label>
+                <span>{t('registration.gender')}</span>
+                <div className="segmented-toggle" role="group">
+                  {kidGenderOptions.map((option) => (
+                    <button
+                      className={gender === option ? 'active' : undefined}
+                      key={option}
+                      type="button"
+                      aria-pressed={gender === option}
+                      onClick={() => setGender(option)}
+                    >
+                      {t(`registration.gender.${option}`)}
+                    </button>
+                  ))}
+                </div>
+              </label>
+              <label>
+                <span>{t('registration.languagePreference')}</span>
+                <div className="segmented-toggle language-toggle" role="group">
+                  {supportedLocales.map((availableLocale) => (
+                    <button
+                      className={
+                        languagePreference === availableLocale ? 'active' : undefined
+                      }
+                      key={availableLocale}
+                      type="button"
+                      aria-pressed={languagePreference === availableLocale}
+                      onClick={() => setLanguagePreference(availableLocale)}
+                    >
+                      {t(`language.${availableLocale}`)}
+                    </button>
+                  ))}
+                </div>
+              </label>
             </div>
-            {formError ? <p className="form-error">{formError}</p> : null}
-            <button className="access-button" type="submit">
-              {t('desk.confirm')}
-            </button>
-          </form>
-        ) : null}
+          </div>
+          {formError ? <p className="form-error">{formError}</p> : null}
+          <button className="access-button" type="submit">
+            {t('desk.confirm')}
+          </button>
+        </form>
       </section>
     </>
   );
