@@ -12,7 +12,7 @@ import {
   type KidGender,
 } from '../registration';
 
-export function RegistrationPage() {
+export function RegistrationRequestPage() {
   const navigate = useNavigate();
   const { locale, t } = useI18n();
   const [nickname, setNickname] = useState('');
