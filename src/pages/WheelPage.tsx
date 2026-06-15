@@ -169,6 +169,10 @@ export function WheelPage() {
       : t('wheel.spin.start');
 
   const startSpin = () => {
+    if (isSpinning) {
+      return;
+    }
+
     if (!selectedKid || !shotSummary) {
       setSpinNotice({
         message: t('wheel.spin.selectKid'),
@@ -337,18 +341,16 @@ export function WheelPage() {
                     total={totalActivities}
                   />
                 </div>
-                <div className="wheel-shot-meter">
-                  <span>{t('wheel.kid.shots')}</span>
-                  <strong>{shotSummary.availableShots}</strong>
+                <div className="wheel-shot-summary">
+                  <div className="wheel-shot-previous">
+                    <span>{t('wheel.kid.previousShots')}</span>
+                    <strong>{shotSummary.usedShots}</strong>
+                  </div>
+                  <div className="wheel-shot-meter">
+                    <span>{t('wheel.kid.remainingShots')}</span>
+                    <strong>{shotSummary.availableShots}</strong>
+                  </div>
                 </div>
-                <p className="wheel-shot-copy">
-                  {shotSummary.availableShots > 0
-                    ? t('wheel.kid.available').replace(
-                        '{count}',
-                        String(shotSummary.availableShots),
-                      )
-                    : t('wheel.kid.none')}
-                </p>
                 {shotSummary.awards.length > 0 ? (
                   <ol className="wheel-award-list">
                     {shotSummary.awards.map((award) => (
@@ -374,21 +376,23 @@ export function WheelPage() {
                   background: wheelBackground,
                   transform: `rotate(${rotation}deg)`,
                 }}
+                onClick={startSpin}
                 onTransitionEnd={finishSpin}
               >
-                <div className="wheel-center">
-                  <IterationsIcon size={42} aria-hidden="true" />
-                </div>
+                <button
+                  className="wheel-center"
+                  type="button"
+                  disabled={!canSpin}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    startSpin();
+                  }}
+                >
+                  <IterationsIcon size={34} aria-hidden="true" />
+                  <span>{spinButtonLabel}</span>
+                </button>
               </div>
             </div>
-            <button
-              className="access-button wheel-spin-button"
-              type="button"
-              disabled={!canSpin}
-              onClick={startSpin}
-            >
-              {spinButtonLabel}
-            </button>
             {!hasAnyAvailableStock ? (
               <p className="wheel-alert warning" role="status">
                 <AlertIcon size={18} aria-hidden="true" />
