@@ -9,6 +9,8 @@ import activitiesJson from '../data/activities.json';
 import conferenceJson from '../data/conference.json';
 import kidsJson from '../data/kids.json';
 import passportActivitiesJson from '../data/passportActivities.json';
+import prizeAwardsJson from '../data/prizeAwards.json';
+import prizesJson from '../data/prizes.json';
 import usersJson from '../data/users.json';
 import {
   createKidQrIdData,
@@ -42,6 +44,32 @@ export type PassportData = {
 
 type PassportActivitiesByKid = Record<string, PassportActivity[]>;
 
+export type Prize = {
+  given: number;
+  id: string;
+  initialUnits: number;
+  isValuable: boolean;
+  title: string;
+};
+
+export type PrizeAward = {
+  awardedAt: string;
+  id: string;
+  kidId: string;
+  prizeId: string;
+};
+
+export type PrizeAwardRecord = PrizeAward & {
+  prizeTitle: string;
+};
+
+export type WheelShotSummary = {
+  availableShots: number;
+  awards: PrizeAwardRecord[];
+  earnedShots: number;
+  usedShots: number;
+};
+
 export type UserRole = 'desk' | 'wheel' | 'lead';
 
 export type User = {
@@ -72,21 +100,27 @@ export type CurrentUser =
 type DataLayerContextValue = {
   activities: Activity[];
   addRegisteredKid: (registration: RegistrationInput) => Kid;
+  awardPrizeToKid: (kidId: string, prizeId: string) => PrizeAward;
   conference: ConferenceData;
   currentUser: CurrentUser;
   findKidByManualNumber: (rawSearchValue: string) => Kid | undefined;
   findKidByQrIdData: (qrIdData: string) => Kid | undefined;
   getPassportForKid: (kidId: string) => PassportData;
+  getWheelShotSummaryForKid: (kidId: string) => WheelShotSummary;
   kids: Kid[];
   markPassportActivityDone: (kidId: string, activityId: number) => number;
   passport: PassportData;
+  prizes: Prize[];
   reloadPassportActivities: () => void;
   users: User[];
   setCurrentUser: (user: Kid | User) => void;
+  updatePrize: (prizeId: string, updates: Partial<Prize>) => void;
 };
 
 const initialActivities: Activity[] = activitiesJson;
 const initialKids: Kid[] = kidsJson as Kid[];
+const initialPrizeAwards: PrizeAward[] = prizeAwardsJson;
+const initialPrizes: Prize[] = prizesJson;
 const initialUsers: User[] = usersJson as User[];
 const initialPassportActivitiesByUser =
   passportActivitiesJson as PassportActivitiesByKid;
@@ -100,6 +134,26 @@ function clonePassportActivities(
       activities.map((activity) => ({ ...activity })),
     ]),
   );
+}
+
+function clonePrizes(prizes: Prize[]): Prize[] {
+  return prizes.map((prize) => ({ ...prize }));
+}
+
+function clonePrizeAwards(prizeAwards: PrizeAward[]): PrizeAward[] {
+  return prizeAwards.map((award) => ({ ...award }));
+}
+
+export function getPrizeRemaining(prize: Prize) {
+  return Math.max(prize.initialUnits - prize.given, 0);
+}
+
+function normalizePrizeCount(value: number) {
+  if (!Number.isFinite(value)) {
+    throw new Error('Prize stock must be a number');
+  }
+
+  return Math.max(0, Math.floor(value));
 }
 
 function getDefaultUser() {
@@ -159,6 +213,10 @@ const DataLayerContext = createContext<DataLayerContextValue | undefined>(
 
 export function DataLayerProvider({ children }: PropsWithChildren) {
   const [kidList, setKidList] = useState(initialKids);
+  const [prizeList, setPrizeList] = useState(() => clonePrizes(initialPrizes));
+  const [prizeAwards, setPrizeAwards] = useState(() =>
+    clonePrizeAwards(initialPrizeAwards),
+  );
   const [userList] = useState(initialUsers);
   const [passportActivitiesByUser, setPassportActivitiesByUser] = useState(
     () => clonePassportActivities(initialPassportActivitiesByUser),
@@ -214,6 +272,34 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   const getPassportForKid = (kidId: string): PassportData => ({
     activities: passportActivitiesByUser[kidId] ?? [],
   });
+  const getWheelShotSummaryForKid = (kidId: string): WheelShotSummary => {
+    const kidActivities = passportActivitiesByUser[kidId];
+
+    if (!kidActivities) {
+      throw new Error(`Unknown passport kid: ${kidId}`);
+    }
+
+    const earnedShots = Math.floor(
+      kidActivities.filter((activity) => activity.completedAt).length / 4,
+    );
+    const awards = prizeAwards
+      .filter((award) => award.kidId === kidId)
+      .map((award) => {
+        const prize = prizeList.find((entry) => entry.id === award.prizeId);
+
+        return {
+          ...award,
+          prizeTitle: prize?.title ?? award.prizeId,
+        };
+      });
+
+    return {
+      availableShots: Math.max(earnedShots - awards.length, 0),
+      awards,
+      earnedShots,
+      usedShots: awards.length,
+    };
+  };
   const findKidByManualNumber = (rawSearchValue: string) => {
     const searchedNumber = Number(rawSearchValue);
 
@@ -260,15 +346,97 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     return completedActivities;
   };
+  const awardPrizeToKid = (kidId: string, prizeId: string) => {
+    if (!kidList.some((kid) => kid.id === kidId)) {
+      throw new Error(`Unknown kid: ${kidId}`);
+    }
+
+    const shotSummary = getWheelShotSummaryForKid(kidId);
+
+    if (shotSummary.availableShots <= 0) {
+      throw new Error(`Kid has no wheel shots available: ${kidId}`);
+    }
+
+    if (!prizeList.some((prize) => getPrizeRemaining(prize) > 0)) {
+      throw new Error('No prizes remaining');
+    }
+
+    const prize = prizeList.find((entry) => entry.id === prizeId);
+
+    if (!prize) {
+      throw new Error(`Unknown prize: ${prizeId}`);
+    }
+
+    if (getPrizeRemaining(prize) <= 0) {
+      throw new Error(`Prize is out of stock: ${prizeId}`);
+    }
+
+    const award: PrizeAward = {
+      awardedAt: new Date().toISOString(),
+      id: `${kidId}-${Date.now()}`,
+      kidId,
+      prizeId,
+    };
+
+    setPrizeList((currentPrizes) =>
+      currentPrizes.map((currentPrize) =>
+        currentPrize.id === prizeId
+          ? {
+              ...currentPrize,
+              given: currentPrize.given + 1,
+            }
+          : currentPrize,
+      ),
+    );
+    setPrizeAwards((currentAwards) => [...currentAwards, award]);
+
+    return award;
+  };
+  const updatePrize = (prizeId: string, updates: Partial<Prize>) => {
+    setPrizeList((currentPrizes) => {
+      if (!currentPrizes.some((prize) => prize.id === prizeId)) {
+        throw new Error(`Unknown prize: ${prizeId}`);
+      }
+
+      return currentPrizes.map((prize) => {
+        if (prize.id !== prizeId) {
+          return prize;
+        }
+
+        const title = updates.title ?? prize.title;
+        const initialUnits = normalizePrizeCount(
+          updates.initialUnits ?? prize.initialUnits,
+        );
+        const given = Math.min(
+          normalizePrizeCount(updates.given ?? prize.given),
+          initialUnits,
+        );
+
+        if (!title.trim()) {
+          throw new Error(`Prize title cannot be empty: ${prizeId}`);
+        }
+
+        return {
+          ...prize,
+          given,
+          initialUnits,
+          isValuable: updates.isValuable ?? prize.isValuable,
+          title: title.trim(),
+        };
+      });
+    });
+  };
   const value = useMemo<DataLayerContextValue>(
     () => ({
       activities: initialActivities,
       addRegisteredKid,
+      awardPrizeToKid,
       conference: conferenceJson,
       currentUser,
       findKidByManualNumber,
       findKidByQrIdData,
       getPassportForKid,
+      getWheelShotSummaryForKid,
       kids: kidList,
       markPassportActivityDone,
       passport: {
@@ -277,11 +445,20 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
             ? (passportActivitiesByUser[currentUser.id] ?? [])
             : [],
       },
+      prizes: prizeList,
       reloadPassportActivities,
       setCurrentUser,
+      updatePrize,
       users: userList,
     }),
-    [currentUser, kidList, passportActivitiesByUser, userList],
+    [
+      currentUser,
+      kidList,
+      passportActivitiesByUser,
+      prizeAwards,
+      prizeList,
+      userList,
+    ],
   );
 
   return (
@@ -345,6 +522,22 @@ export function useAddRegisteredKid() {
 
 export function useMarkPassportActivityDone() {
   return useDataLayer().markPassportActivityDone;
+}
+
+export function usePrizesData() {
+  return useDataLayer().prizes;
+}
+
+export function useGetWheelShotSummaryForKid() {
+  return useDataLayer().getWheelShotSummaryForKid;
+}
+
+export function useAwardPrizeToKid() {
+  return useDataLayer().awardPrizeToKid;
+}
+
+export function useUpdatePrize() {
+  return useDataLayer().updatePrize;
 }
 
 export function useSetCurrentUser() {

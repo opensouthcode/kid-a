@@ -14,6 +14,7 @@ import {
   useActivitiesData,
   useConferenceData,
   useCurrentUser,
+  useGetWheelShotSummaryForKid,
   usePassportData,
   useReloadPassportActivities,
 } from '../contexts/DataLayerContext';
@@ -40,6 +41,7 @@ export function PassportPage() {
   const activities = useActivitiesData();
   const conference = useConferenceData();
   const currentUser = useCurrentUser();
+  const getWheelShotSummaryForKid = useGetWheelShotSummaryForKid();
   const passport = usePassportData();
   const reloadPassportActivities = useReloadPassportActivities();
   const navigate = useNavigate();
@@ -52,6 +54,15 @@ export function PassportPage() {
   ).length;
   const kidPassportPayload =
     currentUser.role === 'kid' ? currentUser.kid.qrIdData : '';
+  const wheelShotSummary =
+    currentUser.role === 'kid'
+      ? getWheelShotSummaryForKid(currentUser.id)
+      : {
+          availableShots: 0,
+          awards: [],
+          earnedShots: 0,
+          usedShots: 0,
+        };
 
   useEffect(() => {
     if (currentUser.role !== 'kid') {
@@ -151,6 +162,47 @@ export function PassportPage() {
         </nav>
         <p className="eyebrow">{conference.title}</p>
         <h1 id="kid-page-title">{t('kid.title')}</h1>
+        <section
+          className={
+            wheelShotSummary.availableShots > 0
+              ? 'passport-wheel-card available'
+              : 'passport-wheel-card'
+          }
+          aria-label={t('kid.wheel.title')}
+        >
+          <div className="passport-wheel-copy">
+            <span className="passport-wheel-icon">
+              <IterationsIcon size={22} aria-hidden="true" />
+            </span>
+            <div>
+              <h2>{t('kid.wheel.title')}</h2>
+              <p>
+                {wheelShotSummary.availableShots > 0
+                  ? wheelShotSummary.availableShots === 1
+                    ? t('kid.wheel.availableSingular')
+                    : t('kid.wheel.availablePlural')
+                      .replace(
+                        '{count}',
+                        String(wheelShotSummary.availableShots),
+                      )
+                  : t('kid.wheel.none')}
+              </p>
+            </div>
+          </div>
+          <strong className="passport-wheel-count">
+            {wheelShotSummary.availableShots}
+          </strong>
+          {wheelShotSummary.awards.length > 0 ? (
+            <div className="passport-prize-history">
+              <span>{t('kid.wheel.prizes')}</span>
+              <ol>
+                {wheelShotSummary.awards.map((award) => (
+                  <li key={award.id}>{award.prizeTitle}</li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+        </section>
         {qrCodeUrl ? (
           <button
             className="kid-qr-corner-button"
