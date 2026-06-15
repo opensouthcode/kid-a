@@ -1424,7 +1424,6 @@ h2 {
 
 .wheel-layout {
   display: grid;
-  grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1fr);
   gap: 24px;
   align-items: stretch;
   margin-top: 28px;
@@ -1435,7 +1434,12 @@ h2 {
 }
 
 .wheel-kid-card.selected {
-  min-height: 100%;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+}
+
+.wheel-kid-card.selected .selected-kid-summary {
+  grid-column: 1;
 }
 
 .wheel-kid-card strong {
@@ -1452,12 +1456,38 @@ h2 {
 }
 
 .wheel-shot-copy {
+  grid-column: 1 / -1;
   margin: 0;
   color: #5a4228;
   font-weight: 900;
 }
 
+.wheel-shot-meter {
+  display: grid;
+  min-width: 132px;
+  justify-items: center;
+  border: 1px solid #4e6f2b;
+  border-radius: 28px;
+  padding: 14px 18px;
+  background: #eef5df;
+  color: #4e6f2b;
+}
+
+.wheel-shot-meter span {
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.wheel-shot-meter strong {
+  color: #4e6f2b;
+  font-size: clamp(3rem, 8vw, 5rem);
+  line-height: 0.9;
+}
+
 .wheel-award-list {
+  grid-column: 1 / -1;
   display: grid;
   gap: 8px;
   margin: 0;
@@ -1478,6 +1508,12 @@ h2 {
   margin: 0;
 }
 
+.wheel-kid-card.selected .secondary-button {
+  grid-column: 3;
+  grid-row: 1;
+  justify-self: end;
+}
+
 .wheel-stage-card {
   display: grid;
   gap: 18px;
@@ -1492,7 +1528,7 @@ h2 {
 .wheel-stage {
   position: relative;
   display: grid;
-  width: min(440px, 100%);
+  width: min(680px, 100%);
   aspect-ratio: 1;
   place-items: center;
 }
@@ -1838,9 +1874,18 @@ h2 {
   .desk-registration-layout,
   .desk-summary,
   .lead-controls-panel,
-  .wheel-layout,
   .prize-row {
     grid-template-columns: 1fr;
+  }
+
+  .wheel-kid-card.selected {
+    grid-template-columns: 1fr;
+  }
+
+  .wheel-kid-card.selected .secondary-button {
+    grid-column: auto;
+    grid-row: auto;
+    justify-self: start;
   }
 
   .kid-confirmation {

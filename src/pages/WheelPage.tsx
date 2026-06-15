@@ -14,6 +14,7 @@ import {
   getPrizeRemaining,
   useAwardPrizeToKid,
   useCurrentUser,
+  useGetPassportForKid,
   useGetWheelShotSummaryForKid,
   useKidsData,
   usePrizesData,
@@ -23,8 +24,6 @@ import {
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 
-const regularPrizeWeight = 3;
-const valuablePrizeWeight = 1;
 const prizeColors = [
   '#ffbe0b',
   '#fb5607',
@@ -43,7 +42,17 @@ type SpinNotice = {
 function getWeightedSegments(prizes: Prize[]) {
   return prizes.flatMap((prize) =>
     Array.from(
-      { length: prize.isValuable ? valuablePrizeWeight : regularPrizeWeight },
+      {
+        length:
+          getPrizeRemaining(prize) > 0
+            ? Math.max(
+                1,
+                prize.isValuable
+                  ? Math.ceil(getPrizeRemaining(prize) / 2)
+                  : getPrizeRemaining(prize),
+              )
+            : 1,
+      },
       () => prize,
     ),
   );
@@ -79,6 +88,7 @@ function createWheelBackground(prizes: Prize[], segments: Prize[]) {
 export function WheelPage() {
   const awardPrizeToKid = useAwardPrizeToKid();
   const currentUser = useCurrentUser();
+  const getPassportForKid = useGetPassportForKid();
   const getWheelShotSummaryForKid = useGetWheelShotSummaryForKid();
   const kids = useKidsData();
   const navigate = useNavigate();
@@ -98,6 +108,13 @@ export function WheelPage() {
   const shotSummary = selectedKid
     ? getWheelShotSummaryForKid(selectedKid.id)
     : undefined;
+  const selectedKidPassport = selectedKid
+    ? getPassportForKid(selectedKid.id)
+    : undefined;
+  const completedActivities =
+    selectedKidPassport?.activities.filter((activity) => activity.completedAt)
+      .length ?? 0;
+  const totalActivities = selectedKidPassport?.activities.length ?? 0;
   const hasAnyAvailableStock = prizes.some(
     (prize) => getPrizeRemaining(prize) > 0,
   );
@@ -316,9 +333,13 @@ export function WheelPage() {
                     <code>{selectedKid.id}</code>
                   </div>
                   <ProgressCounter
-                    completed={shotSummary.availableShots}
-                    total={shotSummary.earnedShots}
+                    completed={completedActivities}
+                    total={totalActivities}
                   />
+                </div>
+                <div className="wheel-shot-meter">
+                  <span>{t('wheel.kid.shots')}</span>
+                  <strong>{shotSummary.availableShots}</strong>
                 </div>
                 <p className="wheel-shot-copy">
                   {shotSummary.availableShots > 0

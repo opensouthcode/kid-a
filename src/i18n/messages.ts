@@ -120,6 +120,7 @@ export const messages = {
     'wheel.kid.selected': 'Selected kid',
     'wheel.kid.available': '{count} wheel shots available.',
     'wheel.kid.none': 'No wheel shots available yet.',
+    'wheel.kid.shots': 'Shots',
     'wheel.kid.next': 'Next kid',
     'wheel.stage.title': 'Prize wheel',
     'wheel.spin.start': 'Spin wheel',
@@ -137,7 +138,7 @@ export const messages = {
     'wheel.manage.open': 'Stock',
     'wheel.manage.close': 'Close',
     'wheel.manage.description':
-      'Valuable prizes appear once; regular prizes appear more times so they are easier to win.',
+      'Each remaining unit adds one equal-size wheel sector. Valuable prizes use fewer sectors so they stay harder to win.',
     'wheel.manage.prizeTitle': 'Prize',
     'wheel.manage.initialUnits': 'Initial units',
     'wheel.manage.given': 'Given',
@@ -265,6 +266,7 @@ export const messages = {
     'wheel.kid.selected': 'Kid seleccionado',
     'wheel.kid.available': '{count} tiradas de ruleta disponibles.',
     'wheel.kid.none': 'Aún no hay tiradas de ruleta disponibles.',
+    'wheel.kid.shots': 'Tiradas',
     'wheel.kid.next': 'Siguiente kid',
     'wheel.stage.title': 'Ruleta de premios',
     'wheel.spin.start': 'Girar ruleta',
@@ -283,7 +285,7 @@ export const messages = {
     'wheel.manage.open': 'Stock',
     'wheel.manage.close': 'Cerrar',
     'wheel.manage.description':
-      'Los premios valiosos aparecen una vez; los normales aparecen más veces para que sean más fáciles de ganar.',
+      'Cada unidad restante añade un sector de ruleta del mismo tamaño. Los premios valiosos usan menos sectores para que sigan siendo más difíciles.',
     'wheel.manage.prizeTitle': 'Premio',
     'wheel.manage.initialUnits': 'Unidades iniciales',
     'wheel.manage.given': 'Entregados',
