@@ -52,6 +52,8 @@ export type Prize = {
   title: string;
 };
 
+type PrizeSettingsUpdate = Partial<Omit<Prize, 'given'>>;
+
 export type PrizeAward = {
   awardedAt: string;
   id: string;
@@ -114,7 +116,7 @@ type DataLayerContextValue = {
   reloadPassportActivities: () => void;
   users: User[];
   setCurrentUser: (user: Kid | User) => void;
-  updatePrize: (prizeId: string, updates: Partial<Prize>) => void;
+  updatePrize: (prizeId: string, updates: PrizeSettingsUpdate) => void;
 };
 
 const initialActivities: Activity[] = activitiesJson;
@@ -146,6 +148,17 @@ function clonePrizeAwards(prizeAwards: PrizeAward[]): PrizeAward[] {
 
 export function getPrizeRemaining(prize: Prize) {
   return Math.max(prize.initialUnits - prize.given, 0);
+}
+
+function getPrizeGiven(prizeAwards: PrizeAward[], prizeId: string) {
+  return prizeAwards.filter((award) => award.prizeId === prizeId).length;
+}
+
+function syncPrizeGivenCache(prizes: Prize[], prizeAwards: PrizeAward[]): Prize[] {
+  return prizes.map((prize) => ({
+    ...prize,
+    given: getPrizeGiven(prizeAwards, prize.id),
+  }));
 }
 
 function normalizePrizeCount(value: number) {
@@ -213,9 +226,11 @@ const DataLayerContext = createContext<DataLayerContextValue | undefined>(
 
 export function DataLayerProvider({ children }: PropsWithChildren) {
   const [kidList, setKidList] = useState(initialKids);
-  const [prizeList, setPrizeList] = useState(() => clonePrizes(initialPrizes));
   const [prizeAwards, setPrizeAwards] = useState(() =>
     clonePrizeAwards(initialPrizeAwards),
+  );
+  const [prizeList, setPrizeList] = useState(() =>
+    syncPrizeGivenCache(clonePrizes(initialPrizes), initialPrizeAwards),
   );
   const [userList] = useState(initialUsers);
   const [passportActivitiesByUser, setPassportActivitiesByUser] = useState(
@@ -223,6 +238,10 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   );
   const [selectedCurrentUser, setSelectedCurrentUser] =
     useState<CurrentUser>(wrapKid(defaultKid));
+  const prizes = useMemo<Prize[]>(
+    () => syncPrizeGivenCache(prizeList, prizeAwards),
+    [prizeAwards, prizeList],
+  );
   const currentUser =
     selectedCurrentUser.role === 'kid'
       ? wrapKid(
@@ -285,7 +304,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     const awards = prizeAwards
       .filter((award) => award.kidId === kidId)
       .map((award) => {
-        const prize = prizeList.find((entry) => entry.id === award.prizeId);
+        const prize = prizes.find((entry) => entry.id === award.prizeId);
 
         return {
           ...award,
@@ -357,11 +376,11 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       throw new Error(`Kid has no wheel shots available: ${kidId}`);
     }
 
-    if (!prizeList.some((prize) => getPrizeRemaining(prize) > 0)) {
+    if (!prizes.some((prize) => getPrizeRemaining(prize) > 0)) {
       throw new Error('No prizes remaining');
     }
 
-    const prize = prizeList.find((entry) => entry.id === prizeId);
+    const prize = prizes.find((entry) => entry.id === prizeId);
 
     if (!prize) {
       throw new Error(`Unknown prize: ${prizeId}`);
@@ -378,21 +397,16 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       prizeId,
     };
 
+    const nextPrizeAwards = [...prizeAwards, award];
+
+    setPrizeAwards(nextPrizeAwards);
     setPrizeList((currentPrizes) =>
-      currentPrizes.map((currentPrize) =>
-        currentPrize.id === prizeId
-          ? {
-              ...currentPrize,
-              given: currentPrize.given + 1,
-            }
-          : currentPrize,
-      ),
+      syncPrizeGivenCache(currentPrizes, nextPrizeAwards),
     );
-    setPrizeAwards((currentAwards) => [...currentAwards, award]);
 
     return award;
   };
-  const updatePrize = (prizeId: string, updates: Partial<Prize>) => {
+  const updatePrize = (prizeId: string, updates: PrizeSettingsUpdate) => {
     setPrizeList((currentPrizes) => {
       if (!currentPrizes.some((prize) => prize.id === prizeId)) {
         throw new Error(`Unknown prize: ${prizeId}`);
@@ -404,12 +418,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
         }
 
         const title = updates.title ?? prize.title;
-        const initialUnits = normalizePrizeCount(
-          updates.initialUnits ?? prize.initialUnits,
-        );
-        const given = Math.min(
-          normalizePrizeCount(updates.given ?? prize.given),
-          initialUnits,
+        const initialUnits = Math.max(
+          normalizePrizeCount(updates.initialUnits ?? prize.initialUnits),
+          getPrizeGiven(prizeAwards, prizeId),
         );
 
         if (!title.trim()) {
@@ -418,7 +429,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
         return {
           ...prize,
-          given,
+          given: getPrizeGiven(prizeAwards, prizeId),
           initialUnits,
           isValuable: updates.isValuable ?? prize.isValuable,
           title: title.trim(),
@@ -445,7 +456,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
             ? (passportActivitiesByUser[currentUser.id] ?? [])
             : [],
       },
-      prizes: prizeList,
+      prizes,
       reloadPassportActivities,
       setCurrentUser,
       updatePrize,
@@ -455,8 +466,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       currentUser,
       kidList,
       passportActivitiesByUser,
-      prizeAwards,
-      prizeList,
+      prizes,
       userList,
     ],
   );

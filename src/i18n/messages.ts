@@ -134,6 +134,8 @@ export const messages = {
     'wheel.spin.error': 'The wheel could not record this prize.',
     'wheel.manage.eyebrow': 'Prize stock',
     'wheel.manage.title': 'Manage prizes',
+    'wheel.manage.open': 'Stock',
+    'wheel.manage.close': 'Close',
     'wheel.manage.description':
       'Valuable prizes appear once; regular prizes appear more times so they are easier to win.',
     'wheel.manage.prizeTitle': 'Prize',
@@ -278,6 +280,8 @@ export const messages = {
     'wheel.spin.error': 'La ruleta no pudo registrar este premio.',
     'wheel.manage.eyebrow': 'Stock de premios',
     'wheel.manage.title': 'Gestionar premios',
+    'wheel.manage.open': 'Stock',
+    'wheel.manage.close': 'Cerrar',
     'wheel.manage.description':
       'Los premios valiosos aparecen una vez; los normales aparecen más veces para que sean más fáciles de ganar.',
     'wheel.manage.prizeTitle': 'Premio',

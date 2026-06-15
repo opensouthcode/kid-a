@@ -1579,19 +1579,32 @@ h2 {
 }
 
 .prize-manager {
+  width: min(960px, 100%);
+  max-height: min(780px, calc(100vh - 48px));
+  overflow: auto;
   display: grid;
   gap: 16px;
-  margin-top: 24px;
   border: 1px solid #c9ac77;
   border-radius: 28px;
   padding: 22px;
-  background: rgb(255 250 240 / 80%);
+  background: #fbf7ec;
+  box-shadow: 0 24px 64px rgb(45 36 24 / 28%);
+}
+
+.prize-manager-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  padding: 24px;
+  background: rgb(45 36 24 / 62%);
+  place-items: center;
 }
 
 .prize-manager-header {
   display: flex;
   gap: 18px;
-  align-items: end;
+  align-items: start;
   justify-content: space-between;
 }
 
@@ -1604,6 +1617,26 @@ h2 {
   max-width: 460px;
   color: #5a4228;
   font-weight: 800;
+}
+
+.prize-manager-close {
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.stock-toolbar-button {
+  border: 1px solid #8c6b3f;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #fbf7ec;
+  color: #2d2418;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.stock-toolbar-button:hover,
+.stock-toolbar-button:focus-visible {
+  background: #e5f0d0;
 }
 
 .prize-list {
@@ -1659,6 +1692,26 @@ h2 {
 
 .valuable-toggle input {
   accent-color: #4e6f2b;
+}
+
+.prize-given {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 8px;
+}
+
+.prize-given span {
+  color: #5a4228;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.prize-given strong {
+  color: #2d2418;
+  font-size: 1.2rem;
+  line-height: 1;
 }
 
 .prize-remaining {

@@ -88,6 +88,7 @@ export function WheelPage() {
   const [selectedKidId, setSelectedKidId] = useState('');
   const [pendingPrizeId, setPendingPrizeId] = useState('');
   const [managementError, setManagementError] = useState('');
+  const [isPrizeManagerOpen, setIsPrizeManagerOpen] = useState(false);
   const [spinNotice, setSpinNotice] = useState<SpinNotice>();
   const [stockNotice, setStockNotice] = useState('');
   const [isSpinning, setIsSpinning] = useState(false);
@@ -111,6 +112,22 @@ export function WheelPage() {
       navigate('/', { replace: true });
     }
   }, [currentUser.role, navigate]);
+
+  useEffect(() => {
+    if (!isPrizeManagerOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsPrizeManagerOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isPrizeManagerOpen]);
 
   const selectKid = (kid: Kid) => {
     setSelectedKidId(kid.id);
@@ -247,7 +264,10 @@ export function WheelPage() {
     finishPendingSpin();
   };
 
-  const updateManagedPrize = (prizeId: string, updates: Partial<Prize>) => {
+  const updateManagedPrize = (
+    prizeId: string,
+    updates: Partial<Omit<Prize, 'given'>>,
+  ) => {
     updatePrize(prizeId, updates);
     setManagementError('');
   };
@@ -258,7 +278,19 @@ export function WheelPage() {
 
   return (
     <>
-      <TopBar showUserMenu onLogout={() => navigate('/')} />
+      <TopBar
+        customButtons={
+          <button
+            className="stock-toolbar-button"
+            type="button"
+            onClick={() => setIsPrizeManagerOpen(true)}
+          >
+            {t('wheel.manage.open')}
+          </button>
+        }
+        showUserMenu
+        onLogout={() => navigate('/')}
+      />
       <section className="wheel-content" aria-labelledby="wheel-title">
         <p className="eyebrow">{t('wheel.eyebrow')}</p>
         <h1 id="wheel-title">{t('wheel.title')}</h1>
@@ -359,89 +391,103 @@ export function WheelPage() {
           </section>
         </div>
 
-        <section className="prize-manager" aria-labelledby="prize-manager-title">
-          <div className="prize-manager-header">
-            <div>
-              <p className="eyebrow">{t('wheel.manage.eyebrow')}</p>
-              <h2 id="prize-manager-title">{t('wheel.manage.title')}</h2>
-            </div>
-            <p>{t('wheel.manage.description')}</p>
-          </div>
-          {managementError ? <p className="form-error">{managementError}</p> : null}
-          <div className="prize-list">
-            {prizes.map((prize) => (
-              <article
-                className={
-                  getPrizeRemaining(prize) > 0
-                    ? 'prize-row'
-                    : 'prize-row out-of-stock'
-                }
-                key={prize.id}
-              >
-                <label>
-                  {t('wheel.manage.prizeTitle')}
-                  <input
-                    value={prize.title}
-                    onChange={(event) => {
-                      if (!event.target.value.trim()) {
-                        setManagementError(t('wheel.manage.error.title'));
-                        return;
-                      }
+        {isPrizeManagerOpen ? (
+          <div
+            className="prize-manager-overlay"
+            role="presentation"
+            onClick={() => setIsPrizeManagerOpen(false)}
+          >
+            <section
+              className="prize-manager"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="prize-manager-title"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="prize-manager-header">
+                <div>
+                  <p className="eyebrow">{t('wheel.manage.eyebrow')}</p>
+                  <h2 id="prize-manager-title">{t('wheel.manage.title')}</h2>
+                </div>
+                <p>{t('wheel.manage.description')}</p>
+                <button
+                  className="secondary-button prize-manager-close"
+                  type="button"
+                  onClick={() => setIsPrizeManagerOpen(false)}
+                >
+                  {t('wheel.manage.close')}
+                </button>
+              </div>
+              {managementError ? (
+                <p className="form-error">{managementError}</p>
+              ) : null}
+              <div className="prize-list">
+                {prizes.map((prize) => (
+                  <article
+                    className={
+                      getPrizeRemaining(prize) > 0
+                        ? 'prize-row'
+                        : 'prize-row out-of-stock'
+                    }
+                    key={prize.id}
+                  >
+                    <label>
+                      {t('wheel.manage.prizeTitle')}
+                      <input
+                        value={prize.title}
+                        onChange={(event) => {
+                          if (!event.target.value.trim()) {
+                            setManagementError(t('wheel.manage.error.title'));
+                            return;
+                          }
 
-                      updateManagedPrize(prize.id, {
-                        title: event.target.value,
-                      });
-                    }}
-                  />
-                </label>
-                <label>
-                  {t('wheel.manage.initialUnits')}
-                  <input
-                    min="0"
-                    type="number"
-                    value={prize.initialUnits}
-                    onChange={(event) =>
-                      updateManagedPrize(prize.id, {
-                        initialUnits: Number(event.target.value),
-                      })
-                    }
-                  />
-                </label>
-                <label>
-                  {t('wheel.manage.given')}
-                  <input
-                    min="0"
-                    type="number"
-                    value={prize.given}
-                    onChange={(event) =>
-                      updateManagedPrize(prize.id, {
-                        given: Number(event.target.value),
-                      })
-                    }
-                  />
-                </label>
-                <label className="valuable-toggle">
-                  <input
-                    checked={prize.isValuable}
-                    type="checkbox"
-                    onChange={(event) =>
-                      updateManagedPrize(prize.id, {
-                        isValuable: event.target.checked,
-                      })
-                    }
-                  />
-                  {t('wheel.manage.valuable')}
-                </label>
-                <strong className="prize-remaining">
-                  {t('wheel.manage.remaining').replace(
-                    '{count}',
-                    String(getPrizeRemaining(prize)),
-                  )}
-                </strong>
-              </article>
-            ))}
+                          updateManagedPrize(prize.id, {
+                            title: event.target.value,
+                          });
+                        }}
+                      />
+                    </label>
+                    <label>
+                      {t('wheel.manage.initialUnits')}
+                      <input
+                        min={prize.given}
+                        type="number"
+                        value={prize.initialUnits}
+                        onChange={(event) =>
+                          updateManagedPrize(prize.id, {
+                            initialUnits: Number(event.target.value),
+                          })
+                        }
+                      />
+                    </label>
+                    <div className="prize-given">
+                      <span>{t('wheel.manage.given')}</span>
+                      <strong>{prize.given}</strong>
+                    </div>
+                    <label className="valuable-toggle">
+                      <input
+                        checked={prize.isValuable}
+                        type="checkbox"
+                        onChange={(event) =>
+                          updateManagedPrize(prize.id, {
+                            isValuable: event.target.checked,
+                          })
+                        }
+                      />
+                      {t('wheel.manage.valuable')}
+                    </label>
+                    <strong className="prize-remaining">
+                      {t('wheel.manage.remaining').replace(
+                        '{count}',
+                        String(getPrizeRemaining(prize)),
+                      )}
+                    </strong>
+                  </article>
+                ))}
+              </div>
+            </section>
           </div>
-        </section>
+        ) : null}
       </section>
     </>
   );

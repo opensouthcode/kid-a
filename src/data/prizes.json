@@ -3,14 +3,14 @@
     "id": "stickers",
     "title": "Sticker pack",
     "initialUnits": 18,
-    "given": 2,
+    "given": 0,
     "isValuable": false
   },
   {
     "id": "badges",
     "title": "OpenSouthCode badge",
     "initialUnits": 12,
-    "given": 1,
+    "given": 0,
     "isValuable": false
   },
   {
@@ -31,7 +31,7 @@
     "id": "plushie",
     "title": "Robot plushie",
     "initialUnits": 2,
-    "given": 1,
+    "given": 0,
     "isValuable": true
   }
 ]
