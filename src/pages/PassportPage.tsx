@@ -1,5 +1,4 @@
 import {
-  CheckCircleFillIcon,
   IterationsIcon,
   LocationIcon,
   PeopleIcon,
@@ -9,6 +8,7 @@ import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FriendsDialog } from '../components/FriendsDialog';
+import { PassportActivityMosaic } from '../components/PassportActivityMosaic';
 import { ProgressCounter } from '../components/ProgressCounter';
 import { TopBar } from '../components/TopBar';
 import {
@@ -268,33 +268,13 @@ export function PassportPage() {
           className="activity-section"
           aria-label={t('kid.activities.title')}
         >
-          <div className="activity-grid">
-            {passport.activities.map((activity) => (
-              <article
-                className={
-                  activity.completedAt
-                    ? 'activity-card completed'
-                    : 'activity-card'
-                }
-                key={activity.id}
-              >
-                <span className="activity-number">
-                  {activity.id.toString().padStart(2, '0')}
-                </span>
-                <span className="activity-title">
-                  {activities.find((entry) => entry.id === String(activity.id))
-                    ?.title ?? ''}
-                </span>
-                {activity.completedAt ? (
-                  <CheckCircleFillIcon
-                    aria-label={t('kid.activity.completed')}
-                    className="activity-completed-icon"
-                    size={34}
-                  />
-                ) : null}
-              </article>
-            ))}
-          </div>
+          <PassportActivityMosaic
+            activities={passport.activities}
+            getActivityTitle={(activityId) =>
+              activities.find((entry) => entry.id === String(activityId))
+                ?.title ?? ''
+            }
+          />
         </section>
         <FriendsDialog
           isOpen={isFriendsDialogOpen}

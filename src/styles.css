@@ -826,134 +826,70 @@ h2 {
   font-size: clamp(1.5rem, 3vw, 2.1rem);
 }
 
-.friend-passport-activity-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  max-height: min(460px, 48vh);
-  overflow: auto;
-}
-
-.friend-passport-activity {
-  display: grid;
-  min-height: 72px;
-  align-content: start;
-  gap: 6px;
-  border: 1px solid rgb(78 111 43 / 18%);
-  border-radius: 16px;
-  padding: 10px;
-  background: #fff;
-  color: #5a4228;
-}
-
-.friend-passport-activity.completed {
-  border-color: #4e6f2b;
-  background: #e5f0d0;
-  color: #2d2418;
-}
-
-.friend-passport-activity span {
-  color: #4e6f2b;
-  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
-  font-size: 0.8rem;
-  font-weight: 900;
-}
-
-.friend-passport-activity svg {
-  margin-top: auto;
-  color: #4e6f2b;
-}
-
 .activity-section {
   margin-top: 28px;
 }
 
-.activity-grid {
+.passport-mosaic {
   display: grid;
   overflow: hidden;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   width: min(720px, 100%);
   margin: 0 auto;
-  aspect-ratio: 1;
-  background: transparent;
+  aspect-ratio: 1174 / 1534;
+  border: 4px solid #1f1f1f;
+  background: #fff;
+  box-shadow: 0 16px 36px rgb(45 36 24 / 18%);
 }
 
-.activity-card {
+.passport-mosaic-cell {
   position: relative;
-  display: grid;
   overflow: hidden;
   min-height: 0;
   border: 0;
-  padding: 16px;
-  background: #fff;
-  place-items: center;
+  background-position: var(--passport-cell-x) var(--passport-cell-y);
+  background-size: 400% 400%;
 }
 
-.activity-card::before,
-.activity-card::after {
+.passport-mosaic-cell::after {
   position: absolute;
-  border: 5px solid #1f1f1f;
+  z-index: 1;
+  inset: 1px;
+  background: rgb(255 255 255 / 90%);
   content: "";
   pointer-events: none;
 }
 
-.activity-card::before {
-  top: -24%;
-  right: -18%;
-  width: 38%;
-  height: 148%;
-  border-top: 0;
-  border-bottom: 0;
-  border-left: 0;
-  border-radius: 50%;
+.passport-mosaic-cell.completed::after {
+  display: none;
 }
 
-.activity-card::after {
-  right: -24%;
-  bottom: -18%;
-  width: 148%;
-  height: 38%;
-  border-top: 0;
-  border-right: 0;
-  border-left: 0;
-  border-radius: 50%;
-}
-
-.activity-card.completed {
-  background: #fff;
-}
-
-.activity-number {
-  color: #1f1f1f;
-  font-size: clamp(2.3rem, 6vw, 4.6rem);
+.passport-mosaic-number {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  color: rgb(45 36 24 / 28%);
+  font-size: clamp(2.8rem, 7vw, 5.6rem);
   font-weight: 300;
   line-height: 1;
+  pointer-events: none;
+  text-shadow: 0 1px 12px rgb(255 255 255 / 42%);
+  transform: translate(-50%, -50%);
 }
 
-.activity-title {
-  position: relative;
-  z-index: 1;
-  display: -webkit-box;
-  overflow: hidden;
-  max-width: 100%;
-  color: #6f6f6f;
-  font-size: clamp(0.58rem, 1.3vw, 0.82rem);
-  font-weight: 800;
-  line-clamp: 2;
-  text-align: center;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+.passport-mosaic-cell.completed .passport-mosaic-number {
+  color: rgb(255 255 255 / 62%);
+  text-shadow: 0 2px 12px rgb(45 36 24 / 32%);
 }
 
-.activity-card.completed .activity-number {
-  color: #e7e7e7;
+.friend-passport-mosaic {
+  width: min(420px, 100%);
+  box-shadow: 0 12px 28px rgb(45 36 24 / 14%);
 }
 
-.activity-completed-icon {
-  position: absolute;
-  top: calc(50% - 44px);
-  left: calc(50% - 58px);
-  color: #4e6f2b;
+.friend-passport-mosaic .passport-mosaic-number {
+  font-size: clamp(1.55rem, 5vw, 3rem);
 }
 
 .registration-content {
@@ -2237,7 +2173,7 @@ h2 {
     padding-top: 88px;
   }
 
-  .activity-grid {
+  .passport-mosaic {
     width: 100%;
   }
 
@@ -2291,17 +2227,7 @@ h2 {
 }
 
 @media (max-width: 460px) {
-  .activity-card {
-    padding: 10px;
-  }
-
-  .activity-card::before,
-  .activity-card::after {
-    border-width: 4px;
-  }
-
-  .activity-completed-icon {
-    top: calc(50% - 34px);
-    left: calc(50% - 44px);
+  .passport-mosaic {
+    border-width: 3px;
   }
 }
