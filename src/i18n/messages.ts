@@ -81,9 +81,10 @@ export const messages = {
     'lead.mark.submit': 'Complete',
     'lead.mark.completed': 'Already done',
     'lead.mark.completedAt': 'Already done at {time}',
-    'lead.mark.success': 'Activity completed.',
+    'lead.mark.success': 'Done.',
     'lead.closeKid': 'Close',
     'lead.wheelReminder': 'Every 4 activities, go to the wheel.',
+    'lead.wheelShotAvailable': 'Wheel shot available.',
     'lead.passportComplete':
       'Passport complete! Go to the prize wheel to collect the T-shirt.',
     'lead.summary.title': 'Kids',
@@ -131,7 +132,7 @@ export const messages = {
     'wheel.spin.noStock': 'No prizes are available. Restock prizes before spinning.',
     'wheel.spin.outOfStock':
       '{prize} is out of stock. Retry until the kid gets an available prize.',
-    'wheel.spin.success': '{kid} won {prize}.',
+    'wheel.spin.loading': 'of {count} prizes',
     'wheel.spin.lastUnit': '{prize} is now out of stock.',
     'wheel.spin.error': 'The wheel could not record this prize.',
     'wheel.completion.error': 'The passport completion prize could not be recorded.',
@@ -232,9 +233,10 @@ export const messages = {
     'lead.mark.submit': 'Completar',
     'lead.mark.completed': 'Ya completada',
     'lead.mark.completedAt': 'Ya completada a las {time}',
-    'lead.mark.success': 'Actividad completada.',
+    'lead.mark.success': 'Hecho.',
     'lead.closeKid': 'Cerrar',
     'lead.wheelReminder': 'Cada 4 actividades, ve a la ruleta.',
+    'lead.wheelShotAvailable': 'Tirada de ruleta disponible.',
     'lead.passportComplete':
       'Pasaporte completo! Ve a la ruleta de premios para recoger la camiseta.',
     'lead.summary.title': 'Kids',
@@ -283,7 +285,7 @@ export const messages = {
       'No hay premios disponibles. Repón premios antes de girar.',
     'wheel.spin.outOfStock':
       '{prize} está agotado. Repite hasta que el kid consiga un premio disponible.',
-    'wheel.spin.success': '{kid} ha ganado {prize}.',
+    'wheel.spin.loading': 'de {count} premios',
     'wheel.spin.lastUnit': '{prize} se ha agotado.',
     'wheel.spin.error': 'La ruleta no pudo registrar este premio.',
     'wheel.completion.error':

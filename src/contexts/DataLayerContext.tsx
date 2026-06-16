@@ -120,6 +120,7 @@ type DataLayerContextValue = {
   markPassportActivityDone: (kidId: string, activityId: number) => number;
   passport: PassportData;
   prizes: Prize[];
+  refreshPrizes: () => Prize[];
   reloadPassportActivities: () => void;
   users: User[];
   setCurrentUser: (user: Kid | User) => void;
@@ -356,6 +357,13 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       clonePassportActivities(currentPassportActivities),
     );
   };
+  const refreshPrizes = () => {
+    const refreshedPrizes = syncPrizeGivenCache(prizeList, prizeAwards);
+
+    setPrizeList(refreshedPrizes);
+
+    return refreshedPrizes;
+  };
   const markPassportActivityDone = (kidId: string, activityId: number) => {
     const kidActivities = passportActivitiesByUser[kidId];
 
@@ -397,7 +405,11 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       throw new Error(`Kid has no wheel shots available: ${kidId}`);
     }
 
-    if (!prizes.some((prize) => getPrizeRemaining(prize) > 0)) {
+    if (
+      !prizes.some(
+        (prize) => prize.kind !== 'final' && getPrizeRemaining(prize) > 0,
+      )
+    ) {
       throw new Error('No prizes remaining');
     }
 
@@ -532,6 +544,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
             : [],
       },
       prizes,
+      refreshPrizes,
       reloadPassportActivities,
       setCurrentUser,
       updatePrize,
@@ -611,6 +624,10 @@ export function useMarkPassportActivityDone() {
 
 export function usePrizesData() {
   return useDataLayer().prizes;
+}
+
+export function useRefreshPrizes() {
+  return useDataLayer().refreshPrizes;
 }
 
 export function useGetWheelShotSummaryForKid() {

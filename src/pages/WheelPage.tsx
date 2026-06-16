@@ -3,6 +3,7 @@ import {
   useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type TransitionEvent,
 } from 'react';
@@ -19,6 +20,7 @@ import {
   useGetWheelShotSummaryForKid,
   useKidsData,
   usePrizesData,
+  useRefreshPrizes,
   useUpdatePrize,
   type Kid,
   type Prize,
@@ -97,12 +99,21 @@ export function WheelPage() {
   const kids = useKidsData();
   const navigate = useNavigate();
   const prizes = usePrizesData();
+  const refreshPrizes = useRefreshPrizes();
   const updatePrize = useUpdatePrize();
   const { t } = useI18n();
+  const fillIntervalRef = useRef<number | undefined>(undefined);
+  const fillTimeoutRef = useRef<number | undefined>(undefined);
+  const [animatedWheelSegments, setAnimatedWheelSegments] = useState<
+    Prize[] | undefined
+  >();
+  const [filledSegmentCount, setFilledSegmentCount] = useState(0);
   const [selectedKidId, setSelectedKidId] = useState('');
   const [pendingPrizeId, setPendingPrizeId] = useState('');
   const [managementError, setManagementError] = useState('');
+  const [wonPrizeTitle, setWonPrizeTitle] = useState('');
   const [isPrizeManagerOpen, setIsPrizeManagerOpen] = useState(false);
+  const [isFillingWheel, setIsFillingWheel] = useState(false);
   const [spinNotice, setSpinNotice] = useState<SpinNotice>();
   const [stockNotice, setStockNotice] = useState('');
   const [isSpinning, setIsSpinning] = useState(false);
@@ -125,9 +136,14 @@ export function WheelPage() {
     (prize) => prize.kind !== 'final' && getPrizeRemaining(prize) > 0,
   );
   const wheelSegments = useMemo(() => getWeightedSegments(prizes), [prizes]);
+  const activeWheelSegments = animatedWheelSegments ?? wheelSegments;
+  const visibleWheelSegments =
+    isFillingWheel && animatedWheelSegments
+      ? animatedWheelSegments.slice(0, filledSegmentCount)
+      : activeWheelSegments;
   const wheelBackground = useMemo(
-    () => createWheelBackground(prizes, wheelSegments),
-    [prizes, wheelSegments],
+    () => createWheelBackground(prizes, visibleWheelSegments),
+    [prizes, visibleWheelSegments],
   );
 
   useEffect(() => {
@@ -151,6 +167,14 @@ export function WheelPage() {
 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPrizeManagerOpen]);
+
+  useEffect(
+    () => () => {
+      window.clearInterval(fillIntervalRef.current);
+      window.clearTimeout(fillTimeoutRef.current);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!selectedKid || !shotSummary || !isPassportComplete) {
@@ -181,21 +205,34 @@ export function WheelPage() {
   ]);
 
   const selectKid = (kid: Kid) => {
+    window.clearInterval(fillIntervalRef.current);
+    window.clearTimeout(fillTimeoutRef.current);
+    setAnimatedWheelSegments(undefined);
+    setFilledSegmentCount(0);
+    setIsFillingWheel(false);
     setSelectedKidId(kid.id);
     setPendingPrizeId('');
     setSpinNotice(undefined);
     setStockNotice('');
+    setWonPrizeTitle('');
   };
   const clearKid = () => {
+    window.clearInterval(fillIntervalRef.current);
+    window.clearTimeout(fillTimeoutRef.current);
+    setAnimatedWheelSegments(undefined);
+    setFilledSegmentCount(0);
+    setIsFillingWheel(false);
     setSelectedKidId('');
     setPendingPrizeId('');
     setSpinNotice(undefined);
     setStockNotice('');
+    setWonPrizeTitle('');
   };
   const canSpin =
     Boolean(selectedKid) &&
     Boolean(shotSummary?.availableShots) &&
     hasAnyAvailableStock &&
+    !isFillingWheel &&
     !isSpinning;
   const spinButtonLabel =
     spinNotice?.type === 'warning' && pendingPrizeId === ''
@@ -204,6 +241,10 @@ export function WheelPage() {
 
   const startSpin = () => {
     if (isSpinning) {
+      return;
+    }
+
+    if (isFillingWheel) {
       return;
     }
 
@@ -231,10 +272,10 @@ export function WheelPage() {
       return;
     }
 
-    const segmentIndex = Math.floor(Math.random() * wheelSegments.length);
-    const segment = wheelSegments[segmentIndex];
+    const refreshedPrizes = refreshPrizes();
+    const nextWheelSegments = getWeightedSegments(refreshedPrizes);
 
-    if (!segment) {
+    if (nextWheelSegments.length === 0) {
       setSpinNotice({
         message: t('wheel.spin.noStock'),
         type: 'warning',
@@ -242,16 +283,50 @@ export function WheelPage() {
       return;
     }
 
-    const segmentAngle = 360 / wheelSegments.length;
-    const segmentCenter = segmentIndex * segmentAngle + segmentAngle / 2;
-    const nextSpinRound = spinRound + 5;
-
-    setPendingPrizeId(segment.id);
-    setIsSpinning(true);
+    window.clearInterval(fillIntervalRef.current);
+    window.clearTimeout(fillTimeoutRef.current);
+    setAnimatedWheelSegments(nextWheelSegments);
+    setFilledSegmentCount(0);
+    setIsFillingWheel(true);
     setSpinNotice(undefined);
     setStockNotice('');
-    setSpinRound(nextSpinRound);
-    setRotation(360 * nextSpinRound - segmentCenter);
+    setWonPrizeTitle('');
+
+    const fillDuration = 3000;
+    const segmentInterval = Math.max(24, fillDuration / nextWheelSegments.length);
+
+    fillIntervalRef.current = window.setInterval(() => {
+      setFilledSegmentCount((currentCount) =>
+        Math.min(currentCount + 1, nextWheelSegments.length),
+      );
+    }, segmentInterval);
+
+    fillTimeoutRef.current = window.setTimeout(() => {
+      window.clearInterval(fillIntervalRef.current);
+      setFilledSegmentCount(nextWheelSegments.length);
+
+      const segmentIndex = Math.floor(Math.random() * nextWheelSegments.length);
+      const segment = nextWheelSegments[segmentIndex];
+
+      if (!segment) {
+        setIsFillingWheel(false);
+        setSpinNotice({
+          message: t('wheel.spin.noStock'),
+          type: 'warning',
+        });
+        return;
+      }
+
+      const segmentAngle = 360 / nextWheelSegments.length;
+      const segmentCenter = segmentIndex * segmentAngle + segmentAngle / 2;
+      const nextSpinRound = spinRound + 5;
+
+      setPendingPrizeId(segment.id);
+      setIsFillingWheel(false);
+      setIsSpinning(true);
+      setSpinRound(nextSpinRound);
+      setRotation(360 * nextSpinRound - segmentCenter);
+    }, fillDuration);
   };
 
   const finishPendingSpin = useCallback(() => {
@@ -263,6 +338,7 @@ export function WheelPage() {
 
     if (!prize) {
       setIsSpinning(false);
+      setAnimatedWheelSegments(undefined);
       setPendingPrizeId('');
       setSpinNotice({
         message: t('wheel.spin.error'),
@@ -273,6 +349,7 @@ export function WheelPage() {
 
     if (getPrizeRemaining(prize) <= 0) {
       setIsSpinning(false);
+      setAnimatedWheelSegments(undefined);
       setPendingPrizeId('');
       setSpinNotice({
         message: t('wheel.spin.outOfStock').replace('{prize}', prize.title),
@@ -285,13 +362,10 @@ export function WheelPage() {
 
     awardPrizeToKid(selectedKid.id, prize.id);
     setIsSpinning(false);
+    setAnimatedWheelSegments(undefined);
     setPendingPrizeId('');
-    setSpinNotice({
-      message: t('wheel.spin.success')
-        .replace('{kid}', selectedKid.name)
-        .replace('{prize}', prize.title),
-      type: 'success',
-    });
+    setWonPrizeTitle(prize.title);
+    setSpinNotice(undefined);
 
     if (remainingAfterAward === 0) {
       setStockNotice(t('wheel.spin.lastUnit').replace('{prize}', prize.title));
@@ -410,6 +484,11 @@ export function WheelPage() {
 
           <section className="wheel-stage-card" aria-label={t('wheel.stage.title')}>
             <div className="wheel-stage">
+              {wonPrizeTitle ? (
+                <p className="wheel-winner-badge" role="status">
+                  {wonPrizeTitle}
+                </p>
+              ) : null}
               <div className="wheel-pointer" aria-hidden="true" />
               <div
                 className={isSpinning ? 'prize-wheel spinning' : 'prize-wheel'}
@@ -421,7 +500,7 @@ export function WheelPage() {
                 onTransitionEnd={finishSpin}
               >
                 <button
-                  className="wheel-center"
+                  className={isFillingWheel ? 'wheel-center filling' : 'wheel-center'}
                   type="button"
                   disabled={!canSpin}
                   onClick={(event) => {
@@ -429,8 +508,24 @@ export function WheelPage() {
                     startSpin();
                   }}
                 >
-                  <IterationsIcon size={34} aria-hidden="true" />
-                  <span>{spinButtonLabel}</span>
+                  {isFillingWheel ? (
+                    <>
+                      <strong className="wheel-fill-counter">
+                        {filledSegmentCount}
+                      </strong>
+                      <span>
+                        {t('wheel.spin.loading').replace(
+                          '{count}',
+                          String(activeWheelSegments.length),
+                        )}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <IterationsIcon size={34} aria-hidden="true" />
+                      <span>{spinButtonLabel}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

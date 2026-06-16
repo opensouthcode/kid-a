@@ -80,6 +80,13 @@ export function ActivityLeadPage() {
   const leadActivityCompletedTime = leadActivity?.completedAt
     ? formatCompletionTime(leadActivity.completedAt)
     : '';
+  const hasJustCompletedActivity = lastCompletedKidId === confirmedKidId;
+  const shouldShowJustCompletedWheelShot =
+    hasJustCompletedActivity &&
+    completedActivities % 4 === 0 &&
+    completedActivities < passport.activities.length;
+  const shouldShowAlreadyCompletedWarning =
+    Boolean(leadActivity?.completedAt) && !hasJustCompletedActivity;
 
   useEffect(() => {
     if (currentUser.role !== 'lead') {
@@ -166,7 +173,7 @@ export function ActivityLeadPage() {
                   {shouldShowWheelReminder ? (
                     <p className="wheel-reminder">{t('lead.wheelReminder')}</p>
                   ) : null}
-                  {leadActivity?.completedAt ? (
+                  {shouldShowAlreadyCompletedWarning ? (
                     <p className="activity-done-warning" role="status">
                       <AlertIcon size={18} aria-hidden="true" />
                       {leadActivityCompletedTime
@@ -182,7 +189,14 @@ export function ActivityLeadPage() {
                       {t('lead.passportComplete')}
                     </p>
                   ) : null}
-                  {lastCompletedKidId === confirmedKidId ? (
+                  {shouldShowJustCompletedWheelShot ? (
+                    <p className="wheel-reminder" role="status">
+                      {t('lead.wheelShotAvailable')}
+                    </p>
+                  ) : null}
+                  {hasJustCompletedActivity &&
+                  !shouldShowJustCompletedWheelShot &&
+                  passportCompletedKidId !== confirmedKidId ? (
                     <p className="completion-message" role="status">
                       {t('lead.mark.success')}
                     </p>

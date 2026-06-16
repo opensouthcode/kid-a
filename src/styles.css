@@ -1583,6 +1583,25 @@ h2 {
   transform: translateX(-50%);
 }
 
+.wheel-winner-badge {
+  position: absolute;
+  top: -64px;
+  left: 50%;
+  z-index: 4;
+  min-width: min(360px, 90%);
+  margin: 0;
+  border: 2px solid #d48a00;
+  border-radius: 999px;
+  padding: 12px 18px;
+  background: linear-gradient(135deg, #fff4c2 0%, #ffd66b 100%);
+  color: #6f3d00;
+  font-size: clamp(1rem, 2.2vw, 1.5rem);
+  font-weight: 900;
+  text-align: center;
+  box-shadow: 0 14px 30px rgb(212 138 0 / 28%);
+  transform: translateX(-50%);
+}
+
 .prize-wheel {
   position: relative;
   display: grid;
@@ -1633,11 +1652,22 @@ h2 {
   cursor: not-allowed;
 }
 
+.wheel-center.filling:disabled {
+  background: #2d2418;
+  cursor: progress;
+}
+
 .wheel-center span {
   max-width: 96px;
   font-size: 0.86rem;
   line-height: 1.05;
   text-align: center;
+}
+
+.wheel-fill-counter {
+  color: #ffd66b;
+  font-size: clamp(2.2rem, 6vw, 4.2rem);
+  line-height: 0.9;
 }
 
 .wheel-alert {
