@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { PersonIcon, SmileyGrinIcon } from '@primer/octicons-react';
-import { useCurrentUser } from '../contexts/DataLayerContext';
+import { useCurrentUser, useResetCurrentUser } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { isSupportedLocale, supportedLocales } from '../i18n/messages';
 
@@ -47,6 +47,7 @@ export function TopBar({
 }: TopBarProps) {
   const { t } = useI18n();
   const currentUser = useCurrentUser();
+  const resetCurrentUser = useResetCurrentUser();
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -81,6 +82,7 @@ export function TopBar({
 
   const logOut = () => {
     setIsUserMenuOpen(false);
+    resetCurrentUser();
     onLogout?.();
   };
 

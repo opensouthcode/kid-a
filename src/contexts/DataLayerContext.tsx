@@ -98,6 +98,11 @@ export type Kid = {
 
 export type CurrentUser =
   | {
+      id: 'guest';
+      name: 'Guest';
+      role: 'guest';
+    }
+  | {
       id: string;
       kid: Kid;
       name: string;
@@ -124,6 +129,7 @@ type DataLayerContextValue = {
   refreshPrizes: () => Prize[];
   reloadPassportActivities: () => void;
   users: User[];
+  resetCurrentUser: () => void;
   setCurrentUser: (user: Kid | User) => void;
   updatePrize: (prizeId: string, updates: PrizeSettingsUpdate) => void;
 };
@@ -207,6 +213,11 @@ function getDefaultUser() {
 }
 
 const defaultUser = getDefaultUser();
+const guestUser: CurrentUser = {
+  id: 'guest',
+  name: 'Guest',
+  role: 'guest',
+};
 
 function getDefaultKid() {
   const defaultKid = initialKids[0];
@@ -263,13 +274,15 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     () => clonePassportActivities(initialPassportActivitiesByUser),
   );
   const [selectedCurrentUser, setSelectedCurrentUser] =
-    useState<CurrentUser>(wrapKid(defaultKid));
+    useState<CurrentUser>(guestUser);
   const prizes = useMemo<Prize[]>(
     () => syncPrizeGivenCache(prizeList, prizeAwards),
     [prizeAwards, prizeList],
   );
   const currentUser =
-    selectedCurrentUser.role === 'kid'
+    selectedCurrentUser.role === 'guest'
+      ? guestUser
+      : selectedCurrentUser.role === 'kid'
       ? wrapKid(
           kidList.find((kid) => kid.id === selectedCurrentUser.id) ?? defaultKid,
         )
@@ -294,6 +307,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     }
 
     setSelectedCurrentUser(nextCurrentUser);
+  };
+  const resetCurrentUser = () => {
+    setSelectedCurrentUser(guestUser);
   };
   const addRegisteredKid = (registration: RegistrationInput) => {
     const kidId = getNextKidId(kidList, conferenceJson.kidIdPrefix);
@@ -580,6 +596,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       prizes,
       refreshPrizes,
       reloadPassportActivities,
+      resetCurrentUser,
       setCurrentUser,
       updatePrize,
       users: userList,
@@ -686,4 +703,8 @@ export function useUpdatePrize() {
 
 export function useSetCurrentUser() {
   return useDataLayer().setCurrentUser;
+}
+
+export function useResetCurrentUser() {
+  return useDataLayer().resetCurrentUser;
 }

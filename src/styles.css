@@ -104,6 +104,15 @@ h2 {
   margin-top: 28px;
 }
 
+.welcome-friends-list {
+  max-width: 720px;
+  margin-top: 28px;
+}
+
+.welcome-friends-header {
+  margin-bottom: 10px;
+}
+
 .welcome-activity-list h2 {
   margin-bottom: 10px;
   color: #5a4228;
@@ -113,6 +122,24 @@ h2 {
   text-transform: uppercase;
 }
 
+.welcome-friends-list h2 {
+  margin-bottom: 0;
+  color: #5a4228;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.welcome-friends-list ol {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .welcome-activity-list ol {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -120,6 +147,54 @@ h2 {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+.welcome-friends-list li {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid rgb(78 111 43 / 24%);
+  border-radius: 18px;
+  padding: 8px;
+  background: rgb(255 250 240 / 52%);
+}
+
+.welcome-friend-button {
+  display: flex;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  min-width: 0;
+  flex: 1;
+  gap: 8px;
+  align-items: center;
+  color: inherit;
+  cursor: pointer;
+  font-weight: 800;
+  padding: 0;
+  text-decoration: none;
+}
+
+.welcome-friend-button .progress-counter {
+  margin-left: auto;
+}
+
+.welcome-friend-button .progress-counter-completed,
+.welcome-friend-button .progress-counter-divider {
+  font-size: 1.35rem;
+}
+
+.welcome-friend-button:hover strong,
+.welcome-friend-button:focus-visible strong {
+  text-decoration: underline;
+}
+
+.welcome-find-button {
+  margin-top: 12px;
+}
+
+.welcome-friends-list .kid-gender-icon {
+  transform: none;
 }
 
 .welcome-activity-list a {
@@ -488,6 +563,59 @@ h2 {
   opacity: 0.72;
 }
 
+.passport-nav-button.enabled {
+  cursor: pointer;
+  opacity: 1;
+}
+
+.passport-nav-button.enabled:hover,
+.passport-nav-button.enabled:focus-visible {
+  background: rgb(78 111 43 / 12%);
+}
+
+.passport-title-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.passport-title-row h1 {
+  margin-right: auto;
+}
+
+.friend-star-button {
+  display: inline-grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #8c5a18;
+  cursor: pointer;
+}
+
+.friend-star-button svg {
+  color: #5a4228;
+  fill: transparent;
+  stroke: #5a4228;
+  stroke-width: 1.2px;
+}
+
+.friend-star-button:hover,
+.friend-star-button:focus-visible {
+  background: rgb(255 216 77 / 22%);
+}
+
+.friend-star-button.active {
+  background: transparent;
+}
+
+.friend-star-button.active svg {
+  fill: #ffd84d;
+}
+
 .toolbar-icon-button {
   display: inline-grid;
   width: 42px;
@@ -578,6 +706,7 @@ h2 {
 }
 
 .kid-qr-dialog {
+  position: relative;
   display: grid;
   gap: 14px;
   justify-items: center;
@@ -603,6 +732,136 @@ h2 {
 
 .kid-qr-dialog .secondary-button {
   margin: 0;
+}
+
+.dialog-close-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid rgb(140 107 63 / 42%);
+  border-radius: 50%;
+  background: #fffaf0;
+  color: #5a4228;
+  cursor: pointer;
+}
+
+.dialog-close-button:hover,
+.dialog-close-button:focus-visible {
+  background: rgb(78 111 43 / 12%);
+}
+
+.friends-dialog {
+  justify-items: stretch;
+  width: min(760px, 100%);
+  text-align: left;
+}
+
+.friends-dialog .welcome-friends-list {
+  margin-top: 0;
+}
+
+.friends-dialog .welcome-find-button {
+  margin-top: 12px;
+}
+
+.friend-passport-dialog {
+  justify-items: stretch;
+  width: min(760px, 100%);
+  text-align: left;
+}
+
+.friend-picker-panel {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  border: 1px solid rgb(78 111 43 / 24%);
+  border-radius: 24px;
+  padding: 16px;
+  background: rgb(255 250 240 / 52%);
+}
+
+.friend-picker-panel .kid-acquisition-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 0.7fr);
+}
+
+.friend-passport-view {
+  display: grid;
+  gap: 14px;
+}
+
+.friend-passport-header {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.friend-passport-header > div {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  gap: 10px;
+  align-items: center;
+}
+
+.friend-passport-header .kid-gender-icon {
+  transform: none;
+}
+
+.friend-passport-header h3 {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  line-height: 1;
+}
+
+.friend-passport-header .progress-counter {
+  flex: 0 0 auto;
+}
+
+.friend-passport-header .progress-counter-completed,
+.friend-passport-header .progress-counter-divider {
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+}
+
+.friend-passport-activity-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  max-height: min(460px, 48vh);
+  overflow: auto;
+}
+
+.friend-passport-activity {
+  display: grid;
+  min-height: 72px;
+  align-content: start;
+  gap: 6px;
+  border: 1px solid rgb(78 111 43 / 18%);
+  border-radius: 16px;
+  padding: 10px;
+  background: #fff;
+  color: #5a4228;
+}
+
+.friend-passport-activity.completed {
+  border-color: #4e6f2b;
+  background: #e5f0d0;
+  color: #2d2418;
+}
+
+.friend-passport-activity span {
+  color: #4e6f2b;
+  font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.friend-passport-activity svg {
+  margin-top: auto;
+  color: #4e6f2b;
 }
 
 .activity-section {

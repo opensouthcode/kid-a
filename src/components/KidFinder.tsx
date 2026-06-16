@@ -5,13 +5,48 @@ import {
   type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
+import type { MessageKey } from '../i18n/messages';
 import { QrReader } from './QrReader';
 
+type KidFinderMessages = {
+  confirmButton: MessageKey;
+  confirmKid: MessageKey;
+  invalidKidQr: MessageKey;
+  kidNotFound: MessageKey;
+  manualKid: MessageKey;
+  manualKidSearch: MessageKey;
+  scanApproved: MessageKey;
+  scannerActive: MessageKey;
+  scanQr: MessageKey;
+  scanQrShort: MessageKey;
+};
+
 type KidFinderProps = {
+  blockedKidId?: string;
+  blockedKidMessage?: MessageKey;
+  messages?: KidFinderMessages;
   onKidSelected: (kid: Kid) => void;
 };
 
-export function KidFinder({ onKidSelected }: KidFinderProps) {
+const defaultMessages: KidFinderMessages = {
+  confirmButton: 'lead.manualKid.confirmButton',
+  confirmKid: 'lead.manualKid.confirm',
+  invalidKidQr: 'lead.error.invalidKidQr',
+  kidNotFound: 'lead.error.kidNotFound',
+  manualKid: 'lead.manualKid',
+  manualKidSearch: 'lead.manualKid.search',
+  scanApproved: 'lead.scan.approved',
+  scannerActive: 'lead.scan.active',
+  scanQr: 'lead.scan.title',
+  scanQrShort: 'lead.scan.short',
+};
+
+export function KidFinder({
+  blockedKidId = '',
+  blockedKidMessage,
+  messages = defaultMessages,
+  onKidSelected,
+}: KidFinderProps) {
   const findKidByManualNumber = useFindKidByManualNumber();
   const findKidByQrIdData = useFindKidByQrIdData();
   const { t } = useI18n();
@@ -30,7 +65,12 @@ export function KidFinder({ onKidSelected }: KidFinderProps) {
     const matchingKid = findKidByQrIdData(qrPayload);
 
     if (!matchingKid) {
-      setFormError(t('lead.error.invalidKidQr'));
+      setFormError(t(messages.invalidKidQr));
+      return;
+    }
+
+    if (matchingKid.id === blockedKidId && blockedKidMessage) {
+      setFormError(t(blockedKidMessage));
       return;
     }
 
@@ -44,7 +84,13 @@ export function KidFinder({ onKidSelected }: KidFinderProps) {
 
     if (!matchingKid) {
       setPendingKid(undefined);
-      setFormError(t('lead.error.kidNotFound'));
+      setFormError(t(messages.kidNotFound));
+      return;
+    }
+
+    if (matchingKid.id === blockedKidId && blockedKidMessage) {
+      setPendingKid(undefined);
+      setFormError(t(blockedKidMessage));
       return;
     }
 
@@ -60,10 +106,10 @@ export function KidFinder({ onKidSelected }: KidFinderProps) {
           cameraPreview: t('scanner.cameraPreview'),
           cameraStartError: t('scanner.error.cameraStart'),
           cameraUnsupportedError: t('scanner.error.cameraUnsupported'),
-          scanApproved: t('lead.scan.approved'),
-          scannerActive: t('lead.scan.active'),
-          scanQr: t('lead.scan.title'),
-          scanQrShort: t('lead.scan.short'),
+          scanApproved: t(messages.scanApproved),
+          scannerActive: t(messages.scannerActive),
+          scanQr: t(messages.scanQr),
+          scanQrShort: t(messages.scanQrShort),
           stopScanner: t('scanner.stopScanner'),
         }}
         onError={(message) => setFormError(message)}
@@ -72,7 +118,7 @@ export function KidFinder({ onKidSelected }: KidFinderProps) {
       <div className="manual-kid-panel">
         <form className="manual-kid-search" onSubmit={searchManualKid}>
           <label>
-            {t('lead.manualKid')}
+            {t(messages.manualKid)}
             <input
               inputMode="numeric"
               pattern="[0-9]*"
@@ -84,20 +130,20 @@ export function KidFinder({ onKidSelected }: KidFinderProps) {
             />
           </label>
           <button className="secondary-button" type="submit">
-            {t('lead.manualKid.search')}
+            {t(messages.manualKidSearch)}
           </button>
         </form>
         {pendingKid ? (
           <div className="kid-confirmation" role="status">
             <p>
-              {t('lead.manualKid.confirm').replace('{nickname}', pendingKid.name)}
+              {t(messages.confirmKid).replace('{nickname}', pendingKid.name)}
             </p>
             <button
               className="access-button"
               type="button"
               onClick={() => selectKid(pendingKid)}
             >
-              {t('lead.manualKid.confirmButton')}
+              {t(messages.confirmButton)}
             </button>
           </div>
         ) : null}
