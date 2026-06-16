@@ -5,6 +5,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type TransitionEvent,
 } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -41,6 +42,14 @@ const outOfStockColor = '#c8c2b8';
 type SpinNotice = {
   message: string;
   type: 'success' | 'warning';
+};
+
+type WonPrize = {
+  awardId: string;
+  dx: number;
+  dy: number;
+  isFlying: boolean;
+  title: string;
 };
 
 function getWeightedSegments(prizes: Prize[]) {
@@ -106,6 +115,10 @@ export function WheelPage() {
   const { t } = useI18n();
   const fillIntervalRef = useRef<number | undefined>(undefined);
   const fillTimeoutRef = useRef<number | undefined>(undefined);
+  const winnerBadgeRef = useRef<HTMLParagraphElement>(null);
+  const winnerHoldTimeoutRef = useRef<number | undefined>(undefined);
+  const winnerClearTimeoutRef = useRef<number | undefined>(undefined);
+  const awardItemRefs = useRef<Record<string, HTMLLIElement | null>>({});
   const [animatedWheelSegments, setAnimatedWheelSegments] = useState<
     Prize[] | undefined
   >();
@@ -113,7 +126,7 @@ export function WheelPage() {
   const [selectedKidId, setSelectedKidId] = useState('');
   const [pendingPrizeId, setPendingPrizeId] = useState('');
   const [managementError, setManagementError] = useState('');
-  const [wonPrizeTitle, setWonPrizeTitle] = useState('');
+  const [wonPrize, setWonPrize] = useState<WonPrize | undefined>();
   const [isPrizeManagerOpen, setIsPrizeManagerOpen] = useState(false);
   const [isFillingWheel, setIsFillingWheel] = useState(false);
   const [spinNotice, setSpinNotice] = useState<SpinNotice>();
@@ -174,6 +187,8 @@ export function WheelPage() {
     () => () => {
       window.clearInterval(fillIntervalRef.current);
       window.clearTimeout(fillTimeoutRef.current);
+      window.clearTimeout(winnerHoldTimeoutRef.current);
+      window.clearTimeout(winnerClearTimeoutRef.current);
     },
     [],
   );
@@ -209,6 +224,8 @@ export function WheelPage() {
   const selectKid = (kid: Kid) => {
     window.clearInterval(fillIntervalRef.current);
     window.clearTimeout(fillTimeoutRef.current);
+    window.clearTimeout(winnerHoldTimeoutRef.current);
+    window.clearTimeout(winnerClearTimeoutRef.current);
     setAnimatedWheelSegments(undefined);
     setFilledSegmentCount(0);
     setIsFillingWheel(false);
@@ -216,11 +233,13 @@ export function WheelPage() {
     setPendingPrizeId('');
     setSpinNotice(undefined);
     setStockNotice('');
-    setWonPrizeTitle('');
+    setWonPrize(undefined);
   };
   const clearKid = () => {
     window.clearInterval(fillIntervalRef.current);
     window.clearTimeout(fillTimeoutRef.current);
+    window.clearTimeout(winnerHoldTimeoutRef.current);
+    window.clearTimeout(winnerClearTimeoutRef.current);
     setAnimatedWheelSegments(undefined);
     setFilledSegmentCount(0);
     setIsFillingWheel(false);
@@ -228,11 +247,13 @@ export function WheelPage() {
     setPendingPrizeId('');
     setSpinNotice(undefined);
     setStockNotice('');
-    setWonPrizeTitle('');
+    setWonPrize(undefined);
   };
   const canSpin =
     Boolean(selectedKid) &&
     Boolean(shotSummary?.availableShots) &&
+    Boolean(animatedWheelSegments?.length) &&
+    filledSegmentCount === animatedWheelSegments?.length &&
     hasAnyAvailableStock &&
     !isFillingWheel &&
     !isSpinning;
@@ -241,12 +262,70 @@ export function WheelPage() {
       ? t('wheel.spin.retry')
       : t('wheel.spin.start');
 
-  const startSpin = () => {
-    if (isSpinning) {
+  const fillWheel = ({ clearWinner = false }: { clearWinner?: boolean } = {}) => {
+    const refreshedPrizes = refreshPrizes();
+    const nextWheelSegments = getWeightedSegments(refreshedPrizes);
+
+    if (nextWheelSegments.length === 0) {
+      setSpinNotice({
+        message: t('wheel.spin.noStock'),
+        type: 'warning',
+      });
       return;
     }
 
-    if (isFillingWheel) {
+    window.clearInterval(fillIntervalRef.current);
+    window.clearTimeout(fillTimeoutRef.current);
+    setAnimatedWheelSegments(nextWheelSegments);
+    setFilledSegmentCount(0);
+    setIsFillingWheel(true);
+    setSpinNotice(undefined);
+    setStockNotice('');
+
+    if (clearWinner) {
+      setWonPrize(undefined);
+    }
+
+    const fillDuration = 3000;
+    const segmentInterval = Math.max(24, fillDuration / nextWheelSegments.length);
+
+    fillIntervalRef.current = window.setInterval(() => {
+      setFilledSegmentCount((currentCount) =>
+        Math.min(currentCount + 1, nextWheelSegments.length),
+      );
+    }, segmentInterval);
+
+    fillTimeoutRef.current = window.setTimeout(() => {
+      window.clearInterval(fillIntervalRef.current);
+      setFilledSegmentCount(nextWheelSegments.length);
+
+      setIsFillingWheel(false);
+    }, fillDuration);
+  };
+
+  useEffect(() => {
+    if (
+      !selectedKidId ||
+      !shotSummary?.availableShots ||
+      isSpinning ||
+      isFillingWheel ||
+      animatedWheelSegments
+    ) {
+      return;
+    }
+
+    fillWheel({ clearWinner: !wonPrize });
+  }, [
+    animatedWheelSegments,
+    isFillingWheel,
+    isSpinning,
+    selectedKidId,
+    shotSummary?.availableShots,
+    wonPrize,
+  ]);
+
+  const startSpin = () => {
+    if (isSpinning || isFillingWheel) {
       return;
     }
 
@@ -274,10 +353,15 @@ export function WheelPage() {
       return;
     }
 
-    const refreshedPrizes = refreshPrizes();
-    const nextWheelSegments = getWeightedSegments(refreshedPrizes);
+    if (!animatedWheelSegments?.length) {
+      fillWheel({ clearWinner: true });
+      return;
+    }
 
-    if (nextWheelSegments.length === 0) {
+    const segmentIndex = Math.floor(Math.random() * animatedWheelSegments.length);
+    const segment = animatedWheelSegments[segmentIndex];
+
+    if (!segment) {
       setSpinNotice({
         message: t('wheel.spin.noStock'),
         type: 'warning',
@@ -285,50 +369,16 @@ export function WheelPage() {
       return;
     }
 
-    window.clearInterval(fillIntervalRef.current);
-    window.clearTimeout(fillTimeoutRef.current);
-    setAnimatedWheelSegments(nextWheelSegments);
-    setFilledSegmentCount(0);
-    setIsFillingWheel(true);
+    const segmentAngle = 360 / animatedWheelSegments.length;
+    const segmentCenter = segmentIndex * segmentAngle + segmentAngle / 2;
+    const nextSpinRound = spinRound + 7;
+
+    setPendingPrizeId(segment.id);
+    setIsSpinning(true);
     setSpinNotice(undefined);
     setStockNotice('');
-    setWonPrizeTitle('');
-
-    const fillDuration = 3000;
-    const segmentInterval = Math.max(24, fillDuration / nextWheelSegments.length);
-
-    fillIntervalRef.current = window.setInterval(() => {
-      setFilledSegmentCount((currentCount) =>
-        Math.min(currentCount + 1, nextWheelSegments.length),
-      );
-    }, segmentInterval);
-
-    fillTimeoutRef.current = window.setTimeout(() => {
-      window.clearInterval(fillIntervalRef.current);
-      setFilledSegmentCount(nextWheelSegments.length);
-
-      const segmentIndex = Math.floor(Math.random() * nextWheelSegments.length);
-      const segment = nextWheelSegments[segmentIndex];
-
-      if (!segment) {
-        setIsFillingWheel(false);
-        setSpinNotice({
-          message: t('wheel.spin.noStock'),
-          type: 'warning',
-        });
-        return;
-      }
-
-      const segmentAngle = 360 / nextWheelSegments.length;
-      const segmentCenter = segmentIndex * segmentAngle + segmentAngle / 2;
-      const nextSpinRound = spinRound + 5;
-
-      setPendingPrizeId(segment.id);
-      setIsFillingWheel(false);
-      setIsSpinning(true);
-      setSpinRound(nextSpinRound);
-      setRotation(360 * nextSpinRound - segmentCenter);
-    }, fillDuration);
+    setSpinRound(nextSpinRound);
+    setRotation(360 * nextSpinRound - segmentCenter);
   };
 
   const finishPendingSpin = useCallback(() => {
@@ -362,11 +412,17 @@ export function WheelPage() {
 
     const remainingAfterAward = getPrizeRemaining(prize) - 1;
 
-    awardPrizeToKid(selectedKid.id, prize.id);
+    const award = awardPrizeToKid(selectedKid.id, prize.id);
     setIsSpinning(false);
     setAnimatedWheelSegments(undefined);
     setPendingPrizeId('');
-    setWonPrizeTitle(prize.title);
+    setWonPrize({
+      awardId: award.id,
+      dx: 0,
+      dy: 0,
+      isFlying: false,
+      title: prize.title,
+    });
     setSpinNotice(undefined);
 
     if (remainingAfterAward === 0) {
@@ -375,11 +431,55 @@ export function WheelPage() {
   }, [awardPrizeToKid, pendingPrizeId, prizes, selectedKid, t]);
 
   useEffect(() => {
+    if (!wonPrize || wonPrize.isFlying) {
+      return;
+    }
+
+    winnerHoldTimeoutRef.current = window.setTimeout(() => {
+      const winnerBadge = winnerBadgeRef.current;
+      const targetAward = awardItemRefs.current[wonPrize.awardId];
+
+      if (!winnerBadge || !targetAward) {
+        return;
+      }
+
+      const badgeRect = winnerBadge.getBoundingClientRect();
+      const targetRect = targetAward.getBoundingClientRect();
+      const dx =
+        targetRect.left +
+        targetRect.width / 2 -
+        (badgeRect.left + badgeRect.width / 2);
+      const dy =
+        targetRect.top +
+        targetRect.height / 2 -
+        (badgeRect.top + badgeRect.height / 2);
+
+      setWonPrize((currentWinner) =>
+        currentWinner && currentWinner.awardId === wonPrize.awardId
+          ? {
+              ...currentWinner,
+              dx,
+              dy,
+              isFlying: true,
+            }
+          : currentWinner,
+      );
+      winnerClearTimeoutRef.current = window.setTimeout(() => {
+        setWonPrize((currentWinner) =>
+          currentWinner?.awardId === wonPrize.awardId ? undefined : currentWinner,
+        );
+      }, 3000);
+    }, 700);
+
+    return () => window.clearTimeout(winnerHoldTimeoutRef.current);
+  }, [wonPrize]);
+
+  useEffect(() => {
     if (!isSpinning || !pendingPrizeId) {
       return;
     }
 
-    const timeoutId = window.setTimeout(finishPendingSpin, 2600);
+    const timeoutId = window.setTimeout(finishPendingSpin, 5000);
 
     return () => window.clearTimeout(timeoutId);
   }, [finishPendingSpin, isSpinning, pendingPrizeId]);
@@ -473,6 +573,9 @@ export function WheelPage() {
                           award.prizeKind === 'final' ? 'final-award' : undefined
                         }
                         key={award.id}
+                        ref={(element) => {
+                          awardItemRefs.current[award.id] = element;
+                        }}
                       >
                         {award.prizeTitle}
                       </li>
@@ -490,9 +593,23 @@ export function WheelPage() {
 
           <section className="wheel-stage-card" aria-label={t('wheel.stage.title')}>
             <div className="wheel-stage">
-              {wonPrizeTitle ? (
-                <p className="wheel-winner-badge" role="status">
-                  {wonPrizeTitle}
+              {wonPrize ? (
+                <p
+                  className={
+                    wonPrize.isFlying
+                      ? 'wheel-winner-badge flying'
+                      : 'wheel-winner-badge'
+                  }
+                  ref={winnerBadgeRef}
+                  role="status"
+                  style={
+                    {
+                      '--winner-dx': `${wonPrize.dx}px`,
+                      '--winner-dy': `${wonPrize.dy}px`,
+                    } as CSSProperties
+                  }
+                >
+                  {wonPrize.title}
                 </p>
               ) : null}
               <div className="wheel-pointer" aria-hidden="true" />

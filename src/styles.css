@@ -1602,6 +1602,29 @@ h2 {
   transform: translateX(-50%);
 }
 
+.wheel-winner-badge.flying {
+  animation: winner-badge-to-list 3000ms cubic-bezier(0.16, 0.8, 0.22, 1)
+    forwards;
+  pointer-events: none;
+}
+
+@keyframes winner-badge-to-list {
+  0% {
+    opacity: 1;
+    transform: translateX(-50%) translate(0, 0) scale(1);
+  }
+
+  72% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateX(-50%) translate(var(--winner-dx), var(--winner-dy))
+      scale(0.82);
+  }
+}
+
 .prize-wheel {
   position: relative;
   display: grid;
@@ -1614,7 +1637,7 @@ h2 {
     0 24px 48px rgb(45 36 24 / 22%),
     inset 0 0 0 8px rgb(255 255 255 / 36%);
   cursor: pointer;
-  transition: transform 2400ms cubic-bezier(0.12, 0.86, 0.18, 1);
+  transition: transform 4800ms cubic-bezier(0.08, 0.82, 0.12, 1);
 }
 
 .prize-wheel::before {
