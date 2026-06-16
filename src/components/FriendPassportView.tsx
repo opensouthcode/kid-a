@@ -1,10 +1,10 @@
-import { CheckCircleFillIcon } from '@primer/octicons-react';
 import {
   useGetPassportForKid,
   type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { FriendStarButton } from './FriendStarButton';
+import { PassportActivityMosaic } from './PassportActivityMosaic';
 import { ProgressCounter } from './ProgressCounter';
 
 type FriendPassportViewProps = {
@@ -36,26 +36,10 @@ export function FriendPassportView({ kid }: FriendPassportViewProps) {
           total={passport.activities.length}
         />
       </div>
-      <div className="friend-passport-activity-grid">
-        {passport.activities.map((activity) => (
-          <article
-            className={
-              activity.completedAt
-                ? 'friend-passport-activity completed'
-                : 'friend-passport-activity'
-            }
-            key={activity.id}
-          >
-            <span>{activity.id.toString().padStart(2, '0')}</span>
-            {activity.completedAt ? (
-              <CheckCircleFillIcon
-                aria-label={t('kid.activity.completed')}
-                size={18}
-              />
-            ) : null}
-          </article>
-        ))}
-      </div>
+      <PassportActivityMosaic
+        activities={passport.activities}
+        className="friend-passport-mosaic"
+      />
     </section>
   );
 }
