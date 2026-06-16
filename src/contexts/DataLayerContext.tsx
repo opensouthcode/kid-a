@@ -108,6 +108,7 @@ export type CurrentUser =
 type DataLayerContextValue = {
   activities: Activity[];
   addRegisteredKid: (registration: RegistrationInput) => Kid;
+  addPrize: (title: string) => Prize;
   awardPassportCompletionPrize: (kidId: string) => PrizeAward;
   awardPrizeToKid: (kidId: string, prizeId: string) => PrizeAward;
   conference: ConferenceData;
@@ -179,6 +180,19 @@ function normalizePrizeCount(value: number) {
   }
 
   return Math.max(0, Math.floor(value));
+}
+
+function createPrizeId(prizes: Prize[]) {
+  const nextPrizeNumber = prizes.length + 1;
+  let candidateId = `prize-${nextPrizeNumber}`;
+  let suffix = nextPrizeNumber;
+
+  while (prizes.some((prize) => prize.id === candidateId)) {
+    suffix += 1;
+    candidateId = `prize-${suffix}`;
+  }
+
+  return candidateId;
 }
 
 function getDefaultUser() {
@@ -299,6 +313,25 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     }));
 
     return registeredKid;
+  };
+  const addPrize = (title: string) => {
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) {
+      throw new Error('Prize title cannot be empty');
+    }
+
+    const createdPrize: Prize = {
+      given: 0,
+      id: createPrizeId(prizeList),
+      initialUnits: 1,
+      kind: 'normal',
+      title: trimmedTitle,
+    };
+
+    setPrizeList((currentPrizes) => [...currentPrizes, createdPrize]);
+
+    return createdPrize;
   };
   const getPassportForKid = (kidId: string): PassportData => ({
     activities: passportActivitiesByUser[kidId] ?? [],
@@ -527,6 +560,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     () => ({
       activities: initialActivities,
       addRegisteredKid,
+      addPrize,
       awardPassportCompletionPrize,
       awardPrizeToKid,
       conference: conferenceJson,
@@ -616,6 +650,10 @@ export function useUsersData() {
 
 export function useAddRegisteredKid() {
   return useDataLayer().addRegisteredKid;
+}
+
+export function useAddPrize() {
+  return useDataLayer().addPrize;
 }
 
 export function useMarkPassportActivityDone() {

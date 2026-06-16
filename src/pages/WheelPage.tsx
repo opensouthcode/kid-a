@@ -13,6 +13,7 @@ import { ProgressCounter } from '../components/ProgressCounter';
 import { TopBar } from '../components/TopBar';
 import {
   getPrizeRemaining,
+  useAddPrize,
   useAwardPassportCompletionPrize,
   useAwardPrizeToKid,
   useCurrentUser,
@@ -91,6 +92,7 @@ function createWheelBackground(prizes: Prize[], segments: Prize[]) {
 }
 
 export function WheelPage() {
+  const addPrize = useAddPrize();
   const awardPassportCompletionPrize = useAwardPassportCompletionPrize();
   const awardPrizeToKid = useAwardPrizeToKid();
   const currentUser = useCurrentUser();
@@ -400,6 +402,10 @@ export function WheelPage() {
     updatePrize(prizeId, updates);
     setManagementError('');
   };
+  const addManagedPrize = () => {
+    addPrize(t('wheel.manage.newPrize'));
+    setManagementError('');
+  };
 
   if (currentUser.role !== 'wheel') {
     return null;
@@ -571,6 +577,13 @@ export function WheelPage() {
                   <h2 id="prize-manager-title">{t('wheel.manage.title')}</h2>
                 </div>
                 <p>{t('wheel.manage.description')}</p>
+                <button
+                  className="secondary-button prize-manager-add"
+                  type="button"
+                  onClick={addManagedPrize}
+                >
+                  {t('wheel.manage.addPrize')}
+                </button>
                 <button
                   className="secondary-button prize-manager-close"
                   type="button"

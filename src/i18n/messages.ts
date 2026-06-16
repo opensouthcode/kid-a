@@ -140,6 +140,8 @@ export const messages = {
     'wheel.manage.title': 'Manage prizes',
     'wheel.manage.open': 'Stock',
     'wheel.manage.close': 'Close',
+    'wheel.manage.addPrize': 'Add prize',
+    'wheel.manage.newPrize': 'New prize',
     'wheel.manage.description':
       'Each remaining unit adds one equal-size wheel sector. Valuable prizes use fewer sectors; final prizes are awarded only for a complete passport.',
     'wheel.manage.prizeTitle': 'Prize',
@@ -294,6 +296,8 @@ export const messages = {
     'wheel.manage.title': 'Gestionar premios',
     'wheel.manage.open': 'Stock',
     'wheel.manage.close': 'Cerrar',
+    'wheel.manage.addPrize': 'Añadir premio',
+    'wheel.manage.newPrize': 'Premio nuevo',
     'wheel.manage.description':
       'Cada unidad restante añade un sector de ruleta del mismo tamaño. Los premios valiosos usan menos sectores; los premios finales solo se entregan al completar el pasaporte.',
     'wheel.manage.prizeTitle': 'Premio',

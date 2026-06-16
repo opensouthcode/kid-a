@@ -1733,6 +1733,7 @@ h2 {
   font-weight: 800;
 }
 
+.prize-manager-add,
 .prize-manager-close {
   flex: 0 0 auto;
   margin: 0;
