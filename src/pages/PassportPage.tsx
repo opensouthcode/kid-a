@@ -197,7 +197,14 @@ export function PassportPage() {
               <span>{t('kid.wheel.prizes')}</span>
               <ol>
                 {wheelShotSummary.awards.map((award) => (
-                  <li key={award.id}>{award.prizeTitle}</li>
+                  <li
+                    className={
+                      award.prizeKind === 'final' ? 'final-award' : undefined
+                    }
+                    key={award.id}
+                  >
+                    {award.prizeTitle}
+                  </li>
                 ))}
               </ol>
             </div>

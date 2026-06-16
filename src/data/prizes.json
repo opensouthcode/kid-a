@@ -4,34 +4,34 @@
     "title": "Sticker pack",
     "initialUnits": 18,
     "given": 1,
-    "isValuable": false
+    "kind": "normal"
   },
   {
     "id": "badges",
     "title": "OpenSouthCode badge",
     "initialUnits": 12,
     "given": 1,
-    "isValuable": false
+    "kind": "normal"
   },
   {
     "id": "notebook",
     "title": "Robot notebook",
     "initialUnits": 8,
     "given": 1,
-    "isValuable": false
+    "kind": "normal"
   },
   {
     "id": "tshirt",
-    "title": "Kid-A T-shirt",
+    "title": "OpenSouthCode T-shirt",
     "initialUnits": 3,
     "given": 0,
-    "isValuable": true
+    "kind": "final"
   },
   {
     "id": "plushie",
     "title": "Robot plushie",
     "initialUnits": 2,
     "given": 0,
-    "isValuable": true
+    "kind": "valuable"
   }
 ]

@@ -1531,6 +1531,14 @@ h2 {
   font-weight: 800;
 }
 
+.wheel-award-list li.final-award,
+.passport-prize-history li.final-award {
+  border-color: #d48a00;
+  background: linear-gradient(135deg, #fff4c2 0%, #ffd66b 100%);
+  color: #6f3d00;
+  box-shadow: 0 8px 20px rgb(212 138 0 / 24%);
+}
+
 .wheel-kid-card .secondary-button {
   justify-self: start;
   margin: 0;
@@ -1748,6 +1756,7 @@ h2 {
 
 .prize-row input[type="text"],
 .prize-row input[type="number"],
+.prize-row select,
 .prize-row input:not([type]) {
   width: 100%;
   border: 1px solid #8c6b3f;
@@ -1758,16 +1767,6 @@ h2 {
   font: inherit;
   letter-spacing: normal;
   text-transform: none;
-}
-
-.valuable-toggle {
-  align-items: center;
-  grid-template-columns: auto 1fr;
-  padding-bottom: 10px;
-}
-
-.valuable-toggle input {
-  accent-color: #4e6f2b;
 }
 
 .prize-given {
@@ -1890,6 +1889,13 @@ h2 {
   padding: 8px 12px;
   background: #eef5df;
   font-weight: 800;
+}
+
+.passport-prize-history li.final-award {
+  border-color: #d48a00;
+  background: linear-gradient(135deg, #fff4c2 0%, #ffd66b 100%);
+  color: #6f3d00;
+  box-shadow: 0 8px 20px rgb(212 138 0 / 24%);
 }
 
 @media (max-width: 720px) {

@@ -41,22 +41,24 @@ type SpinNotice = {
 };
 
 function getWeightedSegments(prizes: Prize[]) {
-  return prizes.flatMap((prize) =>
-    Array.from(
-      {
-        length:
-          getPrizeRemaining(prize) > 0
-            ? Math.max(
-                1,
-                prize.isValuable
-                  ? Math.ceil(getPrizeRemaining(prize) / 2)
-                  : getPrizeRemaining(prize),
-              )
-            : 1,
-      },
-      () => prize,
-    ),
-  );
+  return prizes
+    .filter((prize) => prize.kind !== 'final')
+    .flatMap((prize) =>
+      Array.from(
+        {
+          length:
+            getPrizeRemaining(prize) > 0
+              ? Math.max(
+                  1,
+                  prize.kind === 'valuable'
+                    ? Math.ceil(getPrizeRemaining(prize) / 2)
+                    : getPrizeRemaining(prize),
+                )
+              : 1,
+        },
+        () => prize,
+      ),
+    );
 }
 
 function getPrizeColor(prizes: Prize[], prize: Prize) {
@@ -100,7 +102,6 @@ export function WheelPage() {
   const [selectedKidId, setSelectedKidId] = useState('');
   const [pendingPrizeId, setPendingPrizeId] = useState('');
   const [managementError, setManagementError] = useState('');
-  const [completionNotice, setCompletionNotice] = useState('');
   const [isPrizeManagerOpen, setIsPrizeManagerOpen] = useState(false);
   const [spinNotice, setSpinNotice] = useState<SpinNotice>();
   const [stockNotice, setStockNotice] = useState('');
@@ -121,7 +122,7 @@ export function WheelPage() {
   const isPassportComplete =
     totalActivities > 0 && completedActivities === totalActivities;
   const hasAnyAvailableStock = prizes.some(
-    (prize) => getPrizeRemaining(prize) > 0,
+    (prize) => prize.kind !== 'final' && getPrizeRemaining(prize) > 0,
   );
   const wheelSegments = useMemo(() => getWeightedSegments(prizes), [prizes]);
   const wheelBackground = useMemo(
@@ -157,28 +158,13 @@ export function WheelPage() {
     }
 
     if (shotSummary.completionAward) {
-      setCompletionNotice(
-        t('wheel.completion.awarded').replace(
-          '{prize}',
-          shotSummary.completionAward.prizeTitle,
-        ),
-      );
       return;
     }
 
     try {
-      const award = awardPassportCompletionPrize(selectedKid.id);
-      const prize = prizes.find((entry) => entry.id === award.prizeId);
-
-      setCompletionNotice(
-        t('wheel.completion.awarded').replace(
-          '{prize}',
-          prize?.title ?? award.prizeId,
-        ),
-      );
+      awardPassportCompletionPrize(selectedKid.id);
       setSpinNotice(undefined);
     } catch (error) {
-      setCompletionNotice('');
       setSpinNotice({
         message:
           error instanceof Error ? error.message : t('wheel.completion.error'),
@@ -196,14 +182,12 @@ export function WheelPage() {
 
   const selectKid = (kid: Kid) => {
     setSelectedKidId(kid.id);
-    setCompletionNotice('');
     setPendingPrizeId('');
     setSpinNotice(undefined);
     setStockNotice('');
   };
   const clearKid = () => {
     setSelectedKidId('');
-    setCompletionNotice('');
     setPendingPrizeId('');
     setSpinNotice(undefined);
     setStockNotice('');
@@ -404,14 +388,16 @@ export function WheelPage() {
                 {shotSummary.awards.length > 0 ? (
                   <ol className="wheel-award-list">
                     {shotSummary.awards.map((award) => (
-                      <li key={award.id}>{award.prizeTitle}</li>
+                      <li
+                        className={
+                          award.prizeKind === 'final' ? 'final-award' : undefined
+                        }
+                        key={award.id}
+                      >
+                        {award.prizeTitle}
+                      </li>
                     ))}
                   </ol>
-                ) : null}
-                {completionNotice ? (
-                  <p className="completion-message passport-complete-message">
-                    {completionNotice}
-                  </p>
                 ) : null}
                 <button className="secondary-button" type="button" onClick={clearKid}>
                   {t('wheel.kid.next')}
@@ -544,17 +530,22 @@ export function WheelPage() {
                       <span>{t('wheel.manage.given')}</span>
                       <strong>{prize.given}</strong>
                     </div>
-                    <label className="valuable-toggle">
-                      <input
-                        checked={prize.isValuable}
-                        type="checkbox"
+                    <label>
+                      {t('wheel.manage.kind')}
+                      <select
+                        value={prize.kind}
                         onChange={(event) =>
                           updateManagedPrize(prize.id, {
-                            isValuable: event.target.checked,
+                            kind: event.target.value as Prize['kind'],
                           })
                         }
-                      />
-                      {t('wheel.manage.valuable')}
+                      >
+                        <option value="normal">{t('wheel.manage.kind.normal')}</option>
+                        <option value="valuable">
+                          {t('wheel.manage.kind.valuable')}
+                        </option>
+                        <option value="final">{t('wheel.manage.kind.final')}</option>
+                      </select>
                     </label>
                     <strong className="prize-remaining">
                       {t('wheel.manage.remaining').replace(

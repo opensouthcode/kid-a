@@ -44,11 +44,13 @@ export type PassportData = {
 
 type PassportActivitiesByKid = Record<string, PassportActivity[]>;
 
+export type PrizeKind = 'final' | 'normal' | 'valuable';
+
 export type Prize = {
   given: number;
   id: string;
   initialUnits: number;
-  isValuable: boolean;
+  kind: PrizeKind;
   title: string;
 };
 
@@ -64,6 +66,7 @@ export type PrizeAward = {
 };
 
 export type PrizeAwardRecord = PrizeAward & {
+  prizeKind: PrizeKind;
   prizeTitle: string;
 };
 
@@ -124,10 +127,9 @@ type DataLayerContextValue = {
 };
 
 const initialActivities: Activity[] = activitiesJson;
-const passportCompletionPrizeId = 'tshirt';
 const initialKids: Kid[] = kidsJson as Kid[];
 const initialPrizeAwards = prizeAwardsJson as PrizeAward[];
-const initialPrizes: Prize[] = prizesJson;
+const initialPrizes = prizesJson as Prize[];
 const initialUsers: User[] = usersJson as User[];
 const initialPassportActivitiesByUser =
   passportActivitiesJson as PassportActivitiesByKid;
@@ -322,6 +324,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
         return {
           ...award,
+          prizeKind: prize?.kind ?? 'normal',
           prizeTitle: prize?.title ?? award.prizeId,
         };
       });
@@ -404,6 +407,10 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       throw new Error(`Unknown prize: ${prizeId}`);
     }
 
+    if (prize.kind === 'final') {
+      throw new Error(`Prize is reserved for passport completion: ${prizeId}`);
+    }
+
     if (getPrizeRemaining(prize) <= 0) {
       throw new Error(`Prize is out of stock: ${prizeId}`);
     }
@@ -447,14 +454,14 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       return existingAward;
     }
 
-    const prize = prizes.find((entry) => entry.id === passportCompletionPrizeId);
+    const prize = prizes.find((entry) => entry.kind === 'final');
 
     if (!prize) {
-      throw new Error(`Unknown prize: ${passportCompletionPrizeId}`);
+      throw new Error('No final prize configured');
     }
 
     if (getPrizeRemaining(prize) <= 0) {
-      throw new Error(`Prize is out of stock: ${passportCompletionPrizeId}`);
+      throw new Error(`Prize is out of stock: ${prize.id}`);
     }
 
     const award: PrizeAward = {
@@ -498,7 +505,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
           ...prize,
           given: getPrizeGiven(prizeAwards, prizeId),
           initialUnits,
-          isValuable: updates.isValuable ?? prize.isValuable,
+          kind: updates.kind ?? prize.kind,
           title: title.trim(),
         };
       });
