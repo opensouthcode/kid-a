@@ -279,6 +279,8 @@ export function WheelPage() {
     setAnimatedWheelSegments(nextWheelSegments);
     setFilledSegmentCount(0);
     setIsFillingWheel(true);
+    setRotation(0);
+    setSpinRound(0);
     setSpinNotice(undefined);
     setStockNotice('');
 
