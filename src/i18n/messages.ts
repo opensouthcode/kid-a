@@ -84,6 +84,8 @@ export const messages = {
     'lead.mark.success': 'Activity completed.',
     'lead.closeKid': 'Close',
     'lead.wheelReminder': 'Every 4 activities, go to the wheel.',
+    'lead.passportComplete':
+      'Passport complete! Go to the prize wheel to collect the T-shirt.',
     'lead.summary.title': 'Kids',
     'lead.summary.empty': 'No kids completed this activity yet.',
     'lead.error.invalidKidQr': 'The QR does not match a registered kid.',
@@ -132,6 +134,8 @@ export const messages = {
     'wheel.spin.success': '{kid} won {prize}.',
     'wheel.spin.lastUnit': '{prize} is now out of stock.',
     'wheel.spin.error': 'The wheel could not record this prize.',
+    'wheel.completion.awarded': 'Passport complete: {prize} won.',
+    'wheel.completion.error': 'The passport completion prize could not be recorded.',
     'wheel.manage.eyebrow': 'Prize stock',
     'wheel.manage.title': 'Manage prizes',
     'wheel.manage.open': 'Stock',
@@ -229,6 +233,8 @@ export const messages = {
     'lead.mark.success': 'Actividad completada.',
     'lead.closeKid': 'Cerrar',
     'lead.wheelReminder': 'Cada 4 actividades, ve a la ruleta.',
+    'lead.passportComplete':
+      'Pasaporte completo! Ve a la ruleta de premios para recoger la camiseta.',
     'lead.summary.title': 'Kids',
     'lead.summary.empty': 'Ningún kid ha completado esta actividad todavía.',
     'lead.error.invalidKidQr': 'El QR no corresponde a un kid registrado.',
@@ -278,6 +284,9 @@ export const messages = {
     'wheel.spin.success': '{kid} ha ganado {prize}.',
     'wheel.spin.lastUnit': '{prize} se ha agotado.',
     'wheel.spin.error': 'La ruleta no pudo registrar este premio.',
+    'wheel.completion.awarded': 'Pasaporte completo: {prize} ganado.',
+    'wheel.completion.error':
+      'No se pudo registrar el premio por completar el pasaporte.',
     'wheel.manage.eyebrow': 'Stock de premios',
     'wheel.manage.title': 'Gestionar premios',
     'wheel.manage.open': 'Stock',

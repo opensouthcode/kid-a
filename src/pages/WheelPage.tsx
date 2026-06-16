@@ -12,6 +12,7 @@ import { ProgressCounter } from '../components/ProgressCounter';
 import { TopBar } from '../components/TopBar';
 import {
   getPrizeRemaining,
+  useAwardPassportCompletionPrize,
   useAwardPrizeToKid,
   useCurrentUser,
   useGetPassportForKid,
@@ -86,6 +87,7 @@ function createWheelBackground(prizes: Prize[], segments: Prize[]) {
 }
 
 export function WheelPage() {
+  const awardPassportCompletionPrize = useAwardPassportCompletionPrize();
   const awardPrizeToKid = useAwardPrizeToKid();
   const currentUser = useCurrentUser();
   const getPassportForKid = useGetPassportForKid();
@@ -98,6 +100,7 @@ export function WheelPage() {
   const [selectedKidId, setSelectedKidId] = useState('');
   const [pendingPrizeId, setPendingPrizeId] = useState('');
   const [managementError, setManagementError] = useState('');
+  const [completionNotice, setCompletionNotice] = useState('');
   const [isPrizeManagerOpen, setIsPrizeManagerOpen] = useState(false);
   const [spinNotice, setSpinNotice] = useState<SpinNotice>();
   const [stockNotice, setStockNotice] = useState('');
@@ -115,6 +118,8 @@ export function WheelPage() {
     selectedKidPassport?.activities.filter((activity) => activity.completedAt)
       .length ?? 0;
   const totalActivities = selectedKidPassport?.activities.length ?? 0;
+  const isPassportComplete =
+    totalActivities > 0 && completedActivities === totalActivities;
   const hasAnyAvailableStock = prizes.some(
     (prize) => getPrizeRemaining(prize) > 0,
   );
@@ -146,14 +151,59 @@ export function WheelPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isPrizeManagerOpen]);
 
+  useEffect(() => {
+    if (!selectedKid || !shotSummary || !isPassportComplete) {
+      return;
+    }
+
+    if (shotSummary.completionAward) {
+      setCompletionNotice(
+        t('wheel.completion.awarded').replace(
+          '{prize}',
+          shotSummary.completionAward.prizeTitle,
+        ),
+      );
+      return;
+    }
+
+    try {
+      const award = awardPassportCompletionPrize(selectedKid.id);
+      const prize = prizes.find((entry) => entry.id === award.prizeId);
+
+      setCompletionNotice(
+        t('wheel.completion.awarded').replace(
+          '{prize}',
+          prize?.title ?? award.prizeId,
+        ),
+      );
+      setSpinNotice(undefined);
+    } catch (error) {
+      setCompletionNotice('');
+      setSpinNotice({
+        message:
+          error instanceof Error ? error.message : t('wheel.completion.error'),
+        type: 'warning',
+      });
+    }
+  }, [
+    awardPassportCompletionPrize,
+    isPassportComplete,
+    prizes,
+    selectedKid,
+    shotSummary,
+    t,
+  ]);
+
   const selectKid = (kid: Kid) => {
     setSelectedKidId(kid.id);
+    setCompletionNotice('');
     setPendingPrizeId('');
     setSpinNotice(undefined);
     setStockNotice('');
   };
   const clearKid = () => {
     setSelectedKidId('');
+    setCompletionNotice('');
     setPendingPrizeId('');
     setSpinNotice(undefined);
     setStockNotice('');
@@ -357,6 +407,11 @@ export function WheelPage() {
                       <li key={award.id}>{award.prizeTitle}</li>
                     ))}
                   </ol>
+                ) : null}
+                {completionNotice ? (
+                  <p className="completion-message passport-complete-message">
+                    {completionNotice}
+                  </p>
                 ) : null}
                 <button className="secondary-button" type="button" onClick={clearKid}>
                   {t('wheel.kid.next')}

@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "id": "26OSK0003-wheel-1",
+    "kidId": "26OSK0003",
+    "prizeId": "stickers",
+    "awardedAt": "2026-06-13T09:30:00.000Z",
+    "source": "wheel"
+  },
+  {
+    "id": "26OSK0003-wheel-2",
+    "kidId": "26OSK0003",
+    "prizeId": "badges",
+    "awardedAt": "2026-06-13T10:05:00.000Z",
+    "source": "wheel"
+  },
+  {
+    "id": "26OSK0003-wheel-3",
+    "kidId": "26OSK0003",
+    "prizeId": "notebook",
+    "awardedAt": "2026-06-13T10:42:00.000Z",
+    "source": "wheel"
+  }
+]

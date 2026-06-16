@@ -1404,6 +1404,15 @@ h2 {
   color: #2f8f46;
 }
 
+.passport-complete-message {
+  grid-column: 1 / -1;
+  border: 1px solid #4e6f2b;
+  border-radius: 999px;
+  padding: 10px 16px;
+  background: #eef5df;
+  font-weight: 900;
+}
+
 .wheel-page {
   position: relative;
   width: 100%;
