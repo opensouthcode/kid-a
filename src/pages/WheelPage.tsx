@@ -115,6 +115,7 @@ export function WheelPage() {
   const { t } = useI18n();
   const fillIntervalRef = useRef<number | undefined>(undefined);
   const fillTimeoutRef = useRef<number | undefined>(undefined);
+  const resetTransitionTimeoutRef = useRef<number | undefined>(undefined);
   const winnerBadgeRef = useRef<HTMLParagraphElement>(null);
   const winnerHoldTimeoutRef = useRef<number | undefined>(undefined);
   const winnerClearTimeoutRef = useRef<number | undefined>(undefined);
@@ -129,6 +130,7 @@ export function WheelPage() {
   const [wonPrize, setWonPrize] = useState<WonPrize | undefined>();
   const [isPrizeManagerOpen, setIsPrizeManagerOpen] = useState(false);
   const [isFillingWheel, setIsFillingWheel] = useState(false);
+  const [isResettingWheel, setIsResettingWheel] = useState(false);
   const [spinNotice, setSpinNotice] = useState<SpinNotice>();
   const [stockNotice, setStockNotice] = useState('');
   const [isSpinning, setIsSpinning] = useState(false);
@@ -187,6 +189,7 @@ export function WheelPage() {
     () => () => {
       window.clearInterval(fillIntervalRef.current);
       window.clearTimeout(fillTimeoutRef.current);
+      window.clearTimeout(resetTransitionTimeoutRef.current);
       window.clearTimeout(winnerHoldTimeoutRef.current);
       window.clearTimeout(winnerClearTimeoutRef.current);
     },
@@ -224,6 +227,7 @@ export function WheelPage() {
   const selectKid = (kid: Kid) => {
     window.clearInterval(fillIntervalRef.current);
     window.clearTimeout(fillTimeoutRef.current);
+    window.clearTimeout(resetTransitionTimeoutRef.current);
     window.clearTimeout(winnerHoldTimeoutRef.current);
     window.clearTimeout(winnerClearTimeoutRef.current);
     setAnimatedWheelSegments(undefined);
@@ -238,6 +242,7 @@ export function WheelPage() {
   const clearKid = () => {
     window.clearInterval(fillIntervalRef.current);
     window.clearTimeout(fillTimeoutRef.current);
+    window.clearTimeout(resetTransitionTimeoutRef.current);
     window.clearTimeout(winnerHoldTimeoutRef.current);
     window.clearTimeout(winnerClearTimeoutRef.current);
     setAnimatedWheelSegments(undefined);
@@ -276,9 +281,11 @@ export function WheelPage() {
 
     window.clearInterval(fillIntervalRef.current);
     window.clearTimeout(fillTimeoutRef.current);
+    window.clearTimeout(resetTransitionTimeoutRef.current);
     setAnimatedWheelSegments(nextWheelSegments);
     setFilledSegmentCount(0);
     setIsFillingWheel(true);
+    setIsResettingWheel(true);
     setRotation(0);
     setSpinRound(0);
     setSpinNotice(undefined);
@@ -287,6 +294,10 @@ export function WheelPage() {
     if (clearWinner) {
       setWonPrize(undefined);
     }
+
+    resetTransitionTimeoutRef.current = window.setTimeout(() => {
+      setIsResettingWheel(false);
+    }, 50);
 
     const fillDuration = 3000;
     const segmentInterval = Math.max(24, fillDuration / nextWheelSegments.length);
@@ -616,7 +627,13 @@ export function WheelPage() {
               ) : null}
               <div className="wheel-pointer" aria-hidden="true" />
               <div
-                className={isSpinning ? 'prize-wheel spinning' : 'prize-wheel'}
+                className={[
+                  'prize-wheel',
+                  isSpinning ? 'spinning' : '',
+                  isResettingWheel ? 'resetting' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
                 style={{
                   background: wheelBackground,
                   transform: `rotate(${rotation}deg)`,

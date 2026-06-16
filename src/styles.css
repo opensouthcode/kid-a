@@ -1664,6 +1664,10 @@ h2 {
   will-change: transform;
 }
 
+.prize-wheel.resetting {
+  transition: none;
+}
+
 .wheel-center {
   position: relative;
   z-index: 1;
