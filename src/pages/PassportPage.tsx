@@ -8,6 +8,7 @@ import {
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FriendsDialog } from '../components/FriendsDialog';
 import { ProgressCounter } from '../components/ProgressCounter';
 import { TopBar } from '../components/TopBar';
 import {
@@ -49,6 +50,7 @@ export function PassportPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrError, setQrError] = useState('');
   const [isQrExpanded, setIsQrExpanded] = useState(false);
+  const [isFriendsDialogOpen, setIsFriendsDialogOpen] = useState(false);
   const completedActivities = passport.activities.filter(
     (activity) => activity.completedAt,
   ).length;
@@ -144,24 +146,39 @@ export function PassportPage() {
       />
       <section className="kid-content" aria-labelledby="kid-page-title">
         <nav className="passport-nav" aria-label={t('kid.options.title')}>
-          {kidOptions.map((option) => (
-            <button
-              className="passport-nav-button"
-              type="button"
-              disabled
-              key={option.id}
-            >
-              {option.id === 'wheel' ? (
-                <IterationsIcon size={16} aria-hidden="true" />
-              ) : (
-                <PeopleIcon size={16} aria-hidden="true" />
-              )}
-              {t(option.labelKey)}
-            </button>
-          ))}
+          {kidOptions.map((option) => {
+            const isFriendsOption = option.id === 'friends';
+
+            return (
+              <button
+                className={
+                  isFriendsOption
+                    ? 'passport-nav-button enabled'
+                    : 'passport-nav-button'
+                }
+                type="button"
+                disabled={!isFriendsOption}
+                key={option.id}
+                onClick={
+                  isFriendsOption
+                    ? () => setIsFriendsDialogOpen(true)
+                    : undefined
+                }
+              >
+                {option.id === 'wheel' ? (
+                  <IterationsIcon size={16} aria-hidden="true" />
+                ) : (
+                  <PeopleIcon size={16} aria-hidden="true" />
+                )}
+                {t(option.labelKey)}
+              </button>
+            );
+          })}
         </nav>
         <p className="eyebrow">{conference.title}</p>
-        <h1 id="kid-page-title">{t('kid.title')}</h1>
+        <div className="passport-title-row">
+          <h1 id="kid-page-title">{t('kid.title')}</h1>
+        </div>
         <section
           className={
             wheelShotSummary.availableShots > 0
@@ -180,8 +197,7 @@ export function PassportPage() {
                 {wheelShotSummary.availableShots > 0
                   ? wheelShotSummary.availableShots === 1
                     ? t('kid.wheel.availableSingular')
-                    : t('kid.wheel.availablePlural')
-                      .replace(
+                    : t('kid.wheel.availablePlural').replace(
                         '{count}',
                         String(wheelShotSummary.availableShots),
                       )
@@ -280,6 +296,10 @@ export function PassportPage() {
             ))}
           </div>
         </section>
+        <FriendsDialog
+          isOpen={isFriendsDialogOpen}
+          onClose={() => setIsFriendsDialogOpen(false)}
+        />
       </section>
     </>
   );

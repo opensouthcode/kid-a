@@ -1,16 +1,23 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { KidsSection, SelectedKidPassport } from '../components/KidsSection';
 import { SampleAccessDialog } from '../components/SampleAccessDialog';
 import { TopBar } from '../components/TopBar';
 import {
   useActivitiesData,
   useConferenceData,
+  useCurrentUser,
+  type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 
 export function WelcomePage() {
   const activities = useActivitiesData();
   const conference = useConferenceData();
+  const currentUser = useCurrentUser();
   const { t } = useI18n();
+  const [selectedFriendKid, setSelectedFriendKid] = useState<Kid | undefined>();
+  const blockedKidId = currentUser.role === 'kid' ? currentUser.id : '';
 
   return (
     <>
@@ -35,6 +42,16 @@ export function WelcomePage() {
             ))}
           </ol>
         </section>
+        <KidsSection
+          blockedKidId={blockedKidId}
+          onKidSelected={setSelectedFriendKid}
+        />
+        {selectedFriendKid ? (
+          <SelectedKidPassport
+            kid={selectedFriendKid}
+            onClose={() => setSelectedFriendKid(undefined)}
+          />
+        ) : null}
       </section>
     </>
   );
