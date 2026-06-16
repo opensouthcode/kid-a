@@ -1,0 +1,37 @@
+[
+  {
+    "id": "stickers",
+    "title": "Sticker pack",
+    "initialUnits": 18,
+    "given": 1,
+    "kind": "normal"
+  },
+  {
+    "id": "badges",
+    "title": "OpenSouthCode badge",
+    "initialUnits": 12,
+    "given": 1,
+    "kind": "normal"
+  },
+  {
+    "id": "notebook",
+    "title": "Robot notebook",
+    "initialUnits": 8,
+    "given": 1,
+    "kind": "normal"
+  },
+  {
+    "id": "tshirt",
+    "title": "OpenSouthCode T-shirt",
+    "initialUnits": 3,
+    "given": 0,
+    "kind": "final"
+  },
+  {
+    "id": "plushie",
+    "title": "Robot plushie",
+    "initialUnits": 2,
+    "given": 0,
+    "kind": "valuable"
+  }
+]

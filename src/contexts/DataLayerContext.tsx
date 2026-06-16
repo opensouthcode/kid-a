@@ -9,6 +9,8 @@ import activitiesJson from '../data/activities.json';
 import conferenceJson from '../data/conference.json';
 import kidsJson from '../data/kids.json';
 import passportActivitiesJson from '../data/passportActivities.json';
+import prizeAwardsJson from '../data/prizeAwards.json';
+import prizesJson from '../data/prizes.json';
 import usersJson from '../data/users.json';
 import {
   createKidQrIdData,
@@ -42,6 +44,40 @@ export type PassportData = {
 
 type PassportActivitiesByKid = Record<string, PassportActivity[]>;
 
+export type PrizeKind = 'final' | 'normal' | 'valuable';
+
+export type Prize = {
+  given: number;
+  id: string;
+  initialUnits: number;
+  kind: PrizeKind;
+  title: string;
+};
+
+type PrizeSettingsUpdate = Partial<Omit<Prize, 'given'>>;
+type PrizeAwardSource = 'passportCompletion' | 'wheel';
+
+export type PrizeAward = {
+  awardedAt: string;
+  id: string;
+  kidId: string;
+  prizeId: string;
+  source?: PrizeAwardSource;
+};
+
+export type PrizeAwardRecord = PrizeAward & {
+  prizeKind: PrizeKind;
+  prizeTitle: string;
+};
+
+export type WheelShotSummary = {
+  availableShots: number;
+  awards: PrizeAwardRecord[];
+  completionAward?: PrizeAwardRecord;
+  earnedShots: number;
+  usedShots: number;
+};
+
 export type UserRole = 'desk' | 'wheel' | 'lead';
 
 export type User = {
@@ -72,21 +108,30 @@ export type CurrentUser =
 type DataLayerContextValue = {
   activities: Activity[];
   addRegisteredKid: (registration: RegistrationInput) => Kid;
+  addPrize: (title: string) => Prize;
+  awardPassportCompletionPrize: (kidId: string) => PrizeAward;
+  awardPrizeToKid: (kidId: string, prizeId: string) => PrizeAward;
   conference: ConferenceData;
   currentUser: CurrentUser;
   findKidByManualNumber: (rawSearchValue: string) => Kid | undefined;
   findKidByQrIdData: (qrIdData: string) => Kid | undefined;
   getPassportForKid: (kidId: string) => PassportData;
+  getWheelShotSummaryForKid: (kidId: string) => WheelShotSummary;
   kids: Kid[];
   markPassportActivityDone: (kidId: string, activityId: number) => number;
   passport: PassportData;
+  prizes: Prize[];
+  refreshPrizes: () => Prize[];
   reloadPassportActivities: () => void;
   users: User[];
   setCurrentUser: (user: Kid | User) => void;
+  updatePrize: (prizeId: string, updates: PrizeSettingsUpdate) => void;
 };
 
 const initialActivities: Activity[] = activitiesJson;
 const initialKids: Kid[] = kidsJson as Kid[];
+const initialPrizeAwards = prizeAwardsJson as PrizeAward[];
+const initialPrizes = prizesJson as Prize[];
 const initialUsers: User[] = usersJson as User[];
 const initialPassportActivitiesByUser =
   passportActivitiesJson as PassportActivitiesByKid;
@@ -100,6 +145,54 @@ function clonePassportActivities(
       activities.map((activity) => ({ ...activity })),
     ]),
   );
+}
+
+function clonePrizes(prizes: Prize[]): Prize[] {
+  return prizes.map((prize) => ({ ...prize }));
+}
+
+function clonePrizeAwards(prizeAwards: PrizeAward[]): PrizeAward[] {
+  return prizeAwards.map((award) => ({ ...award }));
+}
+
+export function getPrizeRemaining(prize: Prize) {
+  return Math.max(prize.initialUnits - prize.given, 0);
+}
+
+function getPrizeGiven(prizeAwards: PrizeAward[], prizeId: string) {
+  return prizeAwards.filter((award) => award.prizeId === prizeId).length;
+}
+
+function isWheelAward(award: PrizeAward) {
+  return (award.source ?? 'wheel') === 'wheel';
+}
+
+function syncPrizeGivenCache(prizes: Prize[], prizeAwards: PrizeAward[]): Prize[] {
+  return prizes.map((prize) => ({
+    ...prize,
+    given: getPrizeGiven(prizeAwards, prize.id),
+  }));
+}
+
+function normalizePrizeCount(value: number) {
+  if (!Number.isFinite(value)) {
+    throw new Error('Prize stock must be a number');
+  }
+
+  return Math.max(0, Math.floor(value));
+}
+
+function createPrizeId(prizes: Prize[]) {
+  const nextPrizeNumber = prizes.length + 1;
+  let candidateId = `prize-${nextPrizeNumber}`;
+  let suffix = nextPrizeNumber;
+
+  while (prizes.some((prize) => prize.id === candidateId)) {
+    suffix += 1;
+    candidateId = `prize-${suffix}`;
+  }
+
+  return candidateId;
 }
 
 function getDefaultUser() {
@@ -159,12 +252,22 @@ const DataLayerContext = createContext<DataLayerContextValue | undefined>(
 
 export function DataLayerProvider({ children }: PropsWithChildren) {
   const [kidList, setKidList] = useState(initialKids);
+  const [prizeAwards, setPrizeAwards] = useState(() =>
+    clonePrizeAwards(initialPrizeAwards),
+  );
+  const [prizeList, setPrizeList] = useState(() =>
+    syncPrizeGivenCache(clonePrizes(initialPrizes), initialPrizeAwards),
+  );
   const [userList] = useState(initialUsers);
   const [passportActivitiesByUser, setPassportActivitiesByUser] = useState(
     () => clonePassportActivities(initialPassportActivitiesByUser),
   );
   const [selectedCurrentUser, setSelectedCurrentUser] =
     useState<CurrentUser>(wrapKid(defaultKid));
+  const prizes = useMemo<Prize[]>(
+    () => syncPrizeGivenCache(prizeList, prizeAwards),
+    [prizeAwards, prizeList],
+  );
   const currentUser =
     selectedCurrentUser.role === 'kid'
       ? wrapKid(
@@ -211,9 +314,66 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     return registeredKid;
   };
+  const addPrize = (title: string) => {
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) {
+      throw new Error('Prize title cannot be empty');
+    }
+
+    const createdPrize: Prize = {
+      given: 0,
+      id: createPrizeId(prizeList),
+      initialUnits: 1,
+      kind: 'normal',
+      title: trimmedTitle,
+    };
+
+    setPrizeList((currentPrizes) => [...currentPrizes, createdPrize]);
+
+    return createdPrize;
+  };
   const getPassportForKid = (kidId: string): PassportData => ({
     activities: passportActivitiesByUser[kidId] ?? [],
   });
+  const getWheelShotSummaryForKid = (kidId: string): WheelShotSummary => {
+    const kidActivities = passportActivitiesByUser[kidId];
+
+    if (!kidActivities) {
+      throw new Error(`Unknown passport kid: ${kidId}`);
+    }
+
+    const completedActivities = kidActivities.filter(
+      (activity) => activity.completedAt,
+    ).length;
+    const spinEligibleActivities = Math.min(
+      completedActivities,
+      Math.max(kidActivities.length - 1, 0),
+    );
+    const earnedShots = Math.floor(spinEligibleActivities / 4);
+    const awards = prizeAwards
+      .filter((award) => award.kidId === kidId)
+      .map((award) => {
+        const prize = prizes.find((entry) => entry.id === award.prizeId);
+
+        return {
+          ...award,
+          prizeKind: prize?.kind ?? 'normal',
+          prizeTitle: prize?.title ?? award.prizeId,
+        };
+      });
+    const usedShots = awards.filter(isWheelAward).length;
+
+    return {
+      availableShots: Math.max(earnedShots - usedShots, 0),
+      awards,
+      completionAward: awards.find(
+        (award) => award.source === 'passportCompletion',
+      ),
+      earnedShots,
+      usedShots,
+    };
+  };
   const findKidByManualNumber = (rawSearchValue: string) => {
     const searchedNumber = Number(rawSearchValue);
 
@@ -229,6 +389,13 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     setPassportActivitiesByUser((currentPassportActivities) =>
       clonePassportActivities(currentPassportActivities),
     );
+  };
+  const refreshPrizes = () => {
+    const refreshedPrizes = syncPrizeGivenCache(prizeList, prizeAwards);
+
+    setPrizeList(refreshedPrizes);
+
+    return refreshedPrizes;
   };
   const markPassportActivityDone = (kidId: string, activityId: number) => {
     const kidActivities = passportActivitiesByUser[kidId];
@@ -260,15 +427,148 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     return completedActivities;
   };
+  const awardPrizeToKid = (kidId: string, prizeId: string) => {
+    if (!kidList.some((kid) => kid.id === kidId)) {
+      throw new Error(`Unknown kid: ${kidId}`);
+    }
+
+    const shotSummary = getWheelShotSummaryForKid(kidId);
+
+    if (shotSummary.availableShots <= 0) {
+      throw new Error(`Kid has no wheel shots available: ${kidId}`);
+    }
+
+    if (
+      !prizes.some(
+        (prize) => prize.kind !== 'final' && getPrizeRemaining(prize) > 0,
+      )
+    ) {
+      throw new Error('No prizes remaining');
+    }
+
+    const prize = prizes.find((entry) => entry.id === prizeId);
+
+    if (!prize) {
+      throw new Error(`Unknown prize: ${prizeId}`);
+    }
+
+    if (prize.kind === 'final') {
+      throw new Error(`Prize is reserved for passport completion: ${prizeId}`);
+    }
+
+    if (getPrizeRemaining(prize) <= 0) {
+      throw new Error(`Prize is out of stock: ${prizeId}`);
+    }
+
+    const award: PrizeAward = {
+      awardedAt: new Date().toISOString(),
+      id: `${kidId}-${Date.now()}`,
+      kidId,
+      prizeId,
+    };
+
+    const nextPrizeAwards = [...prizeAwards, award];
+
+    setPrizeAwards(nextPrizeAwards);
+    setPrizeList((currentPrizes) =>
+      syncPrizeGivenCache(currentPrizes, nextPrizeAwards),
+    );
+
+    return award;
+  };
+  const awardPassportCompletionPrize = (kidId: string) => {
+    if (!kidList.some((kid) => kid.id === kidId)) {
+      throw new Error(`Unknown kid: ${kidId}`);
+    }
+
+    const kidActivities = passportActivitiesByUser[kidId];
+
+    if (!kidActivities) {
+      throw new Error(`Unknown passport kid: ${kidId}`);
+    }
+
+    if (!kidActivities.every((activity) => activity.completedAt)) {
+      throw new Error(`Passport is not complete: ${kidId}`);
+    }
+
+    const existingAward = prizeAwards.find(
+      (award) => award.kidId === kidId && award.source === 'passportCompletion',
+    );
+
+    if (existingAward) {
+      return existingAward;
+    }
+
+    const prize = prizes.find((entry) => entry.kind === 'final');
+
+    if (!prize) {
+      throw new Error('No final prize configured');
+    }
+
+    if (getPrizeRemaining(prize) <= 0) {
+      throw new Error(`Prize is out of stock: ${prize.id}`);
+    }
+
+    const award: PrizeAward = {
+      awardedAt: new Date().toISOString(),
+      id: `${kidId}-passport-complete-${Date.now()}`,
+      kidId,
+      prizeId: prize.id,
+      source: 'passportCompletion',
+    };
+    const nextPrizeAwards = [...prizeAwards, award];
+
+    setPrizeAwards(nextPrizeAwards);
+    setPrizeList((currentPrizes) =>
+      syncPrizeGivenCache(currentPrizes, nextPrizeAwards),
+    );
+
+    return award;
+  };
+  const updatePrize = (prizeId: string, updates: PrizeSettingsUpdate) => {
+    setPrizeList((currentPrizes) => {
+      if (!currentPrizes.some((prize) => prize.id === prizeId)) {
+        throw new Error(`Unknown prize: ${prizeId}`);
+      }
+
+      return currentPrizes.map((prize) => {
+        if (prize.id !== prizeId) {
+          return prize;
+        }
+
+        const title = updates.title ?? prize.title;
+        const initialUnits = Math.max(
+          normalizePrizeCount(updates.initialUnits ?? prize.initialUnits),
+          getPrizeGiven(prizeAwards, prizeId),
+        );
+
+        if (!title.trim()) {
+          throw new Error(`Prize title cannot be empty: ${prizeId}`);
+        }
+
+        return {
+          ...prize,
+          given: getPrizeGiven(prizeAwards, prizeId),
+          initialUnits,
+          kind: updates.kind ?? prize.kind,
+          title: title.trim(),
+        };
+      });
+    });
+  };
   const value = useMemo<DataLayerContextValue>(
     () => ({
       activities: initialActivities,
       addRegisteredKid,
+      addPrize,
+      awardPassportCompletionPrize,
+      awardPrizeToKid,
       conference: conferenceJson,
       currentUser,
       findKidByManualNumber,
       findKidByQrIdData,
       getPassportForKid,
+      getWheelShotSummaryForKid,
       kids: kidList,
       markPassportActivityDone,
       passport: {
@@ -277,11 +577,20 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
             ? (passportActivitiesByUser[currentUser.id] ?? [])
             : [],
       },
+      prizes,
+      refreshPrizes,
       reloadPassportActivities,
       setCurrentUser,
+      updatePrize,
       users: userList,
     }),
-    [currentUser, kidList, passportActivitiesByUser, userList],
+    [
+      currentUser,
+      kidList,
+      passportActivitiesByUser,
+      prizes,
+      userList,
+    ],
   );
 
   return (
@@ -343,8 +652,36 @@ export function useAddRegisteredKid() {
   return useDataLayer().addRegisteredKid;
 }
 
+export function useAddPrize() {
+  return useDataLayer().addPrize;
+}
+
 export function useMarkPassportActivityDone() {
   return useDataLayer().markPassportActivityDone;
+}
+
+export function usePrizesData() {
+  return useDataLayer().prizes;
+}
+
+export function useRefreshPrizes() {
+  return useDataLayer().refreshPrizes;
+}
+
+export function useGetWheelShotSummaryForKid() {
+  return useDataLayer().getWheelShotSummaryForKid;
+}
+
+export function useAwardPrizeToKid() {
+  return useDataLayer().awardPrizeToKid;
+}
+
+export function useAwardPassportCompletionPrize() {
+  return useDataLayer().awardPassportCompletionPrize;
+}
+
+export function useUpdatePrize() {
+  return useDataLayer().updatePrize;
 }
 
 export function useSetCurrentUser() {

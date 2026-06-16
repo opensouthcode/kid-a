@@ -27,6 +27,7 @@ export function ActivityLeadPage() {
   const leadActivityId = currentUser.role === 'lead' ? currentUser.activityId : undefined;
   const activityId = leadActivityId ?? 1;
   const [confirmedKidId, setConfirmedKidId] = useState('');
+  const [passportCompletedKidId, setPassportCompletedKidId] = useState('');
   const [lastCompletedKidId, setLastCompletedKidId] = useState('');
   const confirmedKid = kids.find((kid) => kid.id === confirmedKidId);
   const passport = confirmedKid
@@ -42,7 +43,8 @@ export function ActivityLeadPage() {
   const shouldShowWheelReminder =
     Boolean(leadActivity) &&
     !leadActivity?.completedAt &&
-    (completedActivities + 1) % 4 === 0;
+    (completedActivities + 1) % 4 === 0 &&
+    completedActivities + 1 < passport.activities.length;
   const formatCompletionTime = (completedAt: string) =>
     new Intl.DateTimeFormat(locale, {
       hour: '2-digit',
@@ -78,6 +80,13 @@ export function ActivityLeadPage() {
   const leadActivityCompletedTime = leadActivity?.completedAt
     ? formatCompletionTime(leadActivity.completedAt)
     : '';
+  const hasJustCompletedActivity = lastCompletedKidId === confirmedKidId;
+  const shouldShowJustCompletedWheelShot =
+    hasJustCompletedActivity &&
+    completedActivities % 4 === 0 &&
+    completedActivities < passport.activities.length;
+  const shouldShowAlreadyCompletedWarning =
+    Boolean(leadActivity?.completedAt) && !hasJustCompletedActivity;
 
   useEffect(() => {
     if (currentUser.role !== 'lead') {
@@ -91,10 +100,12 @@ export function ActivityLeadPage() {
 
   const confirmKid = (kid: Kid) => {
     setConfirmedKidId(kid.id);
+    setPassportCompletedKidId('');
     setLastCompletedKidId('');
   };
   const clearConfirmedKid = () => {
     setConfirmedKidId('');
+    setPassportCompletedKidId('');
     setLastCompletedKidId('');
   };
   const returnToKidScan = () => {
@@ -110,8 +121,17 @@ export function ActivityLeadPage() {
       return;
     }
 
-    markPassportActivityDone(confirmedKid.id, leadActivity.id);
+    const nextCompletedActivities = markPassportActivityDone(
+      confirmedKid.id,
+      leadActivity.id,
+    );
     setLastCompletedKidId(confirmedKid.id);
+
+    if (nextCompletedActivities === passport.activities.length) {
+      setPassportCompletedKidId(confirmedKid.id);
+      return;
+    }
+
     returnToKidScan();
   };
 
@@ -153,7 +173,7 @@ export function ActivityLeadPage() {
                   {shouldShowWheelReminder ? (
                     <p className="wheel-reminder">{t('lead.wheelReminder')}</p>
                   ) : null}
-                  {leadActivity?.completedAt ? (
+                  {shouldShowAlreadyCompletedWarning ? (
                     <p className="activity-done-warning" role="status">
                       <AlertIcon size={18} aria-hidden="true" />
                       {leadActivityCompletedTime
@@ -164,7 +184,19 @@ export function ActivityLeadPage() {
                         : t('lead.mark.completed')}
                     </p>
                   ) : null}
-                  {lastCompletedKidId === confirmedKidId ? (
+                  {passportCompletedKidId === confirmedKidId ? (
+                    <p className="completion-message passport-complete-message" role="status">
+                      {t('lead.passportComplete')}
+                    </p>
+                  ) : null}
+                  {shouldShowJustCompletedWheelShot ? (
+                    <p className="wheel-reminder" role="status">
+                      {t('lead.wheelShotAvailable')}
+                    </p>
+                  ) : null}
+                  {hasJustCompletedActivity &&
+                  !shouldShowJustCompletedWheelShot &&
+                  passportCompletedKidId !== confirmedKidId ? (
                     <p className="completion-message" role="status">
                       {t('lead.mark.success')}
                     </p>
