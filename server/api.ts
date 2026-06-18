@@ -1,6 +1,6 @@
-import { randomUUID } from 'node:crypto';
+import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { IncomingHttpHeaders } from 'node:http';
-import { readSnapshot, updateSnapshot } from './store.js';
+import { readSnapshot, updatePassportForKid, updateSnapshot } from './store.js';
 import type {
   PassportActivitiesByKid,
   PassportActivity,
@@ -33,7 +33,20 @@ class HttpError extends Error {
   }
 }
 
-const apiPaths = new Set(['/passport', '/wheel-prizes', '/prizes-won']);
+type AdminBackup = {
+  exportedAt: string;
+  passports: PassportActivitiesByKid;
+  prizesWon: PrizeAward[];
+  wheelPrizes: Prize[];
+};
+
+const apiPaths = new Set([
+  '/admin/export',
+  '/admin/import',
+  '/passport',
+  '/wheel-prizes',
+  '/prizes-won',
+]);
 const prizeKinds = new Set<PrizeKind>(['final', 'normal', 'valuable']);
 
 export function normalizeApiPath(pathname: string) {
@@ -81,7 +94,7 @@ function corsHeaders(request: ApiRequest): Record<string, string> {
   }
 
   return {
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Admin-Token',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
     'Access-Control-Allow-Origin': origin,
     Vary: 'Origin',
@@ -119,6 +132,33 @@ function parseJsonBody(body: string | null | undefined) {
     return JSON.parse(body) as Record<string, unknown>;
   } catch {
     throw new HttpError(400, 'Request body must be valid JSON');
+  }
+}
+
+function constantTimeEquals(left: string, right: string) {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+
+  return (
+    leftBuffer.length === rightBuffer.length &&
+    timingSafeEqual(leftBuffer, rightBuffer)
+  );
+}
+
+function requireAdminToken(request: ApiRequest) {
+  const expectedToken = process.env.KID_A_ADMIN_TOKEN?.trim();
+
+  if (!expectedToken) {
+    throw new HttpError(503, 'Admin token is not configured');
+  }
+
+  const authorization = getHeader(request.headers, 'authorization');
+  const bearerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const headerToken = getHeader(request.headers, 'x-admin-token');
+  const candidateToken = bearerToken ?? headerToken;
+
+  if (!candidateToken || !constantTimeEquals(candidateToken, expectedToken)) {
+    throw new HttpError(401, 'Unauthorized');
   }
 }
 
@@ -243,6 +283,154 @@ function snapshotPrizeResponse(snapshot: StoreData, prize?: Prize) {
   };
 }
 
+function createAdminBackup(snapshot: StoreData): AdminBackup {
+  return {
+    exportedAt: new Date().toISOString(),
+    passports: snapshot.passportActivitiesByKid,
+    prizesWon: snapshot.prizeAwards,
+    wheelPrizes: syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards),
+  };
+}
+
+function asObject(value: unknown, label: string) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new HttpError(400, `${label} must be an object`);
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function asString(value: unknown, label: string) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new HttpError(400, `${label} must be a non-empty string`);
+  }
+
+  return value;
+}
+
+function asArray(value: unknown, label: string) {
+  if (!Array.isArray(value)) {
+    throw new HttpError(400, `${label} must be an array`);
+  }
+
+  return value;
+}
+
+function normalizePassportActivity(value: unknown, label: string): PassportActivity {
+  const activity = asObject(value, label);
+  const id = normalizeCount(activity.id, `${label}.id`);
+
+  if (id <= 0) {
+    throw new HttpError(400, `${label}.id must be a positive integer`);
+  }
+
+  if (
+    activity.completedAt !== undefined &&
+    typeof activity.completedAt !== 'string'
+  ) {
+    throw new HttpError(400, `${label}.completedAt must be a string`);
+  }
+
+  return {
+    ...(activity.completedAt ? { completedAt: activity.completedAt } : {}),
+    id,
+  };
+}
+
+function normalizeBackupPassports(value: unknown): PassportActivitiesByKid {
+  const passports = asObject(value, 'passports');
+
+  return Object.fromEntries(
+    Object.entries(passports).map(([kidId, passport]) => [
+      kidId,
+      asArray(passport, `passports.${kidId}`).map((activity, index) =>
+        normalizePassportActivity(activity, `passports.${kidId}.${index}`),
+      ),
+    ]),
+  );
+}
+
+function normalizeBackupPrizes(value: unknown): Prize[] {
+  return asArray(value, 'wheelPrizes').map((entry, index) => {
+    const prize = asObject(entry, `wheelPrizes.${index}`);
+    const kind = normalizePrizeKind(prize.kind);
+
+    if (!kind) {
+      throw new HttpError(400, `wheelPrizes.${index}.kind is required`);
+    }
+
+    return {
+      given: normalizeCount(prize.given, `wheelPrizes.${index}.given`),
+      id: asString(prize.id, `wheelPrizes.${index}.id`),
+      initialUnits: normalizeCount(
+        prize.initialUnits,
+        `wheelPrizes.${index}.initialUnits`,
+      ),
+      kind,
+      title: asString(prize.title, `wheelPrizes.${index}.title`),
+    };
+  });
+}
+
+function normalizeBackupPrizeAwards(value: unknown): PrizeAward[] {
+  return asArray(value, 'prizesWon').map((entry, index) => {
+    const award = asObject(entry, `prizesWon.${index}`);
+    const source = normalizeAwardSource(award.source);
+
+    return {
+      awardedAt: asString(award.awardedAt, `prizesWon.${index}.awardedAt`),
+      id: asString(award.id, `prizesWon.${index}.id`),
+      kidId: asString(award.kidId, `prizesWon.${index}.kidId`),
+      prizeId: asString(award.prizeId, `prizesWon.${index}.prizeId`),
+      ...(source ? { source } : {}),
+    };
+  });
+}
+
+function parseAdminBackup(body: Record<string, unknown>): AdminBackup {
+  return {
+    exportedAt: asString(body.exportedAt, 'exportedAt'),
+    passports: normalizeBackupPassports(body.passports),
+    prizesWon: normalizeBackupPrizeAwards(body.prizesWon),
+    wheelPrizes: normalizeBackupPrizes(body.wheelPrizes),
+  };
+}
+
+async function handleAdmin(
+  request: ApiRequest,
+  path: string,
+): Promise<ApiResponse> {
+  requireAdminToken(request);
+
+  if (path === '/admin/export') {
+    if (request.method !== 'GET') {
+      throw new HttpError(405, 'Method not allowed');
+    }
+
+    const snapshot = await readSnapshot();
+    return jsonResponse(request, 200, createAdminBackup(snapshot));
+  }
+
+  if (path === '/admin/import') {
+    if (request.method !== 'POST') {
+      throw new HttpError(405, 'Method not allowed');
+    }
+
+    const backup = parseAdminBackup(parseJsonBody(request.body));
+    const restoredBackup = await updateSnapshot((snapshot) => {
+      snapshot.passportActivitiesByKid = backup.passports;
+      snapshot.prizeAwards = backup.prizesWon;
+      snapshot.prizes = syncPrizeGivenCache(backup.wheelPrizes, backup.prizesWon);
+
+      return createAdminBackup(snapshot);
+    }, ['passportActivitiesByKid', 'prizeAwards', 'prizes']);
+
+    return jsonResponse(request, 200, restoredBackup);
+  }
+
+  throw new HttpError(404, 'Not found');
+}
+
 async function handlePassport(
   request: ApiRequest,
   url: URL,
@@ -263,8 +451,10 @@ async function handlePassport(
 
   const activityId = parsePositiveInteger(url.searchParams.get('activity'), 'activity');
 
-  const passportActivitiesByKid = await updateSnapshot((snapshot) => {
-    const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
+  const snapshot = await readSnapshot();
+  const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
+
+  const passportActivitiesByKid = await updatePassportForKid(kidId, (snapshot) => {
     const passport = ensurePassportForKid(
       snapshot.passportActivitiesByKid,
       kidId,
@@ -280,7 +470,7 @@ async function handlePassport(
     }
 
     return snapshot.passportActivitiesByKid;
-  }, ['passportActivitiesByKid']);
+  });
 
   return jsonResponse(request, 200, passportActivitiesByKid);
 }
@@ -481,6 +671,10 @@ export async function handleApiRequest(request: ApiRequest): Promise<ApiResponse
 
     if (path === '/prizes-won') {
       return await handlePrizesWon(request, requestUrl);
+    }
+
+    if (path.startsWith('/admin/')) {
+      return await handleAdmin(request, path);
     }
 
     throw new HttpError(404, 'Not found');

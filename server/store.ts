@@ -9,7 +9,19 @@ import type {
   StoreData,
 } from './types.js';
 
-type StoreFile = keyof typeof storeFiles;
+export type StoreFile = keyof typeof storeFiles;
+
+export type StoreAdapter = {
+  readSnapshot(): Promise<StoreData>;
+  updatePassportForKid<T>(
+    kidId: string,
+    mutator: (snapshot: StoreData) => T | Promise<T>,
+  ): Promise<T>;
+  updateSnapshot<T>(
+    mutator: (snapshot: StoreData) => T | Promise<T>,
+    changedFiles: readonly StoreFile[],
+  ): Promise<T>;
+};
 
 const storeFiles = {
   conference: 'conference.json',
@@ -22,13 +34,6 @@ const storeFiles = {
 const defaultDataDir = path.resolve(process.env.KID_A_DATA_DIR ?? 'server/data');
 const seedDataDir = path.resolve(process.env.KID_A_SEED_DATA_DIR ?? 'src/data');
 
-let seedPromise: Promise<void> | undefined;
-let writeQueue: Promise<void> = Promise.resolve();
-
-function getStorePath(storeFile: StoreFile) {
-  return path.join(defaultDataDir, storeFiles[storeFile]);
-}
-
 async function pathExists(filePath: string) {
   try {
     await access(filePath);
@@ -38,86 +43,137 @@ async function pathExists(filePath: string) {
   }
 }
 
-async function ensureDataFiles() {
-  seedPromise ??= (async () => {
-    await mkdir(defaultDataDir, { recursive: true });
+export function getStoreFileName(storeFile: StoreFile) {
+  return storeFiles[storeFile];
+}
 
-    await Promise.all(
-      Object.entries(storeFiles).map(async ([storeFile, fileName]) => {
-        const targetPath = getStorePath(storeFile as StoreFile);
+export function createFileStore(): StoreAdapter {
+  let seedPromise: Promise<void> | undefined;
+  let writeQueue: Promise<void> = Promise.resolve();
 
-        if (await pathExists(targetPath)) {
-          return;
-        }
+  function getStorePath(storeFile: StoreFile) {
+    return path.join(defaultDataDir, storeFiles[storeFile]);
+  }
 
-        await copyFile(path.join(seedDataDir, fileName), targetPath);
-      }),
+  async function ensureDataFiles() {
+    seedPromise ??= (async () => {
+      await mkdir(defaultDataDir, { recursive: true });
+
+      await Promise.all(
+        Object.entries(storeFiles).map(async ([storeFile, fileName]) => {
+          const targetPath = getStorePath(storeFile as StoreFile);
+
+          if (await pathExists(targetPath)) {
+            return;
+          }
+
+          await copyFile(path.join(seedDataDir, fileName), targetPath);
+        }),
+      );
+    })();
+
+    return seedPromise;
+  }
+
+  async function readJson<T>(storeFile: StoreFile): Promise<T> {
+    return JSON.parse(await readFile(getStorePath(storeFile), 'utf8')) as T;
+  }
+
+  async function writeJson(storeFile: StoreFile, value: unknown) {
+    const targetPath = getStorePath(storeFile);
+    const tempPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
+
+    await writeFile(tempPath, `${JSON.stringify(value, null, 2)}\n`);
+    await rename(tempPath, targetPath);
+  }
+
+  async function readSnapshotUnlocked(): Promise<StoreData> {
+    await ensureDataFiles();
+
+    const [conference, kids, passportActivitiesByKid, prizeAwards, prizes] =
+      await Promise.all([
+        readJson<ConferenceData>('conference'),
+        readJson<Kid[]>('kids'),
+        readJson<PassportActivitiesByKid>('passportActivitiesByKid'),
+        readJson<PrizeAward[]>('prizeAwards'),
+        readJson<Prize[]>('prizes'),
+      ]);
+
+    return {
+      conference,
+      kids,
+      passportActivitiesByKid,
+      prizeAwards,
+      prizes,
+    };
+  }
+
+  async function readSnapshot() {
+    await writeQueue.catch(() => undefined);
+    return readSnapshotUnlocked();
+  }
+
+  async function updateSnapshot<T>(
+    mutator: (snapshot: StoreData) => T | Promise<T>,
+    changedFiles: readonly StoreFile[],
+  ) {
+    const previousWrite = writeQueue;
+    const nextWrite = previousWrite
+      .catch(() => undefined)
+      .then(async () => {
+        const snapshot = await readSnapshotUnlocked();
+        const result = await mutator(snapshot);
+
+        await Promise.all(
+          changedFiles.map((storeFile) => writeJson(storeFile, snapshot[storeFile])),
+        );
+
+        return result;
+      });
+
+    writeQueue = nextWrite.then(
+      () => undefined,
+      () => undefined,
     );
-  })();
 
-  return seedPromise;
-}
+    return nextWrite;
+  }
 
-async function readJson<T>(storeFile: StoreFile): Promise<T> {
-  return JSON.parse(await readFile(getStorePath(storeFile), 'utf8')) as T;
-}
-
-async function writeJson(storeFile: StoreFile, value: unknown) {
-  const targetPath = getStorePath(storeFile);
-  const tempPath = `${targetPath}.${process.pid}.${Date.now()}.tmp`;
-
-  await writeFile(tempPath, `${JSON.stringify(value, null, 2)}\n`);
-  await rename(tempPath, targetPath);
-}
-
-async function readSnapshotUnlocked(): Promise<StoreData> {
-  await ensureDataFiles();
-
-  const [conference, kids, passportActivitiesByKid, prizeAwards, prizes] =
-    await Promise.all([
-      readJson<ConferenceData>('conference'),
-      readJson<Kid[]>('kids'),
-      readJson<PassportActivitiesByKid>('passportActivitiesByKid'),
-      readJson<PrizeAward[]>('prizeAwards'),
-      readJson<Prize[]>('prizes'),
-    ]);
+  async function updatePassportForKid<T>(
+    kidId: string,
+    mutator: (snapshot: StoreData) => T | Promise<T>,
+  ) {
+    void kidId;
+    return updateSnapshot(mutator, ['passportActivitiesByKid']);
+  }
 
   return {
-    conference,
-    kids,
-    passportActivitiesByKid,
-    prizeAwards,
-    prizes,
+    readSnapshot,
+    updatePassportForKid,
+    updateSnapshot,
   };
 }
 
+let activeStore = createFileStore();
+
+export function setStoreAdapter(store: StoreAdapter) {
+  activeStore = store;
+}
+
 export async function readSnapshot() {
-  await writeQueue.catch(() => undefined);
-  return readSnapshotUnlocked();
+  return activeStore.readSnapshot();
 }
 
 export async function updateSnapshot<T>(
   mutator: (snapshot: StoreData) => T | Promise<T>,
-  changedFiles: StoreFile[],
+  changedFiles: readonly StoreFile[],
 ) {
-  const previousWrite = writeQueue;
-  const nextWrite = previousWrite
-    .catch(() => undefined)
-    .then(async () => {
-      const snapshot = await readSnapshotUnlocked();
-      const result = await mutator(snapshot);
+  return activeStore.updateSnapshot(mutator, changedFiles);
+}
 
-      await Promise.all(
-        changedFiles.map((storeFile) => writeJson(storeFile, snapshot[storeFile])),
-      );
-
-      return result;
-    });
-
-  writeQueue = nextWrite.then(
-    () => undefined,
-    () => undefined,
-  );
-
-  return nextWrite;
+export async function updatePassportForKid<T>(
+  kidId: string,
+  mutator: (snapshot: StoreData) => T | Promise<T>,
+) {
+  return activeStore.updatePassportForKid(kidId, mutator);
 }
