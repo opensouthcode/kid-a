@@ -1,0 +1,35 @@
+[
+  {
+    "id": "26OSK0003-wheel-1",
+    "kidId": "26OSK0003",
+    "prizeId": "stickers",
+    "awardedAt": "2026-06-13T09:30:00.000Z",
+    "source": "wheel"
+  },
+  {
+    "id": "26OSK0003-wheel-2",
+    "kidId": "26OSK0003",
+    "prizeId": "badges",
+    "awardedAt": "2026-06-13T10:05:00.000Z",
+    "source": "wheel"
+  },
+  {
+    "id": "26OSK0003-wheel-3",
+    "kidId": "26OSK0003",
+    "prizeId": "notebook",
+    "awardedAt": "2026-06-13T10:42:00.000Z",
+    "source": "wheel"
+  },
+  {
+    "awardedAt": "2026-06-18T00:55:04.140Z",
+    "id": "26OSK0001-wheel-3bf1604f-760b-4b1e-ba49-66196f2e99f1",
+    "kidId": "26OSK0001",
+    "prizeId": "notebook"
+  },
+  {
+    "awardedAt": "2026-06-18T00:55:58.927Z",
+    "id": "26OSK0002-wheel-9e8006c4-e896-43f7-a660-1dcf68bd3d75",
+    "kidId": "26OSK0002",
+    "prizeId": "badges"
+  }
+]
