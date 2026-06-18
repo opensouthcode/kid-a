@@ -54,6 +54,28 @@ stores writable event data in `server/data`, seeded from `src/data` when files
 are missing. Set `KID_A_DATA_DIR` to use a different local data directory.
 
 `netlify.toml` also routes those endpoints to `netlify/functions/api.ts`.
-Netlify Functions can run this adapter locally and with bundled JSON data, but
-the function filesystem is not durable in production. Use durable storage before
-depending on Netlify Functions for live event writes.
+Netlify Functions use Netlify Blobs for durable production writes while keeping
+the same frontend API contract. On first read, the blob store is seeded from the
+committed JSON data in `server/data` or `src/data`. Passports are stored as one
+blob per kid at `passports/{kidId}.json`, so completing an activity only writes
+that kid's passport. Prize catalog settings are stored in one shared blob, and
+prize awards remain an append-only shared JSON document.
+
+The default blob store name is `kid-a-data`. Set `KID_A_BLOBS_STORE` in Netlify
+to use a different store name. Netlify automatically provides the Blobs runtime
+context to the function; local Node deployments continue to use `server/data`
+and `KID_A_DATA_DIR`. The `build:gh-pages` static deployment still uses bundled
+sample data and does not call the remote endpoints.
+
+Set `KID_A_ADMIN_TOKEN` to enable protected admin backup and restore endpoints.
+The export includes `exportedAt`, `passports`, `wheelPrizes`, and `prizesWon`.
+
+```bash
+curl -H "Authorization: Bearer $KID_A_ADMIN_TOKEN" \
+  https://example.netlify.app/admin/export > kid-a-backup.json
+
+curl -X POST -H "Authorization: Bearer $KID_A_ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data-binary @kid-a-backup.json \
+  https://example.netlify.app/admin/import
+```

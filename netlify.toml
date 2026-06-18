@@ -25,6 +25,18 @@
   force = true
 
 [[redirects]]
+  from = "/admin/export"
+  to = "/.netlify/functions/api/admin/export"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/import"
+  to = "/.netlify/functions/api/admin/import"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/kid-a/assets/*"
   to = "/assets/:splat"
   status = 200

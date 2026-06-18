@@ -1,4 +1,10 @@
+import { connectLambda } from '@netlify/blobs';
+import { handleApiRequest } from '../../server/api.js';
+import { createBlobStore } from '../../server/blob-store.js';
+import { setStoreAdapter } from '../../server/store.js';
+
 type NetlifyEvent = {
+  blobs?: string;
   body?: string | null;
   headers?: Record<string, string | undefined>;
   httpMethod: string;
@@ -6,10 +12,23 @@ type NetlifyEvent = {
   path: string;
 };
 
-export async function handler(event: NetlifyEvent) {
-  process.env.KID_A_DATA_DIR ??= '/tmp/kid-a-data';
+function definedHeaders(headers: NetlifyEvent['headers']) {
+  return Object.fromEntries(
+    Object.entries(headers ?? {}).filter(
+      (entry): entry is [string, string] => entry[1] !== undefined,
+    ),
+  );
+}
 
-  const { handleApiRequest } = await import('../../server/api.js');
+export async function handler(event: NetlifyEvent) {
+  if (event.blobs) {
+    connectLambda({
+      blobs: event.blobs,
+      headers: definedHeaders(event.headers),
+    });
+  }
+
+  setStoreAdapter(createBlobStore());
   const response = await handleApiRequest({
     body: event.body,
     headers: event.headers,
