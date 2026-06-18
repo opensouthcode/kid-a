@@ -3,7 +3,7 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist'] },
+  { ignores: ['dist', 'dist-server'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {
@@ -11,6 +11,13 @@ export default tseslint.config(
     languageOptions: {
       ecmaVersion: 2022,
       globals: globals.browser,
+    },
+  },
+  {
+    files: ['server/**/*.ts', 'netlify/functions/**/*.ts'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      globals: globals.node,
     },
   },
 );

@@ -1,5 +1,6 @@
 import {
   createContext,
+  useEffect,
   useContext,
   useMemo,
   useState,
@@ -13,102 +14,59 @@ import prizeAwardsJson from '../data/prizeAwards.json';
 import prizesJson from '../data/prizes.json';
 import usersJson from '../data/users.json';
 import {
+  clonePassportActivities,
+  clonePrizeAwards,
+  clonePrizes,
+  getPrizeGiven,
+  getPrizeRemaining,
+  isWheelAward,
+  syncPrizeGivenCache,
+  type Activity,
+  type ConferenceData,
+  type CurrentUser,
+  type Kid,
+  type PassportActivitiesByKid,
+  type PassportData,
+  type Prize,
+  type PrizeAward,
+  type PrizeSettingsUpdate,
+  type User,
+  type WheelShotSummary,
+} from '../data/data-model';
+import {
+  fetchRemoteDataSnapshot,
+  isRemoteDataLayerEnabled,
+  readRemoteDataCache,
+  saveRemotePassportActivity,
+  saveRemotePrize,
+  saveRemotePrizeAward,
+  writeRemoteDataCache,
+  type RemoteDataSnapshot,
+} from '../data/remote-data-client';
+import {
   createKidQrIdData,
   getKidSequenceNumber,
   getNextKidId,
 } from '../utils/kid-id';
-import type { KidGender, RegistrationInput } from '../utils/kid-registration';
-import type { Locale } from '../i18n/messages';
+import type { RegistrationInput } from '../utils/kid-registration';
 
-export type ConferenceData = {
-  kidIdPrefix: string;
-  shortName: string;
-  title: string;
-};
-
-export type Activity = {
-  details?: string;
-  id: string;
-  issueUrl: string;
-  title: string;
-};
-
-export type PassportActivity = {
-  completedAt?: string;
-  id: number;
-};
-
-export type PassportData = {
-  activities: PassportActivity[];
-};
-
-type PassportActivitiesByKid = Record<string, PassportActivity[]>;
-
-export type PrizeKind = 'final' | 'normal' | 'valuable';
-
-export type Prize = {
-  given: number;
-  id: string;
-  initialUnits: number;
-  kind: PrizeKind;
-  title: string;
-};
-
-type PrizeSettingsUpdate = Partial<Omit<Prize, 'given'>>;
-type PrizeAwardSource = 'passportCompletion' | 'wheel';
-
-export type PrizeAward = {
-  awardedAt: string;
-  id: string;
-  kidId: string;
-  prizeId: string;
-  source?: PrizeAwardSource;
-};
-
-export type PrizeAwardRecord = PrizeAward & {
-  prizeKind: PrizeKind;
-  prizeTitle: string;
-};
-
-export type WheelShotSummary = {
-  availableShots: number;
-  awards: PrizeAwardRecord[];
-  completionAward?: PrizeAwardRecord;
-  earnedShots: number;
-  usedShots: number;
-};
-
-export type UserRole = 'desk' | 'wheel' | 'lead';
-
-export type User = {
-  activityId?: number;
-  id: string;
-  name: string;
-  role: UserRole;
-};
-
-export type Kid = {
-  age: number;
-  gender: KidGender;
-  id: string;
-  language: Locale;
-  name: string;
-  qrIdData: string;
-};
-
-export type CurrentUser =
-  | {
-      id: 'guest';
-      name: 'Guest';
-      role: 'guest';
-    }
-  | {
-      id: string;
-      kid: Kid;
-      name: string;
-      role: 'kid';
-    }
-  | User;
+export { getPrizeRemaining } from '../data/data-model';
+export type {
+  Activity,
+  ConferenceData,
+  CurrentUser,
+  Kid,
+  PassportActivity,
+  PassportData,
+  Prize,
+  PrizeAward,
+  PrizeAwardRecord,
+  PrizeKind,
+  PrizeSettingsUpdate,
+  User,
+  UserRole,
+  WheelShotSummary,
+} from '../data/data-model';
 
 type DataLayerContextValue = {
   activities: Activity[];
@@ -141,44 +99,6 @@ const initialPrizes = prizesJson as Prize[];
 const initialUsers: User[] = usersJson as User[];
 const initialPassportActivitiesByUser =
   passportActivitiesJson as PassportActivitiesByKid;
-
-function clonePassportActivities(
-  passportActivitiesByKid: PassportActivitiesByKid,
-): PassportActivitiesByKid {
-  return Object.fromEntries(
-    Object.entries(passportActivitiesByKid).map(([kidId, activities]) => [
-      kidId,
-      activities.map((activity) => ({ ...activity })),
-    ]),
-  );
-}
-
-function clonePrizes(prizes: Prize[]): Prize[] {
-  return prizes.map((prize) => ({ ...prize }));
-}
-
-function clonePrizeAwards(prizeAwards: PrizeAward[]): PrizeAward[] {
-  return prizeAwards.map((award) => ({ ...award }));
-}
-
-export function getPrizeRemaining(prize: Prize) {
-  return Math.max(prize.initialUnits - prize.given, 0);
-}
-
-function getPrizeGiven(prizeAwards: PrizeAward[], prizeId: string) {
-  return prizeAwards.filter((award) => award.prizeId === prizeId).length;
-}
-
-function isWheelAward(award: PrizeAward) {
-  return (award.source ?? 'wheel') === 'wheel';
-}
-
-function syncPrizeGivenCache(prizes: Prize[], prizeAwards: PrizeAward[]): Prize[] {
-  return prizes.map((prize) => ({
-    ...prize,
-    given: getPrizeGiven(prizeAwards, prize.id),
-  }));
-}
 
 function normalizePrizeCount(value: number) {
   if (!Number.isFinite(value)) {
@@ -262,16 +182,27 @@ const DataLayerContext = createContext<DataLayerContextValue | undefined>(
 );
 
 export function DataLayerProvider({ children }: PropsWithChildren) {
+  const isRemoteDataLayer = isRemoteDataLayerEnabled();
+  const [initialRemoteSnapshot] = useState(() =>
+    isRemoteDataLayer ? readRemoteDataCache() : undefined,
+  );
   const [kidList, setKidList] = useState(initialKids);
   const [prizeAwards, setPrizeAwards] = useState(() =>
-    clonePrizeAwards(initialPrizeAwards),
+    clonePrizeAwards(initialRemoteSnapshot?.prizeAwards ?? initialPrizeAwards),
   );
   const [prizeList, setPrizeList] = useState(() =>
-    syncPrizeGivenCache(clonePrizes(initialPrizes), initialPrizeAwards),
+    syncPrizeGivenCache(
+      clonePrizes(initialRemoteSnapshot?.prizes ?? initialPrizes),
+      initialRemoteSnapshot?.prizeAwards ?? initialPrizeAwards,
+    ),
   );
   const [userList] = useState(initialUsers);
   const [passportActivitiesByUser, setPassportActivitiesByUser] = useState(
-    () => clonePassportActivities(initialPassportActivitiesByUser),
+    () =>
+      clonePassportActivities(
+        initialRemoteSnapshot?.passportActivitiesByKid ??
+          initialPassportActivitiesByUser,
+      ),
   );
   const [selectedCurrentUser, setSelectedCurrentUser] =
     useState<CurrentUser>(guestUser);
@@ -279,6 +210,43 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     () => syncPrizeGivenCache(prizeList, prizeAwards),
     [prizeAwards, prizeList],
   );
+  const applyRemoteSnapshot = (snapshot: RemoteDataSnapshot) => {
+    setPassportActivitiesByUser(
+      clonePassportActivities(snapshot.passportActivitiesByKid),
+    );
+    setPrizeAwards(clonePrizeAwards(snapshot.prizeAwards));
+    setPrizeList(syncPrizeGivenCache(clonePrizes(snapshot.prizes), snapshot.prizeAwards));
+  };
+
+  useEffect(() => {
+    if (!isRemoteDataLayer || initialRemoteSnapshot) {
+      return;
+    }
+
+    fetchRemoteDataSnapshot()
+      .then(applyRemoteSnapshot)
+      .catch((error) => {
+        console.error('Unable to load remote event data.', error);
+      });
+  }, [initialRemoteSnapshot, isRemoteDataLayer]);
+
+  useEffect(() => {
+    if (!isRemoteDataLayer) {
+      return;
+    }
+
+    writeRemoteDataCache({
+      passportActivitiesByKid: passportActivitiesByUser,
+      prizeAwards,
+      prizes,
+    });
+  }, [isRemoteDataLayer, passportActivitiesByUser, prizeAwards, prizes]);
+
+  const persistRemoteSnapshot = (snapshotPromise: Promise<RemoteDataSnapshot>) => {
+    snapshotPromise.then(applyRemoteSnapshot).catch((error) => {
+      console.error('Unable to refresh remote event data.', error);
+    });
+  };
   const currentUser =
     selectedCurrentUser.role === 'guest'
       ? guestUser
@@ -347,6 +315,22 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     setPrizeList((currentPrizes) => [...currentPrizes, createdPrize]);
 
+    if (isRemoteDataLayer) {
+      saveRemotePrize(undefined, { title: trimmedTitle })
+        .then((response) => {
+          setPrizeAwards(clonePrizeAwards(response.prizeAwards ?? prizeAwards));
+          setPrizeList(
+            syncPrizeGivenCache(
+              clonePrizes(response.prizes),
+              response.prizeAwards ?? prizeAwards,
+            ),
+          );
+        })
+        .catch((error) => {
+          console.error('Unable to save remote prize.', error);
+        });
+    }
+
     return createdPrize;
   };
   const getPassportForKid = (kidId: string): PassportData => ({
@@ -402,6 +386,11 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   const findKidByQrIdData = (qrIdData: string) =>
     kidList.find((kid) => kid.qrIdData === qrIdData);
   const reloadPassportActivities = () => {
+    if (isRemoteDataLayer) {
+      persistRemoteSnapshot(fetchRemoteDataSnapshot());
+      return;
+    }
+
     setPassportActivitiesByUser((currentPassportActivities) =>
       clonePassportActivities(currentPassportActivities),
     );
@@ -410,6 +399,10 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     const refreshedPrizes = syncPrizeGivenCache(prizeList, prizeAwards);
 
     setPrizeList(refreshedPrizes);
+
+    if (isRemoteDataLayer) {
+      persistRemoteSnapshot(fetchRemoteDataSnapshot());
+    }
 
     return refreshedPrizes;
   };
@@ -440,6 +433,18 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     };
 
     setPassportActivitiesByUser(nextPassportActivities);
+
+    if (isRemoteDataLayer) {
+      saveRemotePassportActivity(kidId, activityId)
+        .then((remotePassportActivities) => {
+          setPassportActivitiesByUser(
+            clonePassportActivities(remotePassportActivities),
+          );
+        })
+        .catch((error) => {
+          console.error('Unable to save remote passport activity.', error);
+        });
+    }
 
     return completedActivities;
   };
@@ -490,6 +495,19 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       syncPrizeGivenCache(currentPrizes, nextPrizeAwards),
     );
 
+    if (isRemoteDataLayer) {
+      saveRemotePrizeAward(kidId, prizeId)
+        .then((response) => {
+          setPrizeAwards(clonePrizeAwards(response.prizeAwards));
+          setPrizeList(
+            syncPrizeGivenCache(clonePrizes(response.prizes), response.prizeAwards),
+          );
+        })
+        .catch((error) => {
+          console.error('Unable to save remote prize award.', error);
+        });
+    }
+
     return award;
   };
   const awardPassportCompletionPrize = (kidId: string) => {
@@ -539,6 +557,19 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       syncPrizeGivenCache(currentPrizes, nextPrizeAwards),
     );
 
+    if (isRemoteDataLayer) {
+      saveRemotePrizeAward(kidId, prize.id, 'passportCompletion')
+        .then((response) => {
+          setPrizeAwards(clonePrizeAwards(response.prizeAwards));
+          setPrizeList(
+            syncPrizeGivenCache(clonePrizes(response.prizes), response.prizeAwards),
+          );
+        })
+        .catch((error) => {
+          console.error('Unable to save remote passport completion prize.', error);
+        });
+    }
+
     return award;
   };
   const updatePrize = (prizeId: string, updates: PrizeSettingsUpdate) => {
@@ -571,6 +602,22 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
         };
       });
     });
+
+    if (isRemoteDataLayer) {
+      saveRemotePrize(prizeId, updates)
+        .then((response) => {
+          setPrizeAwards(clonePrizeAwards(response.prizeAwards ?? prizeAwards));
+          setPrizeList(
+            syncPrizeGivenCache(
+              clonePrizes(response.prizes),
+              response.prizeAwards ?? prizeAwards,
+            ),
+          );
+        })
+        .catch((error) => {
+          console.error('Unable to update remote prize.', error);
+        });
+    }
   };
   const value = useMemo<DataLayerContextValue>(
     () => ({
