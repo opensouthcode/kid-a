@@ -1080,9 +1080,28 @@ h2 {
   margin-top: 24px;
 }
 
+.desk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
 .desk-submit-button {
-  justify-self: end;
   min-width: 240px;
+}
+
+.secondary-action {
+  border-color: #8c6b3f;
+  background: #fffaf0;
+  color: #2d2418;
+  box-shadow: 0 10px 22px rgb(45 36 24 / 12%);
+}
+
+.secondary-action:hover,
+.secondary-action:focus-visible {
+  background: #f4e7cb;
+  color: #2d2418;
 }
 
 .desk-submit-button.attention {
@@ -1254,6 +1273,10 @@ h2 {
   color: #2d2418;
   font-size: clamp(1.8rem, 3vw, 2.8rem);
   line-height: 1;
+}
+
+.print-qr-sheet {
+  display: none;
 }
 
 .last-kids-list {
@@ -2229,5 +2252,65 @@ h2 {
 @media (max-width: 460px) {
   .passport-mosaic {
     border-width: 3px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  #root > :not(.print-qr-sheet) {
+    display: none;
+  }
+
+  .print-qr-sheet,
+  .print-qr-sheet * {
+    visibility: visible;
+  }
+
+  .print-qr-sheet {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 3.5mm 4mm;
+    align-items: start;
+    padding: 0;
+    background: #fff;
+    color: #000;
+  }
+
+  .passport-print-qr {
+    display: grid;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    gap: 1mm;
+    justify-items: center;
+    color: #000;
+    font-family: Arial, sans-serif;
+  }
+
+  .passport-print-qr img {
+    display: block;
+    width: 28mm;
+    height: 28mm;
+  }
+
+  .passport-print-qr span {
+    font-size: 7pt;
+    font-weight: 700;
+    line-height: 1;
   }
 }

@@ -1,3 +1,4 @@
+import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QrReader } from '../components/QrReader';
@@ -18,6 +19,18 @@ import {
   type KidGender,
 } from '../utils/kid-registration';
 
+type PrintablePassportQr = {
+  id: string;
+  qrCodeUrl: string;
+};
+
+const PASSPORT_QR_COUNT = 200;
+const PASSPORT_QR_ID_PREFIX = '26OSK';
+const PASSPORT_QR_URL = 'https://kid-a.netlify.app/passport?id=';
+
+const createPassportQrId = (number: number) =>
+  `${PASSPORT_QR_ID_PREFIX}${String(number).padStart(4, '0')}`;
+
 export function DeskPage() {
   const addRegisteredKid = useAddRegisteredKid();
   const navigate = useNavigate();
@@ -32,6 +45,12 @@ export function DeskPage() {
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
   const [isConfirmAttentionActive, setIsConfirmAttentionActive] = useState(false);
   const [lastAnimatedKidId, setLastAnimatedKidId] = useState('');
+  const [printablePassportQrs, setPrintablePassportQrs] = useState<
+    PrintablePassportQr[]
+  >([]);
+  const [isGeneratingPrintQrs, setIsGeneratingPrintQrs] = useState(false);
+  const [shouldPrintQrSheet, setShouldPrintQrSheet] = useState(false);
+  const [printQrError, setPrintQrError] = useState('');
   const lastRegisteredKids = [...kids].reverse().slice(0, 3);
   const kidCount = kids.length;
 
@@ -40,6 +59,21 @@ export function DeskPage() {
       navigate('/', { replace: true });
     }
   }, [currentUser.role, navigate]);
+
+  useEffect(() => {
+    if (!shouldPrintQrSheet || printablePassportQrs.length !== PASSPORT_QR_COUNT) {
+      return;
+    }
+
+    const animationFrameId = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        window.print();
+        setShouldPrintQrSheet(false);
+      });
+    });
+
+    return () => window.cancelAnimationFrame(animationFrameId);
+  }, [printablePassportQrs.length, shouldPrintQrSheet]);
 
   if (currentUser.role !== 'desk') {
     return null;
@@ -50,6 +84,35 @@ export function DeskPage() {
     setAge('');
     setGender('preferNotToSay');
     setLanguage(locale);
+  };
+
+  const printPassportQrs = () => {
+    setPrintQrError('');
+    setIsGeneratingPrintQrs(true);
+
+    Promise.all(
+      Array.from({ length: PASSPORT_QR_COUNT }, (_, index) => {
+        const id = createPassportQrId(index + 1);
+
+        return QRCode.toDataURL(`${PASSPORT_QR_URL}${id}`, {
+          errorCorrectionLevel: 'M',
+          margin: 1,
+          width: 160,
+        }).then((qrCodeUrl) => ({
+          id,
+          qrCodeUrl,
+        }));
+      }),
+    )
+      .then((nextPrintablePassportQrs) => {
+        setPrintablePassportQrs(nextPrintablePassportQrs);
+        setShouldPrintQrSheet(true);
+      })
+      .catch(() => {
+        setPrintQrError(t('desk.printQr.error'));
+        setShouldPrintQrSheet(false);
+      })
+      .finally(() => setIsGeneratingPrintQrs(false));
   };
 
   const readQrPayload = (qrPayload: string) => {
@@ -159,17 +222,30 @@ export function DeskPage() {
               ) : null}
             </div>
           ) : null}
-          <button
-            className={
-              isConfirmAttentionActive
-                ? 'access-button desk-submit-button attention'
-                : 'access-button desk-submit-button'
-            }
-            type="submit"
-            onAnimationEnd={() => setIsConfirmAttentionActive(false)}
-          >
-            {t('desk.confirm')}
-          </button>
+          {printQrError ? <p className="form-error">{printQrError}</p> : null}
+          <div className="desk-actions">
+            <button
+              className="access-button secondary-action"
+              type="button"
+              disabled={isGeneratingPrintQrs}
+              onClick={printPassportQrs}
+            >
+              {isGeneratingPrintQrs
+                ? t('desk.printQr.generating')
+                : t('desk.printQr')}
+            </button>
+            <button
+              className={
+                isConfirmAttentionActive
+                  ? 'access-button desk-submit-button attention'
+                  : 'access-button desk-submit-button'
+              }
+              type="submit"
+              onAnimationEnd={() => setIsConfirmAttentionActive(false)}
+            >
+              {t('desk.confirm')}
+            </button>
+          </div>
         </form>
 
         <section className="desk-summary" aria-label={t('desk.summary.title')}>
@@ -189,6 +265,14 @@ export function DeskPage() {
             <strong>{kidCount}</strong>
           </article>
         </section>
+      </section>
+      <section className="print-qr-sheet" aria-label={t('desk.printQr.sheet')}>
+        {printablePassportQrs.map((passportQr) => (
+          <article className="passport-print-qr" key={passportQr.id}>
+            <img src={passportQr.qrCodeUrl} alt="" />
+            <span>{passportQr.id}</span>
+          </article>
+        ))}
       </section>
     </>
   );
