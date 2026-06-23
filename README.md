@@ -69,8 +69,8 @@ and `KID_A_DATA_DIR`. Staff magic-link tokens are role-scoped and stored as
 SHA-256 hashes in
 the same blob store under `admin/magic-tokens.json`, or in
 `server/data/magicTokens.json` for local Node. Set `ADMIN_PASSWORD` to enable
-the `/admin` page to generate 12-hour desk, wheel, or activity-specific lead
-links by default; the duration can be changed when generating a link. The
+the `/admin` page to generate 1-day desk, wheel, or activity-specific lead
+links by default; the duration in days can be changed when generating a link. The
 `build:gh-pages` static deployment still uses bundled sample data and does not
 call the remote endpoints; it exposes built-in demo links for the same roles.
 

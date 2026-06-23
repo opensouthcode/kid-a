@@ -28,14 +28,16 @@ export const messages = {
     'admin.description':
       'Enter the admin password, choose a staff role, and create a temporary access URL.',
     'admin.demo.description':
-      'Static demo mode uses built-in sample links for current staff users.',
+      'Static demo mode uses built-in sample links for staff roles.',
     'admin.demo.notice':
       'These sample links are for GitHub Pages demo data only and do not expire.',
     'admin.demo.noExpiry': 'Demo link',
     'admin.password': 'Admin password',
+    'admin.unlock': 'Unlock admin',
+    'admin.unlocking': 'Checking password...',
     'admin.role': 'Role',
     'admin.activity': 'Activity',
-    'admin.duration': 'Duration in hours',
+    'admin.duration': 'Duration in days',
     'admin.generate': 'Generate magic link',
     'admin.generating': 'Generating magic link...',
     'admin.generated': 'Magic link generated.',
@@ -50,6 +52,7 @@ export const messages = {
     'admin.qr.instructions': 'Share this QR only with the intended staff user.',
     'admin.qr.empty': 'Generate a link and click Show QR to display it here.',
     'admin.error.generate': 'The magic link could not be generated.',
+    'admin.error.password': 'The admin password could not be verified.',
     'admin.error.qr': 'The magic link QR could not be generated.',
     'admin.error.activity': 'Choose an activity for the lead link.',
     'navigation.home': 'Back home',
@@ -237,14 +240,16 @@ export const messages = {
     'admin.description':
       'Introduce la clave admin, elige un rol del equipo y crea una URL temporal.',
     'admin.demo.description':
-      'El modo demo estático usa enlaces de muestra integrados para el equipo actual.',
+      'El modo demo estático usa enlaces de muestra integrados para roles del equipo.',
     'admin.demo.notice':
       'Estos enlaces de muestra son solo para los datos demo de GitHub Pages y no caducan.',
     'admin.demo.noExpiry': 'Enlace demo',
     'admin.password': 'Clave admin',
+    'admin.unlock': 'Desbloquear admin',
+    'admin.unlocking': 'Comprobando clave...',
     'admin.role': 'Rol',
     'admin.activity': 'Actividad',
-    'admin.duration': 'Duración en horas',
+    'admin.duration': 'Duración en días',
     'admin.generate': 'Generar magic link',
     'admin.generating': 'Generando magic link...',
     'admin.generated': 'Magic link generado.',
@@ -259,6 +264,7 @@ export const messages = {
     'admin.qr.instructions': 'Comparte este QR solo con la persona indicada.',
     'admin.qr.empty': 'Genera un enlace y pulsa Mostrar QR para verlo aquí.',
     'admin.error.generate': 'No se pudo generar el magic link.',
+    'admin.error.password': 'No se pudo comprobar la clave admin.',
     'admin.error.qr': 'No se pudo generar el QR del magic link.',
     'admin.error.activity': 'Elige una actividad para el enlace de actividad.',
     'navigation.home': 'Volver al inicio',

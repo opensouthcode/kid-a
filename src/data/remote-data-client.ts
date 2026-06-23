@@ -112,21 +112,34 @@ export async function fetchRemoteMagicLinkSession() {
   return readJsonResponse<RemoteMagicLinkSession>(response);
 }
 
+export async function verifyRemoteAdminPassword(password: string) {
+  const response = await fetch(buildApiUrl('/admin/session'), {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Password': password,
+    },
+    method: 'POST',
+  });
+
+  return readJsonResponse<{ ok: true }>(response);
+}
+
 export async function createRemoteMagicLink({
   activityId,
-  durationHours,
+  durationDays,
   password,
   role,
 }: {
   activityId?: number;
-  durationHours: number;
+  durationDays: number;
   password: string;
   role: UserRole;
 }) {
   const response = await fetch(buildApiUrl('/admin/magic-links'), {
-    body: JSON.stringify({ activityId, durationHours, password, role }),
+    body: JSON.stringify({ activityId, durationDays, role }),
     headers: {
       'Content-Type': 'application/json',
+      'X-Admin-Password': password,
     },
     method: 'POST',
   });

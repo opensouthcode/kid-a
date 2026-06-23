@@ -47,6 +47,7 @@ type AdminBackup = {
 };
 
 const apiPaths = new Set([
+  '/admin/session',
   '/admin/magic-links',
   '/admin/export',
   '/admin/import',
@@ -239,15 +240,15 @@ function parsePositiveInteger(value: string | null, label: string) {
   return numberValue;
 }
 
-function normalizeDurationHours(value: unknown) {
+function normalizeDurationDays(value: unknown) {
   if (value === undefined || value === null || value === '') {
-    return 12;
+    return 1;
   }
 
   const numberValue = Number(value);
 
-  if (!Number.isFinite(numberValue) || numberValue < 1 || numberValue > 168) {
-    throw new HttpError(400, 'durationHours must be between 1 and 168');
+  if (!Number.isFinite(numberValue) || numberValue < 1 || numberValue > 30) {
+    throw new HttpError(400, 'durationDays must be between 1 and 30');
   }
 
   return numberValue;
@@ -503,6 +504,16 @@ async function handleAdmin(
   request: ApiRequest,
   path: string,
 ): Promise<ApiResponse> {
+  if (path === '/admin/session') {
+    if (request.method !== 'POST') {
+      throw new HttpError(405, 'Method not allowed');
+    }
+
+    requireAdminPassword(request, parseJsonBody(request.body));
+
+    return jsonResponse(request, 200, { ok: true });
+  }
+
   if (path === '/admin/magic-links') {
     if (request.method !== 'POST') {
       throw new HttpError(405, 'Method not allowed');
@@ -513,10 +524,10 @@ async function handleAdmin(
 
     const role = normalizeStaffRole(body.role);
     const activityId = normalizeOptionalActivityId(body.activityId, role);
-    const durationHours = normalizeDurationHours(body.durationHours);
+    const durationDays = normalizeDurationDays(body.durationDays);
     const createdMagicLink = await createMagicLinkToken(
       { ...(activityId ? { activityId } : {}), role },
-      durationHours,
+      durationDays * 24 * 60 * 60 * 1000,
     );
 
     return jsonResponse(request, 201, {

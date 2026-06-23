@@ -15,6 +15,7 @@ import {
 import {
   createRemoteMagicLink,
   isRemoteDataLayerEnabled,
+  verifyRemoteAdminPassword,
 } from '../data/remote-data-client';
 import { useI18n } from '../i18n/I18nProvider';
 import type { MessageKey } from '../i18n/messages';
@@ -42,7 +43,10 @@ export function AdminPage() {
   const { locale, t } = useI18n();
   const isRemoteDataLayer = isRemoteDataLayerEnabled();
   const [password, setPassword] = useState('');
-  const [durationHours, setDurationHours] = useState(12);
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(!isRemoteDataLayer);
+  const [isCheckingPassword, setIsCheckingPassword] = useState(false);
+  const [lockError, setLockError] = useState('');
+  const [durationDays, setDurationDays] = useState(1);
   const [selectedRole, setSelectedRole] = useState<UserRole>('desk');
   const [selectedActivityId, setSelectedActivityId] = useState(
     Number(activities[0]?.id ?? 1),
@@ -102,6 +106,24 @@ export function AdminPage() {
       .catch(() => setStatusMessage(t('admin.copy.error')));
   };
 
+  const unlockAdmin = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    setIsCheckingPassword(true);
+    setLockError('');
+
+    verifyRemoteAdminPassword(password)
+      .then(() => {
+        setIsAdminUnlocked(true);
+      })
+      .catch((error) => {
+        setLockError(
+          error instanceof Error ? error.message : t('admin.error.password'),
+        );
+      })
+      .finally(() => setIsCheckingPassword(false));
+  };
+
   const generateMagicLink = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -119,7 +141,7 @@ export function AdminPage() {
         ? await createRemoteMagicLink({
             activityId:
               selectedRole === 'lead' ? selectedActivityId : undefined,
-            durationHours,
+            durationDays,
             password,
             role: selectedRole,
           })
@@ -189,97 +211,118 @@ export function AdminPage() {
     <>
       <TopBar showLanguageSwitcher />
       <section className="admin-content" aria-labelledby="admin-title">
-        <BackHomeButton />
+        {isAdminUnlocked ? <BackHomeButton /> : null}
         <p className="eyebrow">{t('admin.eyebrow')}</p>
         <h1 id="admin-title">{t('admin.title')}</h1>
         <p className="site-description">
           {isRemoteDataLayer ? t('admin.description') : t('admin.demo.description')}
         </p>
 
-        <div className="admin-layout">
-          <section className="admin-panel">
-            <form className="admin-form" onSubmit={generateMagicLink}>
-              {isRemoteDataLayer ? (
+        {!isAdminUnlocked ? (
+          <form className="admin-lock-screen" onSubmit={unlockAdmin}>
+            <label>
+              {t('admin.password')}
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+              />
+            </label>
+            {lockError ? (
+              <p className="form-error" role="status">
+                {lockError}
+              </p>
+            ) : null}
+            <button
+              className="access-button"
+              type="submit"
+              disabled={isCheckingPassword}
+            >
+              {isCheckingPassword ? t('admin.unlocking') : t('admin.unlock')}
+            </button>
+          </form>
+        ) : null}
+
+        {isAdminUnlocked ? (
+          <div className="admin-layout">
+            <section className="admin-panel">
+              <form className="admin-form" onSubmit={generateMagicLink}>
+                {!isRemoteDataLayer ? <p>{t('admin.demo.notice')}</p> : null}
                 <label>
-                  {t('admin.password')}
-                  <input
-                    type="password"
-                    autoComplete="current-password"
-                    value={password}
-                    onChange={(event) => setPassword(event.target.value)}
-                  />
-                </label>
-              ) : (
-                <p>{t('admin.demo.notice')}</p>
-              )}
-              <label>
-                {t('admin.role')}
-                <select
-                  value={selectedRole}
-                  onChange={(event) => setSelectedRole(event.target.value as UserRole)}
-                >
-                  {roles.map((role) => (
-                    <option key={role} value={role}>
-                      {t(roleLabelKeys[role])}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              {selectedRole === 'lead' ? (
-                <label>
-                  {t('admin.activity')}
+                  {t('admin.role')}
                   <select
-                    value={selectedActivityId}
+                    value={selectedRole}
                     onChange={(event) =>
-                      setSelectedActivityId(Number(event.target.value))
+                      setSelectedRole(event.target.value as UserRole)
                     }
                   >
-                    {activities.map((activity) => (
-                      <option key={activity.id} value={Number(activity.id)}>
-                        {activity.id.padStart(2, '0')} - {activity.title}
+                    {roles.map((role) => (
+                      <option key={role} value={role}>
+                        {t(roleLabelKeys[role])}
                       </option>
                     ))}
                   </select>
                 </label>
+                {selectedRole === 'lead' ? (
+                  <label>
+                    {t('admin.activity')}
+                    <select
+                      value={selectedActivityId}
+                      onChange={(event) =>
+                        setSelectedActivityId(Number(event.target.value))
+                      }
+                    >
+                      {activities.map((activity) => (
+                        <option key={activity.id} value={Number(activity.id)}>
+                          {activity.id.padStart(2, '0')} - {activity.title}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                <label>
+                  {t('admin.duration')}
+                  <input
+                    min={1}
+                    max={30}
+                    type="number"
+                    value={durationDays}
+                    disabled={!isRemoteDataLayer}
+                    onChange={(event) =>
+                      setDurationDays(Math.max(1, Number(event.target.value)))
+                    }
+                  />
+                </label>
+                <button className="access-button" type="submit">
+                  {t('admin.generate')}
+                </button>
+              </form>
+
+              {statusMessage ? (
+                <p className="admin-status" role="status">
+                  {statusMessage}
+                </p>
               ) : null}
-              <label>
-                {t('admin.duration')}
-                <input
-                  min={1}
-                  max={168}
-                  type="number"
-                  value={durationHours}
-                  disabled={!isRemoteDataLayer}
-                  onChange={(event) =>
-                    setDurationHours(Math.max(1, Number(event.target.value)))
-                  }
-                />
-              </label>
-              <button className="access-button" type="submit">
-                {t('admin.generate')}
-              </button>
-            </form>
+              {generatedMagicLink ? renderMagicLinkCard(generatedMagicLink) : null}
+            </section>
 
-            {statusMessage ? (
-              <p className="admin-status" role="status">
-                {statusMessage}
-              </p>
-            ) : null}
-            {generatedMagicLink ? renderMagicLinkCard(generatedMagicLink) : null}
-          </section>
-
-          <aside className="qr-panel admin-qr-panel" aria-label={t('admin.qr.title')}>
-            {qrSourceUrl && qrCodeUrl ? (
-              <>
-                <h2>{t('admin.qr.title')}</h2>
-                <img src={qrCodeUrl} alt={t('admin.qr.alt')} />
-                <p>{t('admin.qr.instructions')}</p>
-              </>
-            ) : (
-              <p>{t('admin.qr.empty')}</p>
-            )}
-          </aside>
-        </div>
+            <aside
+              className="qr-panel admin-qr-panel"
+              aria-label={t('admin.qr.title')}
+            >
+              {qrSourceUrl && qrCodeUrl ? (
+                <>
+                  <h2>{t('admin.qr.title')}</h2>
+                  <img src={qrCodeUrl} alt={t('admin.qr.alt')} />
+                  <p>{t('admin.qr.instructions')}</p>
+                </>
+              ) : (
+                <p>{t('admin.qr.empty')}</p>
+              )}
+            </aside>
+          </div>
+        ) : null}
       </section>
     </>
   );

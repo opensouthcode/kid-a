@@ -144,13 +144,11 @@ async function updateMagicTokens<T>(
 
 export async function createMagicLinkToken(
   scope: MagicLinkScope,
-  durationHours: number,
+  durationMilliseconds: number,
 ): Promise<CreatedMagicLink> {
   const token = randomBytes(24).toString('base64url');
   const createdAt = new Date();
-  const expiresAt = new Date(
-    createdAt.getTime() + durationHours * 60 * 60 * 1000,
-  ).toISOString();
+  const expiresAt = new Date(createdAt.getTime() + durationMilliseconds).toISOString();
   const record: MagicLinkTokenRecord = {
     ...(scope.activityId ? { activityId: scope.activityId } : {}),
     createdAt: createdAt.toISOString(),
