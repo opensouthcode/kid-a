@@ -94,6 +94,7 @@ export const messages = {
     'desk.printQr.error': 'The passport QRs could not be generated.',
     'desk.printQr.sheet': 'Printable passport QR sheet',
     'desk.error.invalidQr': 'The QR data is not a valid registration.',
+    'desk.error.registration': 'The kid could not be registered. Try again.',
     'scanner.scanApproved': 'QR read',
     'scanner.stopScanner': 'Stop camera',
     'scanner.cameraPreview': 'Camera preview',
@@ -306,6 +307,8 @@ export const messages = {
     'desk.printQr.error': 'No se pudieron generar los QRs de pasaporte.',
     'desk.printQr.sheet': 'Hoja imprimible de QRs de pasaporte',
     'desk.error.invalidQr': 'Los datos del QR no son un registro válido.',
+    'desk.error.registration':
+      'No se pudo registrar al participante. Inténtalo de nuevo.',
     'scanner.scanApproved': 'QR leído',
     'scanner.stopScanner': 'Parar cámara',
     'scanner.cameraPreview': 'Vista previa de la cámara',

@@ -5,8 +5,14 @@ import {
   validateMagicLinkToken,
   type MagicLinkSession,
 } from './access-tokens.js';
-import { readSnapshot, updatePassportForKid, updateSnapshot } from './store.js';
+import {
+  readSnapshot,
+  updatePassportForKid,
+  updatePrizeAwardsForKid,
+  updateSnapshot,
+} from './store.js';
 import type {
+  Kid,
   PassportActivitiesByKid,
   PassportActivity,
   Prize,
@@ -39,6 +45,8 @@ class HttpError extends Error {
   }
 }
 
+class StaleKidIdReadError extends Error {}
+
 type AdminBackup = {
   exportedAt: string;
   passports: PassportActivitiesByKid;
@@ -52,12 +60,17 @@ const apiPaths = new Set([
   '/admin/export',
   '/admin/import',
   '/auth/session',
+  '/kids',
   '/passport',
   '/wheel-prizes',
-  '/prizes-won',
+  '/prizes-kid',
 ]);
+const kidGenders = new Set(['boy', 'girl', 'preferNotToSay']);
+const kidRegistrationRetryDelayMs = 250;
+const maxKidRegistrationAttempts = 20;
 const prizeKinds = new Set<PrizeKind>(['final', 'normal', 'valuable']);
 const staffRoles = new Set<UserRole>(['desk', 'lead', 'wheel']);
+const supportedLocales = new Set(['en', 'es']);
 
 export function normalizeApiPath(pathname: string) {
   if (pathname.startsWith('/.netlify/functions/api/')) {
@@ -311,6 +324,44 @@ function normalizeKidId(rawKid: string | null, snapshot: StoreData) {
   return knownKid?.id ?? knownPassportKid ?? candidate.toUpperCase();
 }
 
+function normalizeOptionalLastKnownKidId(value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new HttpError(400, 'lastKnownKidId must be a non-empty string');
+  }
+
+  return value.trim().toLowerCase();
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function getNextKidId(existingKids: Kid[], kidIdPrefix: string) {
+  const existingIds = new Set(existingKids.map((kid) => kid.id.toLowerCase()));
+  let sequence = existingKids.length + 1;
+  let nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
+
+  while (existingIds.has(nextId.toLowerCase())) {
+    sequence += 1;
+    nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
+  }
+
+  return nextId;
+}
+
+function passportResponse(
+  passportActivitiesByKid: PassportActivitiesByKid,
+  kidId: string,
+): PassportActivity[] {
+  return passportActivitiesByKid[kidId] ?? passportTemplate(passportActivitiesByKid);
+}
+
 function passportTemplate(
   passportActivitiesByKid: PassportActivitiesByKid,
 ): PassportActivity[] {
@@ -491,6 +542,34 @@ function normalizeBackupPrizeAwards(value: unknown): PrizeAward[] {
   });
 }
 
+function normalizeRegistrationInput(value: unknown) {
+  const registration = asObject(value, 'registration');
+  const nickname = asString(registration.nickname, 'nickname').trim();
+  const age = normalizeCount(registration.age, 'age');
+  const gender = asString(registration.gender, 'gender');
+  const language = asString(registration.language, 'language');
+
+  if (!nickname) {
+    throw new HttpError(400, 'nickname must be a non-empty string');
+  }
+
+  if (!kidGenders.has(gender)) {
+    throw new HttpError(400, 'gender must be boy, girl, or preferNotToSay');
+  }
+
+  if (!supportedLocales.has(language)) {
+    throw new HttpError(400, 'language must be en or es');
+  }
+
+  return {
+    age,
+    gender,
+    language,
+    lastKnownKidId: normalizeOptionalLastKnownKidId(registration.lastKnownKidId),
+    nickname,
+  };
+}
+
 function parseAdminBackup(body: Record<string, unknown>): AdminBackup {
   return {
     exportedAt: asString(body.exportedAt, 'exportedAt'),
@@ -498,6 +577,69 @@ function parseAdminBackup(body: Record<string, unknown>): AdminBackup {
     prizesWon: normalizeBackupPrizeAwards(body.prizesWon),
     wheelPrizes: normalizeBackupPrizes(body.wheelPrizes),
   };
+}
+
+async function handleKids(request: ApiRequest, url: URL): Promise<ApiResponse> {
+  void url;
+
+  if (request.method === 'GET') {
+    await requireMagicLink(request, url, [...staffRoles]);
+
+    const snapshot = await readSnapshot();
+    return jsonResponse(request, 200, snapshot.kids);
+  }
+
+  if (request.method !== 'POST') {
+    throw new HttpError(405, 'Method not allowed');
+  }
+
+  await requireMagicLink(request, url, ['desk']);
+
+  const registration = normalizeRegistrationInput(parseJsonBody(request.body));
+  let response: Kid | undefined;
+
+  for (let attempt = 1; attempt <= maxKidRegistrationAttempts; attempt += 1) {
+    try {
+      response = await updateSnapshot((snapshot) => {
+        const kidId = getNextKidId(snapshot.kids, snapshot.conference.kidIdPrefix);
+
+        if (kidId.toLowerCase() === registration.lastKnownKidId) {
+          throw new StaleKidIdReadError();
+        }
+
+        const kid: Kid = {
+          age: registration.age,
+          gender: registration.gender,
+          id: kidId,
+          language: registration.language,
+          name: registration.nickname,
+        };
+        const passport = passportTemplate(snapshot.passportActivitiesByKid);
+
+        snapshot.kids.push(kid);
+        snapshot.passportActivitiesByKid[kid.id] = passport;
+
+        return kid;
+      }, ['kids', 'passportActivitiesByKid']);
+      break;
+    } catch (error) {
+      if (
+        error instanceof StaleKidIdReadError &&
+        attempt < maxKidRegistrationAttempts
+      ) {
+        await delay(kidRegistrationRetryDelayMs);
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  if (!response) {
+    throw new HttpError(409, 'Unable to allocate a fresh kid id');
+  }
+
+  return jsonResponse(request, 201, response);
 }
 
 async function handleAdmin(
@@ -605,7 +747,13 @@ async function handlePassport(
     await requireMagicLink(request, url, [...staffRoles]);
 
     const snapshot = await readSnapshot();
-    return jsonResponse(request, 200, snapshot.passportActivitiesByKid);
+    const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
+
+    return jsonResponse(
+      request,
+      200,
+      passportResponse(snapshot.passportActivitiesByKid, kidId),
+    );
   }
 
   if (request.method !== 'POST') {
@@ -622,7 +770,7 @@ async function handlePassport(
   const snapshot = await readSnapshot();
   const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
 
-  const passportActivitiesByKid = await updatePassportForKid(kidId, (snapshot) => {
+  const passport = await updatePassportForKid(kidId, (snapshot) => {
     const passport = ensurePassportForKid(
       snapshot.passportActivitiesByKid,
       kidId,
@@ -637,10 +785,10 @@ async function handlePassport(
       passport.sort((left, right) => left.id - right.id);
     }
 
-    return snapshot.passportActivitiesByKid;
+    return passport;
   });
 
-  return jsonResponse(request, 200, passportActivitiesByKid);
+  return jsonResponse(request, 200, passport);
 }
 
 async function handleWheelPrizes(
@@ -745,7 +893,7 @@ function normalizeAwardSource(value: unknown) {
   return value as PrizeAwardSource;
 }
 
-async function handlePrizesWon(
+async function handlePrizesKid(
   request: ApiRequest,
   url: URL,
 ): Promise<ApiResponse> {
@@ -753,13 +901,7 @@ async function handlePrizesWon(
     await requireMagicLink(request, url, [...staffRoles]);
 
     const snapshot = await readSnapshot();
-    const kid = url.searchParams.get('kid');
-
-    if (!kid) {
-      return jsonResponse(request, 200, snapshot.prizeAwards);
-    }
-
-    const kidId = normalizeKidId(kid, snapshot);
+    const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
     return jsonResponse(
       request,
       200,
@@ -780,8 +922,9 @@ async function handlePrizesWon(
     throw new HttpError(400, 'stock is required');
   }
 
-  const response = await updateSnapshot((snapshot) => {
-    const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
+  const snapshot = await readSnapshot();
+  const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
+  const response = await updatePrizeAwardsForKid(kidId, (snapshot) => {
     const source = normalizeAwardSource(body.source);
     const syncedPrizes = syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards);
     const prize = syncedPrizes.find((entry) => entry.id === stock);
@@ -796,11 +939,7 @@ async function handlePrizesWon(
       );
 
       if (existingAward) {
-        return {
-          award: existingAward,
-          prizeAwards: snapshot.prizeAwards,
-          prizes: syncedPrizes,
-        };
+        return snapshot.prizeAwards.filter((award) => award.kidId === kidId);
       }
     }
 
@@ -818,12 +957,8 @@ async function handlePrizesWon(
 
     snapshot.prizeAwards.push(award);
 
-    return {
-      award,
-      prizeAwards: snapshot.prizeAwards,
-      prizes: syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards),
-    };
-  }, ['prizeAwards']);
+    return snapshot.prizeAwards.filter((award) => award.kidId === kidId);
+  });
 
   return jsonResponse(request, 200, response);
 }
@@ -845,12 +980,16 @@ export async function handleApiRequest(request: ApiRequest): Promise<ApiResponse
       return await handleAuth(request, requestUrl, path);
     }
 
+    if (path === '/kids') {
+      return await handleKids(request, requestUrl);
+    }
+
     if (path === '/wheel-prizes') {
       return await handleWheelPrizes(request, requestUrl);
     }
 
-    if (path === '/prizes-won') {
-      return await handlePrizesWon(request, requestUrl);
+    if (path === '/prizes-kid') {
+      return await handlePrizesKid(request, requestUrl);
     }
 
     if (path.startsWith('/admin/')) {

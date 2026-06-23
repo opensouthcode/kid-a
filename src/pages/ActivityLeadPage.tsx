@@ -13,6 +13,7 @@ import {
   useGetPassportForKid,
   useKidsData,
   useMarkPassportActivityDone,
+  useReloadPassportActivities,
   type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
@@ -24,6 +25,7 @@ export function ActivityLeadPage() {
   const getPassportForKid = useGetPassportForKid();
   const kids = useKidsData();
   const markPassportActivityDone = useMarkPassportActivityDone();
+  const reloadPassportActivities = useReloadPassportActivities();
   const navigate = useNavigate();
   const { locale, t } = useI18n();
   const leadActivityId = currentUser.role === 'lead' ? currentUser.activityId : undefined;
@@ -99,6 +101,12 @@ export function ActivityLeadPage() {
       navigate('/', { replace: true });
     }
   }, [accessSessionStatus.state, currentUser.role, navigate]);
+
+  useEffect(() => {
+    if (confirmedKidId) {
+      reloadPassportActivities(confirmedKidId);
+    }
+  }, [confirmedKidId]);
 
   if (accessSessionStatus.state === 'loading' || currentUser.role !== 'lead') {
     return null;

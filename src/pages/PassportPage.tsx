@@ -18,6 +18,7 @@ import {
   useGetWheelShotSummaryForKid,
   usePassportData,
   useReloadPassportActivities,
+  useReloadPrizeAwardsForKid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import type { MessageKey } from '../i18n/messages';
@@ -46,6 +47,7 @@ export function PassportPage() {
   const getWheelShotSummaryForKid = useGetWheelShotSummaryForKid();
   const passport = usePassportData();
   const reloadPassportActivities = useReloadPassportActivities();
+  const reloadPrizeAwardsForKid = useReloadPrizeAwardsForKid();
   const navigate = useNavigate();
   const { t } = useI18n();
   const [qrCodeUrl, setQrCodeUrl] = useState('');
@@ -72,6 +74,13 @@ export function PassportPage() {
       navigate('/', { replace: true });
     }
   }, [currentUser.role, navigate]);
+
+  useEffect(() => {
+    if (currentUser.role === 'kid') {
+      reloadPassportActivities(currentUser.id);
+      reloadPrizeAwardsForKid(currentUser.id);
+    }
+  }, [currentUser.id, currentUser.role]);
 
   useEffect(() => {
     if (!kidPassportPayload) {
@@ -124,7 +133,7 @@ export function PassportPage() {
               type="button"
               aria-label={t('kid.activities.reload')}
               title={t('kid.activities.reload')}
-              onClick={reloadPassportActivities}
+              onClick={() => reloadPassportActivities()}
             >
               <SyncIcon size={18} aria-hidden="true" />
             </button>

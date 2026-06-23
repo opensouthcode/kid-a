@@ -19,8 +19,14 @@
   force = true
 
 [[redirects]]
-  from = "/api/prizes-won"
-  to = "/.netlify/functions/api/prizes-won"
+  from = "/api/prizes-kid"
+  to = "/.netlify/functions/api/prizes-kid"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/kids"
+  to = "/.netlify/functions/api/kids"
   status = 200
   force = true
 

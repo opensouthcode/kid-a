@@ -1,5 +1,6 @@
 import type {
-  PassportActivitiesByKid,
+  Kid,
+  PassportActivity,
   Prize,
   PrizeAward,
   PrizeAwardSource,
@@ -7,22 +8,14 @@ import type {
   UserRole,
 } from './data-model';
 import { magicLinkRequestHeaders } from '../access/magic-links';
-
+import type { RegistrationInput } from '../utils/kid-registration';
 export type RemoteDataSnapshot = {
-  passportActivitiesByKid: PassportActivitiesByKid;
-  prizeAwards: PrizeAward[];
+  kids: Kid[];
   prizes: Prize[];
 };
 
 type RemotePrizeResponse = {
   prize?: Prize;
-  prizeAwards?: PrizeAward[];
-  prizes: Prize[];
-};
-
-type RemotePrizeAwardResponse = {
-  award: PrizeAward;
-  prizeAwards: PrizeAward[];
   prizes: Prize[];
 };
 
@@ -64,23 +57,43 @@ export function isRemoteDataLayerEnabled() {
 export async function fetchRemoteDataSnapshot(): Promise<RemoteDataSnapshot> {
   const headers = magicLinkRequestHeaders();
   const requestInit = { cache: 'no-store', headers } satisfies RequestInit;
-  const [passportActivitiesByKid, prizes, prizeAwards] = await Promise.all([
-    fetch(buildApiUrl('/passport'), requestInit).then((response) =>
-      readJsonResponse<PassportActivitiesByKid>(response),
+  const [kids, prizes] = await Promise.all([
+    fetch(buildApiUrl('/kids'), requestInit).then((response) =>
+      readJsonResponse<Kid[]>(response),
     ),
     fetch(buildApiUrl('/wheel-prizes'), requestInit).then((response) =>
       readJsonResponse<Prize[]>(response),
     ),
-    fetch(buildApiUrl('/prizes-won'), requestInit).then((response) =>
-      readJsonResponse<PrizeAward[]>(response),
-    ),
   ]);
 
   return {
-    passportActivitiesByKid,
-    prizeAwards,
+    kids,
     prizes,
   };
+}
+
+export async function fetchRemotePassport(kidId: string) {
+  const response = await fetch(
+    buildApiUrl(`/passport?kid=${encodeURIComponent(kidId)}`),
+    {
+      cache: 'no-store',
+      headers: magicLinkRequestHeaders(),
+    },
+  );
+
+  return readJsonResponse<PassportActivity[]>(response);
+}
+
+export async function fetchRemotePrizeAwardsForKid(kidId: string) {
+  const response = await fetch(
+    buildApiUrl(`/prizes-kid?kid=${encodeURIComponent(kidId)}`),
+    {
+      cache: 'no-store',
+      headers: magicLinkRequestHeaders(),
+    },
+  );
+
+  return readJsonResponse<PrizeAward[]>(response);
 }
 
 export async function fetchRemoteMagicLinkSession() {
@@ -143,7 +156,22 @@ export async function saveRemotePassportActivity(
     },
   );
 
-  return readJsonResponse<PassportActivitiesByKid>(response);
+  return readJsonResponse<PassportActivity[]>(response);
+}
+
+export async function saveRemoteRegisteredKid(
+  registration: RegistrationInput & { lastKnownKidId?: string },
+) {
+  const response = await fetch(buildApiUrl('/kids'), {
+    body: JSON.stringify(registration),
+    headers: {
+      'Content-Type': 'application/json',
+      ...magicLinkRequestHeaders(),
+    },
+    method: 'POST',
+  });
+
+  return readJsonResponse<Kid>(response);
 }
 
 export async function saveRemotePrize(
@@ -170,7 +198,7 @@ export async function saveRemotePrizeAward(
 ) {
   const response = await fetch(
     buildApiUrl(
-      `/prizes-won?kid=${encodeURIComponent(kidId)}&stock=${encodeURIComponent(
+      `/prizes-kid?kid=${encodeURIComponent(kidId)}&stock=${encodeURIComponent(
         prizeId,
       )}`,
     ),
@@ -184,5 +212,5 @@ export async function saveRemotePrizeAward(
     },
   );
 
-  return readJsonResponse<RemotePrizeAwardResponse>(response);
+  return readJsonResponse<PrizeAward[]>(response);
 }

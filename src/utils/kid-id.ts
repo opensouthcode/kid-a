@@ -5,10 +5,6 @@ type KidIdentifier = {
 const KID_QR_ID_PREFIX = 'kid-a:';
 const KID_PASSPORT_URL = 'https://kid-a.netlify.app/passport';
 
-export function createKidQrIdData(kidId: string) {
-  return `${KID_QR_ID_PREFIX}${kidId}`;
-}
-
 export function createKidPassportUrl(kidId: string) {
   const url = new URL(KID_PASSPORT_URL);
   url.searchParams.set('id', kidId);

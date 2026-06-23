@@ -10,7 +10,6 @@ export type Kid = {
   id: string;
   language: string;
   name: string;
-  qrIdData: string;
 };
 
 export type PassportActivity = {
