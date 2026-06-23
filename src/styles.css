@@ -1281,7 +1281,7 @@ h2 {
 
 .print-page {
   min-height: 100vh;
-  padding: 1in;
+  padding: 0.5in;
   background: #fff;
   color: #000;
 }
@@ -1318,7 +1318,7 @@ h2 {
   display: grid;
   width: 100%;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 1.5mm 1mm;
+  gap: 0;
   align-items: start;
   justify-items: center;
 }
@@ -1333,8 +1333,8 @@ h2 {
 
 .passport-print-qr img {
   display: block;
-  width: 21mm;
-  height: 21mm;
+  width: 26mm;
+  height: 26mm;
 }
 
 .passport-print-qr span {
@@ -2323,7 +2323,7 @@ h2 {
 @media print {
   @page {
     size: A4;
-    margin: 1in;
+    margin: 0.5in;
   }
 
   html,
@@ -2351,7 +2351,7 @@ h2 {
     display: grid;
     width: 100%;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 1.5mm 1mm;
+    gap: 0;
     align-items: start;
     justify-items: center;
     padding: 0;
