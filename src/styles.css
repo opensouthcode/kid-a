@@ -1297,14 +1297,14 @@ h2 {
 
 .print-page .print-qr-sheet {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 3.5mm 4mm;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1.5mm;
   align-items: start;
 }
 
 .passport-print-qr {
   display: grid;
-  gap: 1mm;
+  gap: 0.5mm;
   justify-items: center;
   color: #000;
   font-family: Arial, sans-serif;
@@ -1312,13 +1312,13 @@ h2 {
 
 .passport-print-qr img {
   display: block;
-  width: 28mm;
-  height: 28mm;
+  width: 24mm;
+  height: 24mm;
 }
 
 .passport-print-qr span {
-  font-size: 7pt;
-  font-weight: 700;
+  font-size: 6pt;
+  font-weight: 400;
   line-height: 1;
 }
 
@@ -2332,8 +2332,8 @@ h2 {
     left: 0;
     display: grid;
     width: 100%;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 3.5mm 4mm;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 1.5mm;
     align-items: start;
     padding: 0;
     background: #fff;
