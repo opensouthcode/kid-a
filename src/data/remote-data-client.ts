@@ -1,4 +1,5 @@
 import type {
+  Kid,
   PassportActivity,
   Prize,
   PrizeAward,
@@ -7,7 +8,9 @@ import type {
   UserRole,
 } from './data-model';
 import { magicLinkRequestHeaders } from '../access/magic-links';
+import type { RegistrationInput } from '../utils/kid-registration';
 export type RemoteDataSnapshot = {
+  kids: Kid[];
   prizes: Prize[];
 };
 
@@ -20,6 +23,12 @@ type RemotePrizeAwardResponse = {
   award: PrizeAward;
   prizeAwards: PrizeAward[];
   prizes: Prize[];
+};
+
+type RemoteRegisteredKidResponse = {
+  kid: Kid;
+  kids: Kid[];
+  passport: PassportActivity[];
 };
 
 export type RemoteMagicLinkSession = {
@@ -60,11 +69,17 @@ export function isRemoteDataLayerEnabled() {
 export async function fetchRemoteDataSnapshot(): Promise<RemoteDataSnapshot> {
   const headers = magicLinkRequestHeaders();
   const requestInit = { cache: 'no-store', headers } satisfies RequestInit;
-  const prizes = await fetch(buildApiUrl('/wheel-prizes'), requestInit).then(
-    (response) => readJsonResponse<Prize[]>(response),
-  );
+  const [kids, prizes] = await Promise.all([
+    fetch(buildApiUrl('/kids'), requestInit).then((response) =>
+      readJsonResponse<Kid[]>(response),
+    ),
+    fetch(buildApiUrl('/wheel-prizes'), requestInit).then((response) =>
+      readJsonResponse<Prize[]>(response),
+    ),
+  ]);
 
   return {
+    kids,
     prizes,
   };
 }
@@ -154,6 +169,19 @@ export async function saveRemotePassportActivity(
   );
 
   return readJsonResponse<PassportActivity[]>(response);
+}
+
+export async function saveRemoteRegisteredKid(registration: RegistrationInput) {
+  const response = await fetch(buildApiUrl('/kids'), {
+    body: JSON.stringify(registration),
+    headers: {
+      'Content-Type': 'application/json',
+      ...magicLinkRequestHeaders(),
+    },
+    method: 'POST',
+  });
+
+  return readJsonResponse<RemoteRegisteredKidResponse>(response);
 }
 
 export async function saveRemotePrize(

@@ -47,6 +47,7 @@ export function DeskPage() {
   const [invalidQrPreview, setInvalidQrPreview] = useState('');
   const [isConfirmAttentionActive, setIsConfirmAttentionActive] = useState(false);
   const [lastAnimatedKidId, setLastAnimatedKidId] = useState('');
+  const [isRegisteringKid, setIsRegisteringKid] = useState(false);
   const [printablePassportQrs, setPrintablePassportQrs] = useState<
     PrintablePassportQr[]
   >([]);
@@ -152,6 +153,10 @@ export function DeskPage() {
   const confirmRegistration = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (isRegisteringKid) {
+      return;
+    }
+
     const nextAge = Number(age);
 
     if (!nickname.trim()) {
@@ -172,18 +177,25 @@ export function DeskPage() {
       return;
     }
 
-    const registeredKid = addRegisteredKid({
+    setIsRegisteringKid(true);
+    addRegisteredKid({
       age: nextAge,
       gender,
       language,
       nickname,
-    });
-
-    setLastAnimatedKidId(registeredKid.id);
-    setIsConfirmAttentionActive(false);
-    clearRegistrationForm();
-    setFormError('');
-    setInvalidQrPreview('');
+    })
+      .then((registeredKid) => {
+        setLastAnimatedKidId(registeredKid.id);
+        setIsConfirmAttentionActive(false);
+        clearRegistrationForm();
+        setFormError('');
+        setInvalidQrPreview('');
+      })
+      .catch(() => {
+        setFormError(t('desk.error.registration'));
+        setInvalidQrPreview('');
+      })
+      .finally(() => setIsRegisteringKid(false));
   };
 
   if (isPrintQrSheetOpen) {
@@ -286,6 +298,7 @@ export function DeskPage() {
                   : 'access-button desk-submit-button'
               }
               type="submit"
+              disabled={isRegisteringKid}
               onAnimationEnd={() => setIsConfirmAttentionActive(false)}
             >
               {t('desk.confirm')}

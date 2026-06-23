@@ -7,6 +7,7 @@ import {
 } from './access-tokens.js';
 import { readSnapshot, updatePassportForKid, updateSnapshot } from './store.js';
 import type {
+  Kid,
   PassportActivitiesByKid,
   PassportActivity,
   Prize,
@@ -52,12 +53,15 @@ const apiPaths = new Set([
   '/admin/export',
   '/admin/import',
   '/auth/session',
+  '/kids',
   '/passport',
   '/wheel-prizes',
   '/prizes-kid',
 ]);
+const kidGenders = new Set(['boy', 'girl', 'preferNotToSay']);
 const prizeKinds = new Set<PrizeKind>(['final', 'normal', 'valuable']);
 const staffRoles = new Set<UserRole>(['desk', 'lead', 'wheel']);
+const supportedLocales = new Set(['en', 'es']);
 
 export function normalizeApiPath(pathname: string) {
   if (pathname.startsWith('/.netlify/functions/api/')) {
@@ -311,6 +315,23 @@ function normalizeKidId(rawKid: string | null, snapshot: StoreData) {
   return knownKid?.id ?? knownPassportKid ?? candidate.toUpperCase();
 }
 
+function createKidQrIdData(kidId: string) {
+  return `kid-a:${kidId}`;
+}
+
+function getNextKidId(existingKids: Kid[], kidIdPrefix: string) {
+  const existingIds = new Set(existingKids.map((kid) => kid.id.toLowerCase()));
+  let sequence = existingKids.length + 1;
+  let nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
+
+  while (existingIds.has(nextId.toLowerCase())) {
+    sequence += 1;
+    nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
+  }
+
+  return nextId;
+}
+
 function passportResponse(
   passportActivitiesByKid: PassportActivitiesByKid,
   kidId: string,
@@ -498,6 +519,33 @@ function normalizeBackupPrizeAwards(value: unknown): PrizeAward[] {
   });
 }
 
+function normalizeRegistrationInput(value: unknown) {
+  const registration = asObject(value, 'registration');
+  const nickname = asString(registration.nickname, 'nickname').trim();
+  const age = normalizeCount(registration.age, 'age');
+  const gender = asString(registration.gender, 'gender');
+  const language = asString(registration.language, 'language');
+
+  if (!nickname) {
+    throw new HttpError(400, 'nickname must be a non-empty string');
+  }
+
+  if (!kidGenders.has(gender)) {
+    throw new HttpError(400, 'gender must be boy, girl, or preferNotToSay');
+  }
+
+  if (!supportedLocales.has(language)) {
+    throw new HttpError(400, 'language must be en or es');
+  }
+
+  return {
+    age,
+    gender,
+    language,
+    nickname,
+  };
+}
+
 function parseAdminBackup(body: Record<string, unknown>): AdminBackup {
   return {
     exportedAt: asString(body.exportedAt, 'exportedAt'),
@@ -505,6 +553,48 @@ function parseAdminBackup(body: Record<string, unknown>): AdminBackup {
     prizesWon: normalizeBackupPrizeAwards(body.prizesWon),
     wheelPrizes: normalizeBackupPrizes(body.wheelPrizes),
   };
+}
+
+async function handleKids(request: ApiRequest, url: URL): Promise<ApiResponse> {
+  void url;
+
+  if (request.method === 'GET') {
+    await requireMagicLink(request, url, [...staffRoles]);
+
+    const snapshot = await readSnapshot();
+    return jsonResponse(request, 200, snapshot.kids);
+  }
+
+  if (request.method !== 'POST') {
+    throw new HttpError(405, 'Method not allowed');
+  }
+
+  await requireMagicLink(request, url, ['desk']);
+
+  const registration = normalizeRegistrationInput(parseJsonBody(request.body));
+  const response = await updateSnapshot((snapshot) => {
+    const kidId = getNextKidId(snapshot.kids, snapshot.conference.kidIdPrefix);
+    const kid: Kid = {
+      age: registration.age,
+      gender: registration.gender,
+      id: kidId,
+      language: registration.language,
+      name: registration.nickname,
+      qrIdData: createKidQrIdData(kidId),
+    };
+    const passport = passportTemplate(snapshot.passportActivitiesByKid);
+
+    snapshot.kids.push(kid);
+    snapshot.passportActivitiesByKid[kid.id] = passport;
+
+    return {
+      kid,
+      kids: snapshot.kids,
+      passport,
+    };
+  }, ['kids', 'passportActivitiesByKid']);
+
+  return jsonResponse(request, 201, response);
 }
 
 async function handleAdmin(
@@ -850,6 +940,10 @@ export async function handleApiRequest(request: ApiRequest): Promise<ApiResponse
 
     if (path === '/auth/session') {
       return await handleAuth(request, requestUrl, path);
+    }
+
+    if (path === '/kids') {
+      return await handleKids(request, requestUrl);
     }
 
     if (path === '/wheel-prizes') {

@@ -25,6 +25,12 @@
   force = true
 
 [[redirects]]
+  from = "/api/kids"
+  to = "/.netlify/functions/api/kids"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/api/auth/session"
   to = "/.netlify/functions/api/auth/session"
   status = 200

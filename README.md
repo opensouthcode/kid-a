@@ -50,7 +50,7 @@ npm run start:node
 `VITE_BASE_PATH=/`, and `VITE_API_BASE_URL=/api`, so the same React app uses the
 Node endpoints instead of bundled mutable sample data. The Node server serves
 `dist` with SPA fallback and exposes JSON endpoints at `/api/passport`,
-`/api/wheel-prizes`, and `/api/prizes-kid`. It stores writable event data in
+`/api/kids`, `/api/wheel-prizes`, and `/api/prizes-kid`. It stores writable event data in
 `server/data`, seeded from `src/data` when files are missing. Set
 `KID_A_DATA_DIR` to use a different local data directory.
 

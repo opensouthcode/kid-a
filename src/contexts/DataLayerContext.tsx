@@ -48,6 +48,7 @@ import {
   saveRemotePassportActivity,
   saveRemotePrize,
   saveRemotePrizeAward,
+  saveRemoteRegisteredKid,
   type RemoteDataSnapshot,
 } from '../data/remote-data-client';
 import {
@@ -79,7 +80,7 @@ export type {
 type DataLayerContextValue = {
   accessSessionStatus: AccessSessionStatus;
   activities: Activity[];
-  addRegisteredKid: (registration: RegistrationInput) => Kid;
+  addRegisteredKid: (registration: RegistrationInput) => Promise<Kid>;
   addPrize: (title: string) => Prize;
   awardPassportCompletionPrize: (kidId: string) => PrizeAward;
   awardPrizeToKid: (kidId: string, prizeId: string) => PrizeAward;
@@ -213,7 +214,9 @@ const DataLayerContext = createContext<DataLayerContextValue | undefined>(
 
 export function DataLayerProvider({ children }: PropsWithChildren) {
   const isRemoteDataLayer = isRemoteDataLayerEnabled();
-  const [kidList, setKidList] = useState(initialKids);
+  const [kidList, setKidList] = useState(() =>
+    isRemoteDataLayer ? [] : initialKids,
+  );
   const [prizeAwards, setPrizeAwards] = useState(() =>
     isRemoteDataLayer ? [] : clonePrizeAwards(initialPrizeAwards),
   );
@@ -250,6 +253,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     [isRemoteDataLayer, prizeAwards, prizeList],
   );
   const applyRemoteSnapshot = (snapshot: RemoteDataSnapshot) => {
+    setKidList(snapshot.kids);
     setPrizeList(clonePrizes(snapshot.prizes));
   };
   const applyRemotePassport = (kidId: string, activities: PassportData['activities']) => {
@@ -378,7 +382,16 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     setAccessSessionStatus({ state: 'idle' });
     setSelectedCurrentUser(guestUser);
   };
-  const addRegisteredKid = (registration: RegistrationInput) => {
+  const addRegisteredKid = async (registration: RegistrationInput) => {
+    if (isRemoteDataLayer) {
+      const response = await saveRemoteRegisteredKid(registration);
+
+      setKidList(response.kids);
+      applyRemotePassport(response.kid.id, response.passport);
+
+      return response.kid;
+    }
+
     const kidId = getNextKidId(kidList, conferenceJson.kidIdPrefix);
     const registeredKid: Kid = {
       age: registration.age,
