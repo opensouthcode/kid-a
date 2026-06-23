@@ -1281,9 +1281,28 @@ h2 {
 
 .print-page {
   min-height: 100vh;
-  padding: 18mm 8mm 8mm;
+  padding: 0;
   background: #fff;
   color: #000;
+}
+
+.app-shell:has(.print-page) {
+  width: 100%;
+  padding: 0;
+  place-items: stretch;
+}
+
+.welcome-card:has(.print-page) {
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+
+.welcome-card:has(.print-page)::after {
+  display: none;
 }
 
 .print-page-actions {
@@ -1299,7 +1318,7 @@ h2 {
   display: grid;
   width: 100%;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 1.5mm 0.8mm;
+  gap: 1.5mm 1mm;
   align-items: start;
   justify-items: center;
 }
@@ -1314,8 +1333,8 @@ h2 {
 
 .passport-print-qr img {
   display: block;
-  width: 23mm;
-  height: 23mm;
+  width: 28mm;
+  height: 28mm;
 }
 
 .passport-print-qr span {
@@ -2304,7 +2323,7 @@ h2 {
 @media print {
   @page {
     size: A4;
-    margin: 8mm;
+    margin: 0;
   }
 
   html,
@@ -2332,7 +2351,7 @@ h2 {
     display: grid;
     width: 100%;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 1.5mm 0.8mm;
+    gap: 1.5mm 1mm;
     align-items: start;
     justify-items: center;
     padding: 0;
