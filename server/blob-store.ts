@@ -21,6 +21,20 @@ const jsonDocumentKeys = {
   prizeAwards: 'prizes-won.json',
   prizes: 'wheel-prizes.json',
 } as const satisfies Partial<Record<StoreFile, string>>;
+const maxConcurrentUpdateAttempts = 5;
+
+class ConcurrentBlobUpdateError extends Error {
+  constructor(storeFile: StoreFile) {
+    super(`Concurrent Netlify Blob update for ${storeFile}`);
+  }
+}
+
+type JsonDocumentStoreFile = keyof typeof jsonDocumentKeys;
+
+type SnapshotRead = {
+  etags: Partial<Record<JsonDocumentStoreFile, string>>;
+  snapshot: StoreData;
+};
 
 function getSeedDataDirs() {
   if (process.env.KID_A_SEED_DATA_DIR) {
@@ -86,6 +100,51 @@ async function readRequiredBlobJson<T>(store: NetlifyBlobStore, key: string) {
   }
 
   return value;
+}
+
+function isJsonDocumentStoreFile(
+  storeFile: StoreFile,
+): storeFile is JsonDocumentStoreFile {
+  return storeFile in jsonDocumentKeys;
+}
+
+async function readRequiredBlobJsonWithMetadata<T>(
+  store: NetlifyBlobStore,
+  key: string,
+) {
+  const value = (await store.getWithMetadata(key, {
+    consistency: 'strong',
+    type: 'json',
+  })) as { data: T; etag?: string } | null;
+
+  if (value === null) {
+    throw new Error(`Missing Netlify Blob document after seed: ${key}`);
+  }
+
+  if (!value.etag) {
+    throw new Error(`Missing Netlify Blob etag for document: ${key}`);
+  }
+
+  return value;
+}
+
+async function writeJsonDocument(
+  store: NetlifyBlobStore,
+  storeFile: JsonDocumentStoreFile,
+  snapshot: StoreData,
+  etag: string | undefined,
+) {
+  if (!etag) {
+    throw new Error(`Missing Netlify Blob etag for update: ${storeFile}`);
+  }
+
+  const result = await store.setJSON(jsonDocumentKeys[storeFile], snapshot[storeFile], {
+    onlyIfMatch: etag,
+  });
+
+  if (!result.modified) {
+    throw new ConcurrentBlobUpdateError(storeFile);
+  }
 }
 
 async function writeStoreFile(
@@ -201,23 +260,41 @@ export function createBlobStore(
   }
 
   async function readSnapshotUnlocked(): Promise<StoreData> {
+    return (await readSnapshotForUpdate()).snapshot;
+  }
+
+  async function readSnapshotForUpdate(): Promise<SnapshotRead> {
     await ensureSeeded();
 
     const [conference, kids, passportActivitiesByKid, prizeAwards, prizes] =
       await Promise.all([
-        readRequiredBlobJson<ConferenceData>(store, jsonDocumentKeys.conference),
-        readRequiredBlobJson<Kid[]>(store, jsonDocumentKeys.kids),
+        readRequiredBlobJsonWithMetadata<ConferenceData>(
+          store,
+          jsonDocumentKeys.conference,
+        ),
+        readRequiredBlobJsonWithMetadata<Kid[]>(store, jsonDocumentKeys.kids),
         readPassportActivitiesByKid(),
-        readRequiredBlobJson<PrizeAward[]>(store, jsonDocumentKeys.prizeAwards),
-        readRequiredBlobJson<Prize[]>(store, jsonDocumentKeys.prizes),
+        readRequiredBlobJsonWithMetadata<PrizeAward[]>(
+          store,
+          jsonDocumentKeys.prizeAwards,
+        ),
+        readRequiredBlobJsonWithMetadata<Prize[]>(store, jsonDocumentKeys.prizes),
       ]);
 
     return {
-      conference,
-      kids,
-      passportActivitiesByKid,
-      prizeAwards,
-      prizes,
+      etags: {
+        conference: conference.etag,
+        kids: kids.etag,
+        prizeAwards: prizeAwards.etag,
+        prizes: prizes.etag,
+      },
+      snapshot: {
+        conference: conference.data,
+        kids: kids.data,
+        passportActivitiesByKid,
+        prizeAwards: prizeAwards.data,
+        prizes: prizes.data,
+      },
     };
   }
 
@@ -234,14 +311,37 @@ export function createBlobStore(
     const nextWrite = previousWrite
       .catch(() => undefined)
       .then(async () => {
-        const snapshot = await readSnapshotUnlocked();
-        const result = await mutator(snapshot);
+        for (let attempt = 1; attempt <= maxConcurrentUpdateAttempts; attempt += 1) {
+          const { etags, snapshot } = await readSnapshotForUpdate();
+          const result = await mutator(snapshot);
 
-        await Promise.all(
-          changedFiles.map((storeFile) => writeStoreFile(store, storeFile, snapshot)),
-        );
+          try {
+            for (const storeFile of changedFiles) {
+              if (isJsonDocumentStoreFile(storeFile)) {
+                await writeJsonDocument(store, storeFile, snapshot, etags[storeFile]);
+              }
+            }
 
-        return result;
+            await Promise.all(
+              changedFiles
+                .filter((storeFile) => !isJsonDocumentStoreFile(storeFile))
+                .map((storeFile) => writeStoreFile(store, storeFile, snapshot)),
+            );
+
+            return result;
+          } catch (error) {
+            if (
+              error instanceof ConcurrentBlobUpdateError &&
+              attempt < maxConcurrentUpdateAttempts
+            ) {
+              continue;
+            }
+
+            throw error;
+          }
+        }
+
+        throw new Error('Unable to update Netlify Blobs after concurrent changes');
       });
 
     writeQueue = nextWrite.then(
