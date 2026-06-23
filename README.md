@@ -73,6 +73,8 @@ the `/admin` page to generate 1-day desk, wheel, or activity-specific lead
 links by default; the duration in days can be changed when generating a link. The
 `build:gh-pages` static deployment still uses bundled sample data and does not
 call the remote endpoints; it exposes built-in demo links for the same roles.
+See [`docs/storage-json.md`](docs/storage-json.md) for the JSON storage layout
+and concurrency notes.
 
 Set `KID_A_ADMIN_TOKEN` to enable protected admin backup and restore endpoints.
 The export includes `exportedAt`, `passports`, `wheelPrizes`, and `prizesWon`.
