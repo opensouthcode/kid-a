@@ -2,8 +2,35 @@ type KidIdentifier = {
   id: string;
 };
 
+const KID_QR_ID_PREFIX = 'kid-a:';
+const KID_PASSPORT_URL = 'https://kid-a.netlify.app/passport';
+
 export function createKidQrIdData(kidId: string) {
-  return `kid-a:${kidId}`;
+  return `${KID_QR_ID_PREFIX}${kidId}`;
+}
+
+export function createKidPassportUrl(kidId: string) {
+  const url = new URL(KID_PASSPORT_URL);
+  url.searchParams.set('id', kidId);
+
+  return url.toString();
+}
+
+export function parseKidQrPayload(qrPayload: string) {
+  const trimmedPayload = qrPayload.trim();
+
+  if (trimmedPayload.startsWith(KID_QR_ID_PREFIX)) {
+    return trimmedPayload.slice(KID_QR_ID_PREFIX.length);
+  }
+
+  try {
+    const url = new URL(trimmedPayload, KID_PASSPORT_URL);
+    const kidId = url.searchParams.get('id')?.trim();
+
+    return kidId || undefined;
+  } catch {
+    return undefined;
+  }
 }
 
 export function getKidSequenceNumber(kidId: string) {

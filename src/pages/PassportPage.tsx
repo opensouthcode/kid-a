@@ -21,6 +21,7 @@ import {
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import type { MessageKey } from '../i18n/messages';
+import { createKidPassportUrl } from '../utils/kid-id';
 
 type KidOption = {
   id: 'wheel' | 'friends';
@@ -55,7 +56,7 @@ export function PassportPage() {
     (activity) => activity.completedAt,
   ).length;
   const kidPassportPayload =
-    currentUser.role === 'kid' ? currentUser.kid.qrIdData : '';
+    currentUser.role === 'kid' ? createKidPassportUrl(currentUser.id) : '';
   const wheelShotSummary =
     currentUser.role === 'kid'
       ? getWheelShotSummaryForKid(currentUser.id)

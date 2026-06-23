@@ -47,6 +47,7 @@ import {
   createKidQrIdData,
   getKidSequenceNumber,
   getNextKidId,
+  parseKidQrPayload,
 } from '../utils/kid-id';
 import type { RegistrationInput } from '../utils/kid-registration';
 
@@ -383,8 +384,13 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     return kidList.find((kid) => getKidSequenceNumber(kid.id) === searchedNumber);
   };
-  const findKidByQrIdData = (qrIdData: string) =>
-    kidList.find((kid) => kid.qrIdData === qrIdData);
+  const findKidByQrIdData = (qrIdData: string) => {
+    const kidId = parseKidQrPayload(qrIdData);
+
+    return kidId
+      ? kidList.find((kid) => kid.id.toLowerCase() === kidId.toLowerCase())
+      : undefined;
+  };
   const reloadPassportActivities = () => {
     if (isRemoteDataLayer) {
       persistRemoteSnapshot(fetchRemoteDataSnapshot());

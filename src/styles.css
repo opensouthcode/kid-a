@@ -1080,9 +1080,28 @@ h2 {
   margin-top: 24px;
 }
 
+.desk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
 .desk-submit-button {
-  justify-self: end;
   min-width: 240px;
+}
+
+.secondary-action {
+  border-color: #8c6b3f;
+  background: #fffaf0;
+  color: #2d2418;
+  box-shadow: 0 10px 22px rgb(45 36 24 / 12%);
+}
+
+.secondary-action:hover,
+.secondary-action:focus-visible {
+  background: #f4e7cb;
+  color: #2d2418;
 }
 
 .desk-submit-button.attention {
@@ -1253,6 +1272,53 @@ h2 {
 .desk-summary strong {
   color: #2d2418;
   font-size: clamp(1.8rem, 3vw, 2.8rem);
+  line-height: 1;
+}
+
+.print-qr-sheet {
+  display: none;
+}
+
+.print-page {
+  min-height: 100vh;
+  padding: 18mm 8mm 8mm;
+  background: #fff;
+  color: #000;
+}
+
+.print-page-actions {
+  position: fixed;
+  z-index: 2;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 10px;
+}
+
+.print-page .print-qr-sheet {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1mm;
+  align-items: start;
+}
+
+.passport-print-qr {
+  display: grid;
+  gap: 0.5mm;
+  justify-items: center;
+  color: #000;
+  font-family: Arial, sans-serif;
+}
+
+.passport-print-qr img {
+  display: block;
+  width: 24mm;
+  height: 24mm;
+}
+
+.passport-print-qr span {
+  font-size: 6pt;
+  font-weight: 400;
   line-height: 1;
 }
 
@@ -2229,5 +2295,53 @@ h2 {
 @media (max-width: 460px) {
   .passport-mosaic {
     border-width: 3px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+
+  body {
+    background: #fff;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .print-qr-sheet,
+  .print-qr-sheet * {
+    visibility: visible;
+  }
+
+  .print-page {
+    min-height: auto;
+    padding: 0;
+  }
+
+  .print-page-actions {
+    display: none;
+  }
+
+  .print-qr-sheet {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1mm;
+    align-items: start;
+    padding: 0;
+    background: #fff;
+    color: #000;
+  }
+
+  .passport-print-qr {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
