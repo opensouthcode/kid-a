@@ -18,6 +18,7 @@ import {
   parseRegistrationPayload,
   type KidGender,
 } from '../utils/kid-registration';
+import { createKidPassportUrl } from '../utils/kid-id';
 
 type PrintablePassportQr = {
   id: string;
@@ -26,7 +27,6 @@ type PrintablePassportQr = {
 
 const PASSPORT_QR_COUNT = 200;
 const PASSPORT_QR_ID_PREFIX = '26OSK';
-const PASSPORT_QR_URL = 'https://kid-a.netlify.app/passport?id=';
 
 const createPassportQrId = (number: number) =>
   `${PASSPORT_QR_ID_PREFIX}${String(number).padStart(4, '0')}`;
@@ -99,7 +99,7 @@ export function DeskPage() {
       Array.from({ length: PASSPORT_QR_COUNT }, (_, index) => {
         const id = createPassportQrId(index + 1);
 
-        return QRCode.toDataURL(`${PASSPORT_QR_URL}${id}`, {
+        return QRCode.toDataURL(createKidPassportUrl(id), {
           errorCorrectionLevel: 'M',
           margin: 1,
           width: 160,

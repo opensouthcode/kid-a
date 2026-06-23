@@ -1297,8 +1297,8 @@ h2 {
 
 .print-page .print-qr-sheet {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 1.5mm;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1mm;
   align-items: start;
 }
 
@@ -2332,8 +2332,8 @@ h2 {
     left: 0;
     display: grid;
     width: 100%;
-    grid-template-columns: repeat(6, 1fr);
-    gap: 1.5mm;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 1mm;
     align-items: start;
     padding: 0;
     background: #fff;
