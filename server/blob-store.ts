@@ -108,24 +108,35 @@ function isJsonDocumentStoreFile(
   return storeFile in jsonDocumentKeys;
 }
 
-async function readRequiredBlobJsonWithMetadata<T>(
+async function readJsonDocumentForUpdate<T>(
   store: NetlifyBlobStore,
   key: string,
 ) {
-  const value = (await store.getWithMetadata(key, {
+  const metadata = await store.getMetadata(key, {
     consistency: 'strong',
-    type: 'json',
-  })) as { data: T; etag?: string } | null;
+  });
 
-  if (value === null) {
+  if (metadata === null) {
     throw new Error(`Missing Netlify Blob document after seed: ${key}`);
   }
 
-  if (!value.etag) {
+  if (!metadata.etag) {
     throw new Error(`Missing Netlify Blob etag for document: ${key}`);
   }
 
-  return value;
+  const data = (await store.get(key, {
+    consistency: 'strong',
+    type: 'json',
+  })) as T | null;
+
+  if (data === null) {
+    throw new Error(`Missing Netlify Blob document after seed: ${key}`);
+  }
+
+  return {
+    data,
+    etag: metadata.etag,
+  };
 }
 
 async function writeJsonDocument(
@@ -138,9 +149,13 @@ async function writeJsonDocument(
     throw new Error(`Missing Netlify Blob etag for update: ${storeFile}`);
   }
 
-  const result = await store.setJSON(jsonDocumentKeys[storeFile], snapshot[storeFile], {
-    onlyIfMatch: etag,
-  });
+  const result = await store.set(
+    jsonDocumentKeys[storeFile],
+    JSON.stringify(snapshot[storeFile]),
+    {
+      onlyIfMatch: etag,
+    },
+  );
 
   if (!result.modified) {
     throw new ConcurrentBlobUpdateError(storeFile);
@@ -260,7 +275,24 @@ export function createBlobStore(
   }
 
   async function readSnapshotUnlocked(): Promise<StoreData> {
-    return (await readSnapshotForUpdate()).snapshot;
+    await ensureSeeded();
+
+    const [conference, kids, passportActivitiesByKid, prizeAwards, prizes] =
+      await Promise.all([
+        readRequiredBlobJson<ConferenceData>(store, jsonDocumentKeys.conference),
+        readRequiredBlobJson<Kid[]>(store, jsonDocumentKeys.kids),
+        readPassportActivitiesByKid(),
+        readRequiredBlobJson<PrizeAward[]>(store, jsonDocumentKeys.prizeAwards),
+        readRequiredBlobJson<Prize[]>(store, jsonDocumentKeys.prizes),
+      ]);
+
+    return {
+      conference,
+      kids,
+      passportActivitiesByKid,
+      prizeAwards,
+      prizes,
+    };
   }
 
   async function readSnapshotForUpdate(): Promise<SnapshotRead> {
@@ -268,17 +300,17 @@ export function createBlobStore(
 
     const [conference, kids, passportActivitiesByKid, prizeAwards, prizes] =
       await Promise.all([
-        readRequiredBlobJsonWithMetadata<ConferenceData>(
+        readJsonDocumentForUpdate<ConferenceData>(
           store,
           jsonDocumentKeys.conference,
         ),
-        readRequiredBlobJsonWithMetadata<Kid[]>(store, jsonDocumentKeys.kids),
+        readJsonDocumentForUpdate<Kid[]>(store, jsonDocumentKeys.kids),
         readPassportActivitiesByKid(),
-        readRequiredBlobJsonWithMetadata<PrizeAward[]>(
+        readJsonDocumentForUpdate<PrizeAward[]>(
           store,
           jsonDocumentKeys.prizeAwards,
         ),
-        readRequiredBlobJsonWithMetadata<Prize[]>(store, jsonDocumentKeys.prizes),
+        readJsonDocumentForUpdate<Prize[]>(store, jsonDocumentKeys.prizes),
       ]);
 
     return {
