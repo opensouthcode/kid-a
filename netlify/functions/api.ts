@@ -1,4 +1,5 @@
 import { connectLambda } from '@netlify/blobs';
+import { createBlobMagicTokenStore, setMagicTokenStore } from '../../server/access-tokens.js';
 import { handleApiRequest } from '../../server/api.js';
 import { createBlobStore } from '../../server/blob-store.js';
 import { setStoreAdapter } from '../../server/store.js';
@@ -29,6 +30,7 @@ export async function handler(event: NetlifyEvent) {
   }
 
   setStoreAdapter(createBlobStore());
+  setMagicTokenStore(createBlobMagicTokenStore());
   const response = await handleApiRequest({
     body: event.body,
     headers: event.headers,

@@ -906,6 +906,26 @@ h2 {
   margin-top: 28px;
 }
 
+.admin-content {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(260px, 340px);
+  gap: 24px;
+  align-items: start;
+  margin-top: 28px;
+}
+
+.admin-panel,
+.admin-form,
+.admin-demo-links {
+  display: grid;
+  gap: 16px;
+}
+
 .registration-notice {
   width: fit-content;
   margin: 18px 0 0;
@@ -918,6 +938,7 @@ h2 {
 }
 
 .registration-form,
+.admin-panel,
 .desk-registration,
 .qr-panel {
   border: 1px solid #c9ac77;
@@ -937,6 +958,7 @@ h2 {
   gap: 16px;
 }
 
+.admin-form label,
 .register-kid-form label,
 .desk-registration label {
   display: grid;
@@ -948,6 +970,8 @@ h2 {
   text-transform: uppercase;
 }
 
+.admin-form input,
+.admin-form select,
 .register-kid-form input,
 .register-kid-form select,
 .desk-registration textarea {
@@ -1027,6 +1051,63 @@ h2 {
 .qr-panel textarea {
   min-height: 112px;
   resize: vertical;
+}
+
+.magic-link-card {
+  display: grid;
+  gap: 12px;
+  border: 1px solid rgb(78 111 43 / 22%);
+  border-radius: 22px;
+  padding: 16px;
+  background: #fffaf0;
+}
+
+.magic-link-card > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.magic-link-card span,
+.magic-link-card small {
+  color: #8c5a18;
+  font-size: 0.76rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.magic-link-card textarea {
+  width: 100%;
+  min-height: 92px;
+  border: 1px solid #c9ac77;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+  color: #5a4228;
+  font: 0.86rem ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+  resize: vertical;
+}
+
+.magic-link-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.magic-link-actions .secondary-button {
+  margin: 0;
+}
+
+.admin-status {
+  margin: 0;
+  color: #4e6f2b;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.admin-qr-panel {
+  position: sticky;
+  top: 24px;
 }
 
 .qr-panel {
@@ -2181,6 +2262,7 @@ h2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .admin-layout,
   .registration-layout,
   .desk-registration-layout,
   .desk-summary,

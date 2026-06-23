@@ -4,7 +4,9 @@ import type {
   PrizeAward,
   PrizeAwardSource,
   PrizeSettingsUpdate,
+  UserRole,
 } from './data-model';
+import { magicLinkRequestHeaders } from '../access/magic-links';
 
 const remoteDataCacheKey = 'kid-a:remote:data-cache';
 
@@ -24,6 +26,22 @@ type RemotePrizeAwardResponse = {
   award: PrizeAward;
   prizeAwards: PrizeAward[];
   prizes: Prize[];
+};
+
+export type RemoteMagicLinkSession = {
+  activityId?: number;
+  createdAt: string;
+  expiresAt: string;
+  role: UserRole;
+  userId: string;
+};
+
+export type CreatedRemoteMagicLink = {
+  activityId?: number;
+  expiresAt: string;
+  role: UserRole;
+  token: string;
+  userId: string;
 };
 
 function getApiBaseUrl() {
@@ -67,14 +85,15 @@ export function writeRemoteDataCache(snapshot: RemoteDataSnapshot) {
 }
 
 export async function fetchRemoteDataSnapshot(): Promise<RemoteDataSnapshot> {
+  const headers = magicLinkRequestHeaders();
   const [passportActivitiesByKid, prizes, prizeAwards] = await Promise.all([
-    fetch(buildApiUrl('/passport')).then((response) =>
+    fetch(buildApiUrl('/passport'), { headers }).then((response) =>
       readJsonResponse<PassportActivitiesByKid>(response),
     ),
-    fetch(buildApiUrl('/wheel-prizes')).then((response) =>
+    fetch(buildApiUrl('/wheel-prizes'), { headers }).then((response) =>
       readJsonResponse<Prize[]>(response),
     ),
-    fetch(buildApiUrl('/prizes-won')).then((response) =>
+    fetch(buildApiUrl('/prizes-won'), { headers }).then((response) =>
       readJsonResponse<PrizeAward[]>(response),
     ),
   ]);
@@ -84,6 +103,34 @@ export async function fetchRemoteDataSnapshot(): Promise<RemoteDataSnapshot> {
     prizeAwards,
     prizes,
   };
+}
+
+export async function fetchRemoteMagicLinkSession() {
+  const response = await fetch(buildApiUrl('/auth/session'), {
+    headers: magicLinkRequestHeaders(),
+  });
+
+  return readJsonResponse<RemoteMagicLinkSession>(response);
+}
+
+export async function createRemoteMagicLink({
+  durationHours,
+  password,
+  userId,
+}: {
+  durationHours: number;
+  password: string;
+  userId: string;
+}) {
+  const response = await fetch(buildApiUrl('/admin/magic-links'), {
+    body: JSON.stringify({ durationHours, password, userId }),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    method: 'POST',
+  });
+
+  return readJsonResponse<CreatedRemoteMagicLink>(response);
 }
 
 export async function saveRemotePassportActivity(
@@ -98,6 +145,7 @@ export async function saveRemotePassportActivity(
       )}`,
     ),
     {
+      headers: magicLinkRequestHeaders(),
       method: 'POST',
     },
   );
@@ -114,6 +162,7 @@ export async function saveRemotePrize(
     body: JSON.stringify(updates),
     headers: {
       'Content-Type': 'application/json',
+      ...magicLinkRequestHeaders(),
     },
     method: 'POST',
   });
@@ -136,6 +185,7 @@ export async function saveRemotePrizeAward(
       body: JSON.stringify({ source }),
       headers: {
         'Content-Type': 'application/json',
+        ...magicLinkRequestHeaders(),
       },
       method: 'POST',
     },

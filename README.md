@@ -64,8 +64,13 @@ prize awards remain an append-only shared JSON document.
 The default blob store name is `kid-a-data`. Set `KID_A_BLOBS_STORE` in Netlify
 to use a different store name. Netlify automatically provides the Blobs runtime
 context to the function; local Node deployments continue to use `server/data`
-and `KID_A_DATA_DIR`. The `build:gh-pages` static deployment still uses bundled
-sample data and does not call the remote endpoints.
+and `KID_A_DATA_DIR`. Staff magic-link tokens are stored as SHA-256 hashes in
+the same blob store under `admin/magic-tokens.json`, or in
+`server/data/magicTokens.json` for local Node. Set `ADMIN_PASSWORD` to enable
+the `/admin` page to generate 12-hour staff links by default; the duration can
+be changed when generating a link. The `build:gh-pages` static deployment still
+uses bundled sample data and does not call the remote endpoints; it exposes
+built-in demo links for the current sample desk, wheel, and lead users.
 
 Set `KID_A_ADMIN_TOKEN` to enable protected admin backup and restore endpoints.
 The export includes `exportedAt`, `passports`, `wheelPrizes`, and `prizesWon`.

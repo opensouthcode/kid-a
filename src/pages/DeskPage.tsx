@@ -6,6 +6,7 @@ import { RegisterKidForm } from '../components/RegisterKidForm';
 import { TopBar } from '../components/TopBar';
 import {
   useAddRegisteredKid,
+  useAccessSessionStatus,
   useCurrentUser,
   useKidsData,
 } from '../contexts/DataLayerContext';
@@ -20,6 +21,7 @@ import {
 
 export function DeskPage() {
   const addRegisteredKid = useAddRegisteredKid();
+  const accessSessionStatus = useAccessSessionStatus();
   const navigate = useNavigate();
   const currentUser = useCurrentUser();
   const kids = useKidsData();
@@ -36,12 +38,16 @@ export function DeskPage() {
   const kidCount = kids.length;
 
   useEffect(() => {
+    if (accessSessionStatus.state === 'loading') {
+      return;
+    }
+
     if (currentUser.role !== 'desk') {
       navigate('/', { replace: true });
     }
-  }, [currentUser.role, navigate]);
+  }, [accessSessionStatus.state, currentUser.role, navigate]);
 
-  if (currentUser.role !== 'desk') {
+  if (accessSessionStatus.state === 'loading' || currentUser.role !== 'desk') {
     return null;
   }
 

@@ -25,6 +25,18 @@
   force = true
 
 [[redirects]]
+  from = "/auth/session"
+  to = "/.netlify/functions/api/auth/session"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/admin/magic-links"
+  to = "/.netlify/functions/api/admin/magic-links"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/admin/export"
   to = "/.netlify/functions/api/admin/export"
   status = 200

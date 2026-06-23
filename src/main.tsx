@@ -5,7 +5,10 @@ import App from './App';
 import { DataLayerProvider } from './contexts/DataLayerContext';
 import { LocalDataLayerProvider } from './contexts/LocalDataLayerContext';
 import { I18nProvider } from './i18n/I18nProvider';
+import { initializeMagicLinkSession } from './access/magic-links';
 import './styles.css';
+
+initializeMagicLinkSession();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

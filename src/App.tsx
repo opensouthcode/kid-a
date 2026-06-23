@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { ActivityPage } from './pages/ActivityPage';
 import { ActivityLeadPage } from './pages/ActivityLeadPage';
+import { AdminPage } from './pages/AdminPage';
 import { DeskPage } from './pages/DeskPage';
 import { PassportPage } from './pages/PassportPage';
 import { RegistrationRequestPage } from './pages/RegistrationRequestPage';
@@ -21,6 +22,7 @@ function App() {
       >
         <Routes>
           <Route path="/" element={<WelcomePage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/activity" element={<ActivityPage />} />
           <Route path="/desk" element={<DeskPage />} />
           <Route path="/lead" element={<ActivityLeadPage />} />

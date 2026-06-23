@@ -40,6 +40,15 @@ export type PrizeAward = {
   source?: PrizeAwardSource;
 };
 
+export type UserRole = 'desk' | 'lead' | 'wheel';
+
+export type User = {
+  activityId?: number;
+  id: string;
+  name: string;
+  role: UserRole;
+};
+
 export type StoreData = {
   conference: ConferenceData;
   kids: Kid[];

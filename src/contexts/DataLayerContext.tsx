@@ -34,7 +34,13 @@ import {
   type WheelShotSummary,
 } from '../data/data-model';
 import {
+  clearMagicLinkSession,
+  getStoredMagicLinkToken,
+  resolveBuiltInMagicLink,
+} from '../access/magic-links';
+import {
   fetchRemoteDataSnapshot,
+  fetchRemoteMagicLinkSession,
   isRemoteDataLayerEnabled,
   readRemoteDataCache,
   saveRemotePassportActivity,
@@ -69,6 +75,7 @@ export type {
 } from '../data/data-model';
 
 type DataLayerContextValue = {
+  accessSessionStatus: AccessSessionStatus;
   activities: Activity[];
   addRegisteredKid: (registration: RegistrationInput) => Kid;
   addPrize: (title: string) => Prize;
@@ -91,6 +98,15 @@ type DataLayerContextValue = {
   setCurrentUser: (user: Kid | User) => void;
   updatePrize: (prizeId: string, updates: PrizeSettingsUpdate) => void;
 };
+
+type AccessSessionStatus =
+  | {
+      state: 'idle' | 'loading' | 'ready';
+    }
+  | {
+      error: string;
+      state: 'error';
+    };
 
 const initialActivities: Activity[] = activitiesJson;
 const initialKids: Kid[] = kidsJson as Kid[];
@@ -172,6 +188,23 @@ function wrapKid(kid: Kid): CurrentUser {
   };
 }
 
+function getInitialMagicLinkUser(
+  isRemoteDataLayer: boolean,
+  users: User[],
+): CurrentUser | undefined {
+  if (isRemoteDataLayer) {
+    return undefined;
+  }
+
+  const builtInMagicLink = resolveBuiltInMagicLink(getStoredMagicLinkToken());
+
+  if (!builtInMagicLink) {
+    return undefined;
+  }
+
+  return users.find((user) => user.id === builtInMagicLink.userId);
+}
+
 const emptyPassportTemplate =
   Object.values(initialPassportActivitiesByUser)[0]?.map((activity) => ({
     id: activity.id,
@@ -204,8 +237,19 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
           initialPassportActivitiesByUser,
       ),
   );
-  const [selectedCurrentUser, setSelectedCurrentUser] =
-    useState<CurrentUser>(guestUser);
+  const [selectedCurrentUser, setSelectedCurrentUser] = useState<CurrentUser>(
+    () => getInitialMagicLinkUser(isRemoteDataLayer, initialUsers) ?? guestUser,
+  );
+  const [accessSessionStatus, setAccessSessionStatus] =
+    useState<AccessSessionStatus>(() =>
+      getStoredMagicLinkToken()
+        ? isRemoteDataLayer
+          ? { state: 'loading' }
+          : getInitialMagicLinkUser(isRemoteDataLayer, initialUsers)
+            ? { state: 'ready' }
+            : { error: 'Unknown sample magic link', state: 'error' }
+        : { state: 'idle' },
+    );
   const prizes = useMemo<Prize[]>(
     () => syncPrizeGivenCache(prizeList, prizeAwards),
     [prizeAwards, prizeList],
@@ -217,6 +261,62 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     setPrizeAwards(clonePrizeAwards(snapshot.prizeAwards));
     setPrizeList(syncPrizeGivenCache(clonePrizes(snapshot.prizes), snapshot.prizeAwards));
   };
+
+  useEffect(() => {
+    const token = getStoredMagicLinkToken();
+
+    if (!token) {
+      setAccessSessionStatus({ state: 'idle' });
+      return;
+    }
+
+    if (!isRemoteDataLayer) {
+      const builtInMagicLink = resolveBuiltInMagicLink(token);
+      const builtInUser = builtInMagicLink
+        ? userList.find((user) => user.id === builtInMagicLink.userId)
+        : undefined;
+
+      if (!builtInUser) {
+        clearMagicLinkSession();
+        setSelectedCurrentUser(guestUser);
+        setAccessSessionStatus({
+          error: 'Unknown sample magic link',
+          state: 'error',
+        });
+        return;
+      }
+
+      setSelectedCurrentUser(builtInUser);
+      setAccessSessionStatus({ state: 'ready' });
+      return;
+    }
+
+    setAccessSessionStatus({ state: 'loading' });
+    fetchRemoteMagicLinkSession()
+      .then((session) => {
+        const sessionUser = userList.find(
+          (user) =>
+            user.id === session.userId &&
+            user.role === session.role &&
+            user.activityId === session.activityId,
+        );
+
+        if (!sessionUser) {
+          throw new Error(`Unknown magic link user: ${session.userId}`);
+        }
+
+        setSelectedCurrentUser(sessionUser);
+        setAccessSessionStatus({ state: 'ready' });
+      })
+      .catch((error) => {
+        clearMagicLinkSession();
+        setSelectedCurrentUser(guestUser);
+        setAccessSessionStatus({
+          error: error instanceof Error ? error.message : 'Invalid magic link',
+          state: 'error',
+        });
+      });
+  }, [isRemoteDataLayer, userList]);
 
   useEffect(() => {
     if (!isRemoteDataLayer || initialRemoteSnapshot) {
@@ -274,9 +374,13 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       throw new Error(`Unknown user: ${nextCurrentUser.id}`);
     }
 
+    clearMagicLinkSession();
+    setAccessSessionStatus({ state: 'idle' });
     setSelectedCurrentUser(nextCurrentUser);
   };
   const resetCurrentUser = () => {
+    clearMagicLinkSession();
+    setAccessSessionStatus({ state: 'idle' });
     setSelectedCurrentUser(guestUser);
   };
   const addRegisteredKid = (registration: RegistrationInput) => {
@@ -621,6 +725,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   };
   const value = useMemo<DataLayerContextValue>(
     () => ({
+      accessSessionStatus,
       activities: initialActivities,
       addRegisteredKid,
       addPrize,
@@ -654,6 +759,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       passportActivitiesByUser,
       prizes,
       userList,
+      accessSessionStatus,
     ],
   );
 
@@ -678,6 +784,10 @@ export function useConferenceData() {
 
 export function useActivitiesData() {
   return useDataLayer().activities;
+}
+
+export function useAccessSessionStatus() {
+  return useDataLayer().accessSessionStatus;
 }
 
 export function useCurrentUser() {
