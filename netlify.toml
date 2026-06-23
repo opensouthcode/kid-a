@@ -7,56 +7,56 @@
   included_files = ["server/data/*.json", "src/data/*.json"]
 
 [[redirects]]
-  from = "/passport"
+  from = "/api/passport"
   to = "/.netlify/functions/api/passport"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/wheel-prizes"
+  from = "/api/wheel-prizes"
   to = "/.netlify/functions/api/wheel-prizes"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/prizes-won"
+  from = "/api/prizes-won"
   to = "/.netlify/functions/api/prizes-won"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/auth/session"
+  from = "/api/auth/session"
   to = "/.netlify/functions/api/auth/session"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/admin/magic-links"
+  from = "/api/admin/magic-links"
   to = "/.netlify/functions/api/admin/magic-links"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/admin/export"
+  from = "/api/admin/export"
   to = "/.netlify/functions/api/admin/export"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/admin/import"
+  from = "/api/admin/import"
   to = "/.netlify/functions/api/admin/import"
   status = 200
   force = true
 
 [[redirects]]
-  from = "/kid-a/assets/*"
-  to = "/assets/:splat"
-  status = 200
+  from = "/kid-a"
+  to = "/"
+  status = 301
 
 [[redirects]]
   from = "/kid-a/*"
-  to = "/index.html"
-  status = 200
+  to = "/:splat"
+  status = 301
 
 [[redirects]]
   from = "/*"

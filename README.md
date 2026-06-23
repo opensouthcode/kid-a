@@ -46,12 +46,13 @@ npm run build:node
 npm run start:node
 ```
 
-`build:node` and `build:netlify` build the frontend with `VITE_DATA_LAYER=remote`
-and `VITE_BASE_PATH=/`, so the same React app uses the Node endpoints instead of
-bundled mutable sample data. The Node server serves `dist` with SPA fallback and
-exposes JSON endpoints at `/passport`, `/wheel-prizes`, and `/prizes-won`. It
-stores writable event data in `server/data`, seeded from `src/data` when files
-are missing. Set `KID_A_DATA_DIR` to use a different local data directory.
+`build:node` and `build:netlify` build the frontend with `VITE_DATA_LAYER=remote`,
+`VITE_BASE_PATH=/`, and `VITE_API_BASE_URL=/api`, so the same React app uses the
+Node endpoints instead of bundled mutable sample data. The Node server serves
+`dist` with SPA fallback and exposes JSON endpoints at `/api/passport`,
+`/api/wheel-prizes`, and `/api/prizes-won`. It stores writable event data in
+`server/data`, seeded from `src/data` when files are missing. Set
+`KID_A_DATA_DIR` to use a different local data directory.
 
 `netlify.toml` also routes those endpoints to `netlify/functions/api.ts`.
 Netlify Functions use Netlify Blobs for durable production writes while keeping
@@ -78,10 +79,10 @@ The export includes `exportedAt`, `passports`, `wheelPrizes`, and `prizesWon`.
 
 ```bash
 curl -H "Authorization: Bearer $KID_A_ADMIN_TOKEN" \
-  https://example.netlify.app/admin/export > kid-a-backup.json
+  https://example.netlify.app/api/admin/export > kid-a-backup.json
 
 curl -X POST -H "Authorization: Bearer $KID_A_ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   --data-binary @kid-a-backup.json \
-  https://example.netlify.app/admin/import
+  https://example.netlify.app/api/admin/import
 ```

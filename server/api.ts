@@ -67,8 +67,8 @@ export function normalizeApiPath(pathname: string) {
     return '/';
   }
 
-  if (pathname.startsWith('/kid-a/')) {
-    return pathname.slice('/kid-a'.length) || '/';
+  if (pathname.startsWith('/api/')) {
+    return pathname.slice('/api'.length) || '/';
   }
 
   return pathname;
@@ -120,6 +120,7 @@ function jsonResponse(
     body: JSON.stringify(value),
     headers: {
       ...corsHeaders(request),
+      'Cache-Control': 'no-store',
       'Content-Type': 'application/json; charset=utf-8',
     },
     status,

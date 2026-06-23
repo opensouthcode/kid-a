@@ -1161,9 +1161,28 @@ h2 {
   margin-top: 24px;
 }
 
+.desk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
 .desk-submit-button {
-  justify-self: end;
   min-width: 240px;
+}
+
+.secondary-action {
+  border-color: #8c6b3f;
+  background: #fffaf0;
+  color: #2d2418;
+  box-shadow: 0 10px 22px rgb(45 36 24 / 12%);
+}
+
+.secondary-action:hover,
+.secondary-action:focus-visible {
+  background: #f4e7cb;
+  color: #2d2418;
 }
 
 .desk-submit-button.attention {
@@ -1335,6 +1354,75 @@ h2 {
   color: #2d2418;
   font-size: clamp(1.8rem, 3vw, 2.8rem);
   line-height: 1;
+}
+
+.print-qr-sheet {
+  display: none;
+}
+
+.print-page {
+  min-height: 100vh;
+  padding: 0.5in;
+  background: #fff;
+  color: #000;
+}
+
+.app-shell:has(.print-page) {
+  width: 100%;
+  padding: 0;
+  place-items: stretch;
+}
+
+.welcome-card:has(.print-page) {
+  overflow: visible;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: #fff;
+  box-shadow: none;
+}
+
+.welcome-card:has(.print-page)::after {
+  display: none;
+}
+
+.print-page-actions {
+  position: fixed;
+  z-index: 2;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 10px;
+}
+
+.print-page .print-qr-sheet {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  align-items: start;
+  justify-items: center;
+}
+
+.passport-print-qr {
+  display: grid;
+  gap: 0.5mm;
+  justify-items: center;
+  color: #000;
+  font-family: Arial, sans-serif;
+}
+
+.passport-print-qr img {
+  display: block;
+  width: 24mm;
+  height: 24mm;
+}
+
+.passport-print-qr span {
+  font-size: 7pt;
+  font-weight: 400;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .last-kids-list {
@@ -2311,5 +2399,50 @@ h2 {
 @media (max-width: 460px) {
   .passport-mosaic {
     border-width: 3px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 0.5in;
+  }
+
+  html,
+  body {
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    background: #fff;
+  }
+
+  .print-page {
+    width: auto;
+    min-height: auto;
+    margin: 0;
+    padding: 0;
+    background: #fff;
+  }
+
+  .print-page-actions {
+    display: none;
+  }
+
+  .print-qr-sheet {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    align-items: start;
+    justify-items: center;
+    padding: 0;
+    background: #fff;
+    color: #000;
+  }
+
+  .passport-print-qr {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
