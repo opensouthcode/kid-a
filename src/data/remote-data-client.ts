@@ -8,8 +8,6 @@ import type {
 } from './data-model';
 import { magicLinkRequestHeaders } from '../access/magic-links';
 
-const remoteDataCacheKey = 'kid-a:remote:data-cache';
-
 export type RemoteDataSnapshot = {
   passportActivitiesByKid: PassportActivitiesByKid;
   prizeAwards: PrizeAward[];
@@ -61,25 +59,6 @@ async function readJsonResponse<T>(response: Response): Promise<T> {
 
 export function isRemoteDataLayerEnabled() {
   return import.meta.env.VITE_DATA_LAYER === 'remote';
-}
-
-export function readRemoteDataCache(): RemoteDataSnapshot | undefined {
-  const cachedData = window.localStorage.getItem(remoteDataCacheKey);
-
-  if (!cachedData) {
-    return undefined;
-  }
-
-  try {
-    return JSON.parse(cachedData) as RemoteDataSnapshot;
-  } catch (error) {
-    console.warn('Ignoring unreadable remote data cache.', error);
-    return undefined;
-  }
-}
-
-export function writeRemoteDataCache(snapshot: RemoteDataSnapshot) {
-  window.localStorage.setItem(remoteDataCacheKey, JSON.stringify(snapshot));
 }
 
 export async function fetchRemoteDataSnapshot(): Promise<RemoteDataSnapshot> {

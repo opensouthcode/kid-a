@@ -43,11 +43,9 @@ import {
   fetchRemoteDataSnapshot,
   fetchRemoteMagicLinkSession,
   isRemoteDataLayerEnabled,
-  readRemoteDataCache,
   saveRemotePassportActivity,
   saveRemotePrize,
   saveRemotePrizeAward,
-  writeRemoteDataCache,
   type RemoteDataSnapshot,
 } from '../data/remote-data-client';
 import {
@@ -212,26 +210,16 @@ const DataLayerContext = createContext<DataLayerContextValue | undefined>(
 
 export function DataLayerProvider({ children }: PropsWithChildren) {
   const isRemoteDataLayer = isRemoteDataLayerEnabled();
-  const [initialRemoteSnapshot] = useState(() =>
-    isRemoteDataLayer ? readRemoteDataCache() : undefined,
-  );
   const [kidList, setKidList] = useState(initialKids);
   const [prizeAwards, setPrizeAwards] = useState(() =>
-    clonePrizeAwards(initialRemoteSnapshot?.prizeAwards ?? initialPrizeAwards),
+    clonePrizeAwards(initialPrizeAwards),
   );
   const [prizeList, setPrizeList] = useState(() =>
-    syncPrizeGivenCache(
-      clonePrizes(initialRemoteSnapshot?.prizes ?? initialPrizes),
-      initialRemoteSnapshot?.prizeAwards ?? initialPrizeAwards,
-    ),
+    syncPrizeGivenCache(clonePrizes(initialPrizes), initialPrizeAwards),
   );
   const [userList] = useState(initialUsers);
   const [passportActivitiesByUser, setPassportActivitiesByUser] = useState(
-    () =>
-      clonePassportActivities(
-        initialRemoteSnapshot?.passportActivitiesByKid ??
-          initialPassportActivitiesByUser,
-      ),
+    () => clonePassportActivities(initialPassportActivitiesByUser),
   );
   const [selectedCurrentUser, setSelectedCurrentUser] = useState<CurrentUser>(
     () => getInitialMagicLinkUser(isRemoteDataLayer) ?? guestUser,
@@ -305,7 +293,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   }, [isRemoteDataLayer]);
 
   useEffect(() => {
-    if (!isRemoteDataLayer || initialRemoteSnapshot) {
+    if (!isRemoteDataLayer) {
       return;
     }
 
@@ -314,19 +302,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       .catch((error) => {
         console.error('Unable to load remote event data.', error);
       });
-  }, [initialRemoteSnapshot, isRemoteDataLayer]);
-
-  useEffect(() => {
-    if (!isRemoteDataLayer) {
-      return;
-    }
-
-    writeRemoteDataCache({
-      passportActivitiesByKid: passportActivitiesByUser,
-      prizeAwards,
-      prizes,
-    });
-  }, [isRemoteDataLayer, passportActivitiesByUser, prizeAwards, prizes]);
+  }, [isRemoteDataLayer]);
 
   const persistRemoteSnapshot = (snapshotPromise: Promise<RemoteDataSnapshot>) => {
     snapshotPromise.then(applyRemoteSnapshot).catch((error) => {
