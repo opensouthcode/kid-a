@@ -54,7 +54,7 @@ const apiPaths = new Set([
   '/auth/session',
   '/passport',
   '/wheel-prizes',
-  '/prizes-won',
+  '/prizes-kid',
 ]);
 const prizeKinds = new Set<PrizeKind>(['final', 'normal', 'valuable']);
 const staffRoles = new Set<UserRole>(['desk', 'lead', 'wheel']);
@@ -309,6 +309,13 @@ function normalizeKidId(rawKid: string | null, snapshot: StoreData) {
   );
 
   return knownKid?.id ?? knownPassportKid ?? candidate.toUpperCase();
+}
+
+function passportResponse(
+  passportActivitiesByKid: PassportActivitiesByKid,
+  kidId: string,
+): PassportActivity[] {
+  return passportActivitiesByKid[kidId] ?? passportTemplate(passportActivitiesByKid);
 }
 
 function passportTemplate(
@@ -605,7 +612,13 @@ async function handlePassport(
     await requireMagicLink(request, url, [...staffRoles]);
 
     const snapshot = await readSnapshot();
-    return jsonResponse(request, 200, snapshot.passportActivitiesByKid);
+    const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
+
+    return jsonResponse(
+      request,
+      200,
+      passportResponse(snapshot.passportActivitiesByKid, kidId),
+    );
   }
 
   if (request.method !== 'POST') {
@@ -622,7 +635,7 @@ async function handlePassport(
   const snapshot = await readSnapshot();
   const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
 
-  const passportActivitiesByKid = await updatePassportForKid(kidId, (snapshot) => {
+  const passport = await updatePassportForKid(kidId, (snapshot) => {
     const passport = ensurePassportForKid(
       snapshot.passportActivitiesByKid,
       kidId,
@@ -637,10 +650,10 @@ async function handlePassport(
       passport.sort((left, right) => left.id - right.id);
     }
 
-    return snapshot.passportActivitiesByKid;
+    return passport;
   });
 
-  return jsonResponse(request, 200, passportActivitiesByKid);
+  return jsonResponse(request, 200, passport);
 }
 
 async function handleWheelPrizes(
@@ -745,7 +758,7 @@ function normalizeAwardSource(value: unknown) {
   return value as PrizeAwardSource;
 }
 
-async function handlePrizesWon(
+async function handlePrizesKid(
   request: ApiRequest,
   url: URL,
 ): Promise<ApiResponse> {
@@ -753,13 +766,7 @@ async function handlePrizesWon(
     await requireMagicLink(request, url, [...staffRoles]);
 
     const snapshot = await readSnapshot();
-    const kid = url.searchParams.get('kid');
-
-    if (!kid) {
-      return jsonResponse(request, 200, snapshot.prizeAwards);
-    }
-
-    const kidId = normalizeKidId(kid, snapshot);
+    const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
     return jsonResponse(
       request,
       200,
@@ -798,7 +805,7 @@ async function handlePrizesWon(
       if (existingAward) {
         return {
           award: existingAward,
-          prizeAwards: snapshot.prizeAwards,
+          prizeAwards: snapshot.prizeAwards.filter((award) => award.kidId === kidId),
           prizes: syncedPrizes,
         };
       }
@@ -820,7 +827,7 @@ async function handlePrizesWon(
 
     return {
       award,
-      prizeAwards: snapshot.prizeAwards,
+      prizeAwards: snapshot.prizeAwards.filter((award) => award.kidId === kidId),
       prizes: syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards),
     };
   }, ['prizeAwards']);
@@ -849,8 +856,8 @@ export async function handleApiRequest(request: ApiRequest): Promise<ApiResponse
       return await handleWheelPrizes(request, requestUrl);
     }
 
-    if (path === '/prizes-won') {
-      return await handlePrizesWon(request, requestUrl);
+    if (path === '/prizes-kid') {
+      return await handlePrizesKid(request, requestUrl);
     }
 
     if (path.startsWith('/admin/')) {

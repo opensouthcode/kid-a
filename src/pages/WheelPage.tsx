@@ -22,6 +22,8 @@ import {
   useGetPassportForKid,
   useGetWheelShotSummaryForKid,
   useKidsData,
+  useReloadPassportActivities,
+  useReloadPrizeAwardsForKid,
   usePrizesData,
   useRefreshPrizes,
   useUpdatePrize,
@@ -112,6 +114,8 @@ export function WheelPage() {
   const kids = useKidsData();
   const navigate = useNavigate();
   const prizes = usePrizesData();
+  const reloadPassportActivities = useReloadPassportActivities();
+  const reloadPrizeAwardsForKid = useReloadPrizeAwardsForKid();
   const refreshPrizes = useRefreshPrizes();
   const updatePrize = useUpdatePrize();
   const { t } = useI18n();
@@ -174,6 +178,13 @@ export function WheelPage() {
       navigate('/', { replace: true });
     }
   }, [accessSessionStatus.state, currentUser.role, navigate]);
+
+  useEffect(() => {
+    if (selectedKidId) {
+      reloadPassportActivities(selectedKidId);
+      reloadPrizeAwardsForKid(selectedKidId);
+    }
+  }, [selectedKidId]);
 
   useEffect(() => {
     if (!isPrizeManagerOpen) {

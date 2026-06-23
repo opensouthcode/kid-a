@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   useGetPassportForKid,
   useKidsData,
+  useReloadPassportActivities,
   type Kid,
 } from '../contexts/DataLayerContext';
 import { useGetFriendIds } from '../contexts/LocalDataLayerContext';
@@ -22,11 +23,17 @@ export function KidsSection({
   const getFriendIds = useGetFriendIds();
   const getPassportForKid = useGetPassportForKid();
   const kids = useKidsData();
+  const reloadPassportActivities = useReloadPassportActivities();
   const { t } = useI18n();
   const [isFriendPickerOpen, setIsFriendPickerOpen] = useState(false);
   const friends = getFriendIds()
     .map((friendId) => kids.find((kid) => kid.id === friendId))
     .filter((kid): kid is Kid => kid !== undefined && kid.id !== blockedKidId);
+  const friendKidIds = friends.map((kid) => kid.id).join(',');
+
+  useEffect(() => {
+    friends.forEach((kid) => reloadPassportActivities(kid.id));
+  }, [friendKidIds]);
 
   return (
     <section className="welcome-friends-list" aria-label={t('friends.home.title')}>

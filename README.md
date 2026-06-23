@@ -50,7 +50,7 @@ npm run start:node
 `VITE_BASE_PATH=/`, and `VITE_API_BASE_URL=/api`, so the same React app uses the
 Node endpoints instead of bundled mutable sample data. The Node server serves
 `dist` with SPA fallback and exposes JSON endpoints at `/api/passport`,
-`/api/wheel-prizes`, and `/api/prizes-won`. It stores writable event data in
+`/api/wheel-prizes`, and `/api/prizes-kid`. It stores writable event data in
 `server/data`, seeded from `src/data` when files are missing. Set
 `KID_A_DATA_DIR` to use a different local data directory.
 
@@ -60,7 +60,7 @@ the same frontend API contract. On first read, the blob store is seeded from the
 committed JSON data in `server/data` or `src/data`. Passports are stored as one
 blob per kid at `passports/{kidId}.json`, so completing an activity only writes
 that kid's passport. Prize catalog settings are stored in one shared blob, and
-prize awards remain an append-only shared JSON document.
+prize awards are exposed through kid-scoped API responses.
 
 The default blob store name is `kid-a-data`. Set `KID_A_BLOBS_STORE` in Netlify
 to use a different store name. Netlify automatically provides the Blobs runtime

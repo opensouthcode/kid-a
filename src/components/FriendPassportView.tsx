@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import {
   useGetPassportForKid,
+  useReloadPassportActivities,
   type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
@@ -13,11 +15,16 @@ type FriendPassportViewProps = {
 
 export function FriendPassportView({ kid }: FriendPassportViewProps) {
   const getPassportForKid = useGetPassportForKid();
+  const reloadPassportActivities = useReloadPassportActivities();
   const { t } = useI18n();
   const passport = getPassportForKid(kid.id);
   const completedActivities = passport.activities.filter(
     (activity) => activity.completedAt,
   ).length;
+
+  useEffect(() => {
+    reloadPassportActivities(kid.id);
+  }, [kid.id]);
 
   return (
     <section className="friend-passport-view" aria-labelledby="friend-passport-title">
