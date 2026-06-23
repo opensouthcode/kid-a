@@ -21,19 +21,14 @@ const jsonDocumentKeys = {
   prizeAwards: 'prizes-won.json',
   prizes: 'wheel-prizes.json',
 } as const satisfies Partial<Record<StoreFile, string>>;
-const maxConcurrentUpdateAttempts = 5;
+const sharedUpdateLockKey = 'locks/shared-update.json';
+const lockRetryDelayMs = 100;
+const maxLockAttempts = 100;
+const staleLockMs = 30_000;
 
-class ConcurrentBlobUpdateError extends Error {
-  constructor(storeFile: StoreFile) {
-    super(`Concurrent Netlify Blob update for ${storeFile}`);
-  }
-}
-
-type JsonDocumentStoreFile = keyof typeof jsonDocumentKeys;
-
-type SnapshotRead = {
-  etags: Partial<Record<JsonDocumentStoreFile, string>>;
-  snapshot: StoreData;
+type BlobLock = {
+  acquiredAt: number;
+  token: string;
 };
 
 function getSeedDataDirs() {
@@ -102,66 +97,6 @@ async function readRequiredBlobJson<T>(store: NetlifyBlobStore, key: string) {
   return value;
 }
 
-function isJsonDocumentStoreFile(
-  storeFile: StoreFile,
-): storeFile is JsonDocumentStoreFile {
-  return storeFile in jsonDocumentKeys;
-}
-
-async function readJsonDocumentForUpdate<T>(
-  store: NetlifyBlobStore,
-  key: string,
-) {
-  const metadata = await store.getMetadata(key, {
-    consistency: 'strong',
-  });
-
-  if (metadata === null) {
-    throw new Error(`Missing Netlify Blob document after seed: ${key}`);
-  }
-
-  if (!metadata.etag) {
-    throw new Error(`Missing Netlify Blob etag for document: ${key}`);
-  }
-
-  const data = (await store.get(key, {
-    consistency: 'strong',
-    type: 'json',
-  })) as T | null;
-
-  if (data === null) {
-    throw new Error(`Missing Netlify Blob document after seed: ${key}`);
-  }
-
-  return {
-    data,
-    etag: metadata.etag,
-  };
-}
-
-async function writeJsonDocument(
-  store: NetlifyBlobStore,
-  storeFile: JsonDocumentStoreFile,
-  snapshot: StoreData,
-  etag: string | undefined,
-) {
-  if (!etag) {
-    throw new Error(`Missing Netlify Blob etag for update: ${storeFile}`);
-  }
-
-  const result = await store.set(
-    jsonDocumentKeys[storeFile],
-    JSON.stringify(snapshot[storeFile]),
-    {
-      onlyIfMatch: etag,
-    },
-  );
-
-  if (!result.modified) {
-    throw new ConcurrentBlobUpdateError(storeFile);
-  }
-}
-
 async function writeStoreFile(
   store: NetlifyBlobStore,
   storeFile: StoreFile,
@@ -194,6 +129,74 @@ async function writeStoreFile(
   }
 
   await store.setJSON(jsonDocumentKeys[storeFile], snapshot[storeFile]);
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function parseLock(rawLock: string | null): BlobLock | undefined {
+  if (!rawLock) {
+    return undefined;
+  }
+
+  try {
+    const lock = JSON.parse(rawLock) as Partial<BlobLock>;
+
+    return typeof lock.token === 'string' && typeof lock.acquiredAt === 'number'
+      ? {
+          acquiredAt: lock.acquiredAt,
+          token: lock.token,
+        }
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+async function acquireSharedUpdateLock(store: NetlifyBlobStore) {
+  const lock: BlobLock = {
+    acquiredAt: Date.now(),
+    token: `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+  };
+
+  for (let attempt = 1; attempt <= maxLockAttempts; attempt += 1) {
+    const result = await store.set(sharedUpdateLockKey, JSON.stringify(lock), {
+      onlyIfNew: true,
+    });
+
+    if (result.modified) {
+      return lock;
+    }
+
+    const currentLock = parseLock(
+      await store.get(sharedUpdateLockKey, { type: 'text' }),
+    );
+
+    if (currentLock && Date.now() - currentLock.acquiredAt > staleLockMs) {
+      await store.delete(sharedUpdateLockKey);
+      continue;
+    }
+
+    await delay(lockRetryDelayMs);
+  }
+
+  throw new Error('Timed out waiting for Netlify Blob update lock');
+}
+
+async function releaseSharedUpdateLock(
+  store: NetlifyBlobStore,
+  lock: BlobLock,
+) {
+  const currentLock = parseLock(
+    await store.get(sharedUpdateLockKey, { type: 'text' }),
+  );
+
+  if (currentLock?.token === lock.token) {
+    await store.delete(sharedUpdateLockKey);
+  }
 }
 
 async function readSeedSnapshot(): Promise<StoreData> {
@@ -295,41 +298,6 @@ export function createBlobStore(
     };
   }
 
-  async function readSnapshotForUpdate(): Promise<SnapshotRead> {
-    await ensureSeeded();
-
-    const [conference, kids, passportActivitiesByKid, prizeAwards, prizes] =
-      await Promise.all([
-        readJsonDocumentForUpdate<ConferenceData>(
-          store,
-          jsonDocumentKeys.conference,
-        ),
-        readJsonDocumentForUpdate<Kid[]>(store, jsonDocumentKeys.kids),
-        readPassportActivitiesByKid(),
-        readJsonDocumentForUpdate<PrizeAward[]>(
-          store,
-          jsonDocumentKeys.prizeAwards,
-        ),
-        readJsonDocumentForUpdate<Prize[]>(store, jsonDocumentKeys.prizes),
-      ]);
-
-    return {
-      etags: {
-        conference: conference.etag,
-        kids: kids.etag,
-        prizeAwards: prizeAwards.etag,
-        prizes: prizes.etag,
-      },
-      snapshot: {
-        conference: conference.data,
-        kids: kids.data,
-        passportActivitiesByKid,
-        prizeAwards: prizeAwards.data,
-        prizes: prizes.data,
-      },
-    };
-  }
-
   async function readSnapshot() {
     await writeQueue.catch(() => undefined);
     return readSnapshotUnlocked();
@@ -343,37 +311,20 @@ export function createBlobStore(
     const nextWrite = previousWrite
       .catch(() => undefined)
       .then(async () => {
-        for (let attempt = 1; attempt <= maxConcurrentUpdateAttempts; attempt += 1) {
-          const { etags, snapshot } = await readSnapshotForUpdate();
+        const lock = await acquireSharedUpdateLock(store);
+
+        try {
+          const snapshot = await readSnapshotUnlocked();
           const result = await mutator(snapshot);
 
-          try {
-            for (const storeFile of changedFiles) {
-              if (isJsonDocumentStoreFile(storeFile)) {
-                await writeJsonDocument(store, storeFile, snapshot, etags[storeFile]);
-              }
-            }
+          await Promise.all(
+            changedFiles.map((storeFile) => writeStoreFile(store, storeFile, snapshot)),
+          );
 
-            await Promise.all(
-              changedFiles
-                .filter((storeFile) => !isJsonDocumentStoreFile(storeFile))
-                .map((storeFile) => writeStoreFile(store, storeFile, snapshot)),
-            );
-
-            return result;
-          } catch (error) {
-            if (
-              error instanceof ConcurrentBlobUpdateError &&
-              attempt < maxConcurrentUpdateAttempts
-            ) {
-              continue;
-            }
-
-            throw error;
-          }
+          return result;
+        } finally {
+          await releaseSharedUpdateLock(store, lock);
         }
-
-        throw new Error('Unable to update Netlify Blobs after concurrent changes');
       });
 
     writeQueue = nextWrite.then(
