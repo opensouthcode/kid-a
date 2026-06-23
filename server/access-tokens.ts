@@ -90,19 +90,22 @@ function createFileMagicTokenStore(filePath = defaultMagicTokensFile) {
 }
 
 export function createBlobMagicTokenStore(
-  store: NetlifyBlobStore = getStore({
-    consistency: 'strong',
-    name: process.env.KID_A_BLOBS_STORE ?? defaultBlobStoreName,
-  }),
+  store: NetlifyBlobStore = getStore(
+    process.env.KID_A_BLOBS_STORE ?? defaultBlobStoreName,
+  ),
 ) {
   return {
     async readTokens() {
-      return (
-        ((await store.get(magicTokensBlobKey, {
-          consistency: 'strong',
-          type: 'json',
-        })) as MagicLinkTokenRecord[] | null) ?? []
-      );
+      const tokens = (await store.get(magicTokensBlobKey, {
+        type: 'json',
+      })) as MagicLinkTokenRecord[] | null;
+
+      if (tokens) {
+        return tokens;
+      }
+
+      await store.setJSON(magicTokensBlobKey, [], { onlyIfNew: true });
+      return [];
     },
     async writeTokens(tokens: MagicLinkTokenRecord[]) {
       await store.setJSON(magicTokensBlobKey, tokens);
