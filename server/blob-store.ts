@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getStore, type Store as NetlifyBlobStore } from '@netlify/blobs';
 import { getStoreFileName, type StoreAdapter, type StoreFile } from './store.js';
 import type {
@@ -13,6 +14,7 @@ import type {
 } from './types.js';
 
 const defaultBlobStoreName = 'kid-a-data';
+const moduleDir = path.dirname(fileURLToPath(import.meta.url));
 const passportPrefix = 'passports/';
 const seedMarkerKey = 'seeded-v1.json';
 const jsonDocumentKeys = {
@@ -27,7 +29,16 @@ function getSeedDataDirs() {
     return [path.resolve(process.env.KID_A_SEED_DATA_DIR)];
   }
 
-  return [path.resolve('server/data'), path.resolve('src/data')];
+  return Array.from(
+    new Set([
+      path.resolve('server/data'),
+      path.resolve('src/data'),
+      path.resolve(moduleDir, 'data'),
+      path.resolve(moduleDir, '../src/data'),
+      path.resolve(moduleDir, '../../server/data'),
+      path.resolve(moduleDir, '../../src/data'),
+    ]),
+  );
 }
 
 function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {
