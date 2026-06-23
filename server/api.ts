@@ -40,6 +40,8 @@ class HttpError extends Error {
   }
 }
 
+class StaleKidIdReadError extends Error {}
+
 type AdminBackup = {
   exportedAt: string;
   passports: PassportActivitiesByKid;
@@ -59,6 +61,8 @@ const apiPaths = new Set([
   '/prizes-kid',
 ]);
 const kidGenders = new Set(['boy', 'girl', 'preferNotToSay']);
+const kidRegistrationRetryDelayMs = 250;
+const maxKidRegistrationAttempts = 20;
 const prizeKinds = new Set<PrizeKind>(['final', 'normal', 'valuable']);
 const staffRoles = new Set<UserRole>(['desk', 'lead', 'wheel']);
 const supportedLocales = new Set(['en', 'es']);
@@ -315,6 +319,24 @@ function normalizeKidId(rawKid: string | null, snapshot: StoreData) {
   return knownKid?.id ?? knownPassportKid ?? candidate.toUpperCase();
 }
 
+function normalizeOptionalLastKnownKidId(value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new HttpError(400, 'lastKnownKidId must be a non-empty string');
+  }
+
+  return value.trim().toLowerCase();
+}
+
+function delay(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 function createKidQrIdData(kidId: string) {
   return `kid-a:${kidId}`;
 }
@@ -542,6 +564,7 @@ function normalizeRegistrationInput(value: unknown) {
     age,
     gender,
     language,
+    lastKnownKidId: normalizeOptionalLastKnownKidId(registration.lastKnownKidId),
     nickname,
   };
 }
@@ -572,23 +595,49 @@ async function handleKids(request: ApiRequest, url: URL): Promise<ApiResponse> {
   await requireMagicLink(request, url, ['desk']);
 
   const registration = normalizeRegistrationInput(parseJsonBody(request.body));
-  const response = await updateSnapshot((snapshot) => {
-    const kidId = getNextKidId(snapshot.kids, snapshot.conference.kidIdPrefix);
-    const kid: Kid = {
-      age: registration.age,
-      gender: registration.gender,
-      id: kidId,
-      language: registration.language,
-      name: registration.nickname,
-      qrIdData: createKidQrIdData(kidId),
-    };
-    const passport = passportTemplate(snapshot.passportActivitiesByKid);
+  let response: Kid | undefined;
 
-    snapshot.kids.push(kid);
-    snapshot.passportActivitiesByKid[kid.id] = passport;
+  for (let attempt = 1; attempt <= maxKidRegistrationAttempts; attempt += 1) {
+    try {
+      response = await updateSnapshot((snapshot) => {
+        const kidId = getNextKidId(snapshot.kids, snapshot.conference.kidIdPrefix);
 
-    return kid;
-  }, ['kids', 'passportActivitiesByKid']);
+        if (kidId.toLowerCase() === registration.lastKnownKidId) {
+          throw new StaleKidIdReadError();
+        }
+
+        const kid: Kid = {
+          age: registration.age,
+          gender: registration.gender,
+          id: kidId,
+          language: registration.language,
+          name: registration.nickname,
+          qrIdData: createKidQrIdData(kidId),
+        };
+        const passport = passportTemplate(snapshot.passportActivitiesByKid);
+
+        snapshot.kids.push(kid);
+        snapshot.passportActivitiesByKid[kid.id] = passport;
+
+        return kid;
+      }, ['kids', 'passportActivitiesByKid']);
+      break;
+    } catch (error) {
+      if (
+        error instanceof StaleKidIdReadError &&
+        attempt < maxKidRegistrationAttempts
+      ) {
+        await delay(kidRegistrationRetryDelayMs);
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  if (!response) {
+    throw new HttpError(409, 'Unable to allocate a fresh kid id');
+  }
 
   return jsonResponse(request, 201, response);
 }

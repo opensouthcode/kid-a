@@ -21,15 +21,6 @@ const jsonDocumentKeys = {
   prizeAwards: 'prizes-won.json',
   prizes: 'wheel-prizes.json',
 } as const satisfies Partial<Record<StoreFile, string>>;
-const sharedUpdateLockKey = 'locks/shared-update.json';
-const lockRetryDelayMs = 100;
-const maxLockAttempts = 100;
-const staleLockMs = 30_000;
-
-type BlobLock = {
-  acquiredAt: number;
-  token: string;
-};
 
 function getSeedDataDirs() {
   if (process.env.KID_A_SEED_DATA_DIR) {
@@ -129,74 +120,6 @@ async function writeStoreFile(
   }
 
   await store.setJSON(jsonDocumentKeys[storeFile], snapshot[storeFile]);
-}
-
-function delay(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-function parseLock(rawLock: string | null): BlobLock | undefined {
-  if (!rawLock) {
-    return undefined;
-  }
-
-  try {
-    const lock = JSON.parse(rawLock) as Partial<BlobLock>;
-
-    return typeof lock.token === 'string' && typeof lock.acquiredAt === 'number'
-      ? {
-          acquiredAt: lock.acquiredAt,
-          token: lock.token,
-        }
-      : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-async function acquireSharedUpdateLock(store: NetlifyBlobStore) {
-  const lock: BlobLock = {
-    acquiredAt: Date.now(),
-    token: `${process.pid}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-  };
-
-  for (let attempt = 1; attempt <= maxLockAttempts; attempt += 1) {
-    const result = await store.set(sharedUpdateLockKey, JSON.stringify(lock), {
-      onlyIfNew: true,
-    });
-
-    if (result.modified) {
-      return lock;
-    }
-
-    const currentLock = parseLock(
-      await store.get(sharedUpdateLockKey, { type: 'text' }),
-    );
-
-    if (currentLock && Date.now() - currentLock.acquiredAt > staleLockMs) {
-      await store.delete(sharedUpdateLockKey);
-      continue;
-    }
-
-    await delay(lockRetryDelayMs);
-  }
-
-  throw new Error('Timed out waiting for Netlify Blob update lock');
-}
-
-async function releaseSharedUpdateLock(
-  store: NetlifyBlobStore,
-  lock: BlobLock,
-) {
-  const currentLock = parseLock(
-    await store.get(sharedUpdateLockKey, { type: 'text' }),
-  );
-
-  if (currentLock?.token === lock.token) {
-    await store.delete(sharedUpdateLockKey);
-  }
 }
 
 async function readSeedSnapshot(): Promise<StoreData> {
@@ -311,20 +234,14 @@ export function createBlobStore(
     const nextWrite = previousWrite
       .catch(() => undefined)
       .then(async () => {
-        const lock = await acquireSharedUpdateLock(store);
+        const snapshot = await readSnapshotUnlocked();
+        const result = await mutator(snapshot);
 
-        try {
-          const snapshot = await readSnapshotUnlocked();
-          const result = await mutator(snapshot);
+        await Promise.all(
+          changedFiles.map((storeFile) => writeStoreFile(store, storeFile, snapshot)),
+        );
 
-          await Promise.all(
-            changedFiles.map((storeFile) => writeStoreFile(store, storeFile, snapshot)),
-          );
-
-          return result;
-        } finally {
-          await releaseSharedUpdateLock(store, lock);
-        }
+        return result;
       });
 
     writeQueue = nextWrite.then(

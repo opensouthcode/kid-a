@@ -390,7 +390,10 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   };
   const addRegisteredKid = async (registration: RegistrationInput) => {
     if (isRemoteDataLayer) {
-      const registeredKid = await saveRemoteRegisteredKid(registration);
+      const registeredKid = await saveRemoteRegisteredKid({
+        ...registration,
+        lastKnownKidId: kidList.at(-1)?.id,
+      });
 
       setKidList((currentKids) => mergeKid(currentKids, registeredKid));
 

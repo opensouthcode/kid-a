@@ -159,7 +159,9 @@ export async function saveRemotePassportActivity(
   return readJsonResponse<PassportActivity[]>(response);
 }
 
-export async function saveRemoteRegisteredKid(registration: RegistrationInput) {
+export async function saveRemoteRegisteredKid(
+  registration: RegistrationInput & { lastKnownKidId?: string },
+) {
   const response = await fetch(buildApiUrl('/kids'), {
     body: JSON.stringify(registration),
     headers: {
