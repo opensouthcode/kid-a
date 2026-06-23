@@ -74,7 +74,6 @@ export type Kid = {
   id: string;
   language: Locale;
   name: string;
-  qrIdData: string;
 };
 
 export type CurrentUser =

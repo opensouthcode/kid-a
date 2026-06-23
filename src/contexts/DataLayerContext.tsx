@@ -52,7 +52,6 @@ import {
   type RemoteDataSnapshot,
 } from '../data/remote-data-client';
 import {
-  createKidQrIdData,
   getKidSequenceNumber,
   getNextKidId,
   parseKidQrPayload,
@@ -87,7 +86,7 @@ type DataLayerContextValue = {
   conference: ConferenceData;
   currentUser: CurrentUser;
   findKidByManualNumber: (rawSearchValue: string) => Kid | undefined;
-  findKidByQrIdData: (qrIdData: string) => Kid | undefined;
+  findKidByQrIdData: (qrPayload: string) => Kid | undefined;
   getPassportForKid: (kidId: string) => PassportData;
   getWheelShotSummaryForKid: (kidId: string) => WheelShotSummary;
   kids: Kid[];
@@ -407,7 +406,6 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       id: kidId,
       language: registration.language,
       name: registration.nickname.trim(),
-      qrIdData: createKidQrIdData(kidId),
     };
 
     setKidList((currentKids) => [...currentKids, registeredKid]);
@@ -509,8 +507,8 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     return kidList.find((kid) => getKidSequenceNumber(kid.id) === searchedNumber);
   };
-  const findKidByQrIdData = (qrIdData: string) => {
-    const kidId = parseKidQrPayload(qrIdData);
+  const findKidByQrIdData = (qrPayload: string) => {
+    const kidId = parseKidQrPayload(qrPayload);
 
     return kidId
       ? kidList.find((kid) => kid.id.toLowerCase() === kidId.toLowerCase())

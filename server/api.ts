@@ -337,10 +337,6 @@ function delay(ms: number) {
   });
 }
 
-function createKidQrIdData(kidId: string) {
-  return `kid-a:${kidId}`;
-}
-
 function getNextKidId(existingKids: Kid[], kidIdPrefix: string) {
   const existingIds = new Set(existingKids.map((kid) => kid.id.toLowerCase()));
   let sequence = existingKids.length + 1;
@@ -612,7 +608,6 @@ async function handleKids(request: ApiRequest, url: URL): Promise<ApiResponse> {
           id: kidId,
           language: registration.language,
           name: registration.nickname,
-          qrIdData: createKidQrIdData(kidId),
         };
         const passport = passportTemplate(snapshot.passportActivitiesByKid);
 
