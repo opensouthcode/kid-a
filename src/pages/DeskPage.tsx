@@ -49,6 +49,7 @@ export function DeskPage() {
     PrintablePassportQr[]
   >([]);
   const [isGeneratingPrintQrs, setIsGeneratingPrintQrs] = useState(false);
+  const [isPrintQrSheetOpen, setIsPrintQrSheetOpen] = useState(false);
   const [shouldPrintQrSheet, setShouldPrintQrSheet] = useState(false);
   const [printQrError, setPrintQrError] = useState('');
   const lastRegisteredKids = [...kids].reverse().slice(0, 3);
@@ -61,7 +62,11 @@ export function DeskPage() {
   }, [currentUser.role, navigate]);
 
   useEffect(() => {
-    if (!shouldPrintQrSheet || printablePassportQrs.length !== PASSPORT_QR_COUNT) {
+    if (
+      !shouldPrintQrSheet ||
+      !isPrintQrSheetOpen ||
+      printablePassportQrs.length !== PASSPORT_QR_COUNT
+    ) {
       return;
     }
 
@@ -73,7 +78,7 @@ export function DeskPage() {
     });
 
     return () => window.cancelAnimationFrame(animationFrameId);
-  }, [printablePassportQrs.length, shouldPrintQrSheet]);
+  }, [isPrintQrSheetOpen, printablePassportQrs.length, shouldPrintQrSheet]);
 
   if (currentUser.role !== 'desk') {
     return null;
@@ -106,6 +111,7 @@ export function DeskPage() {
     )
       .then((nextPrintablePassportQrs) => {
         setPrintablePassportQrs(nextPrintablePassportQrs);
+        setIsPrintQrSheetOpen(true);
         setShouldPrintQrSheet(true);
       })
       .catch(() => {
@@ -174,6 +180,40 @@ export function DeskPage() {
     setFormError('');
     setInvalidQrPreview('');
   };
+
+  if (isPrintQrSheetOpen) {
+    return (
+      <main className="print-page">
+        <div className="print-page-actions">
+          <button
+            className="access-button secondary-action"
+            type="button"
+            onClick={() => {
+              setIsPrintQrSheetOpen(false);
+              setShouldPrintQrSheet(false);
+            }}
+          >
+            {t('desk.printQr.back')}
+          </button>
+          <button
+            className="access-button"
+            type="button"
+            onClick={() => window.print()}
+          >
+            {t('desk.printQr')}
+          </button>
+        </div>
+        <section className="print-qr-sheet" aria-label={t('desk.printQr.sheet')}>
+          {printablePassportQrs.map((passportQr) => (
+            <article className="passport-print-qr" key={passportQr.id}>
+              <img src={passportQr.qrCodeUrl} alt="" />
+              <span>{passportQr.id}</span>
+            </article>
+          ))}
+        </section>
+      </main>
+    );
+  }
 
   return (
     <>
@@ -265,14 +305,6 @@ export function DeskPage() {
             <strong>{kidCount}</strong>
           </article>
         </section>
-      </section>
-      <section className="print-qr-sheet" aria-label={t('desk.printQr.sheet')}>
-        {printablePassportQrs.map((passportQr) => (
-          <article className="passport-print-qr" key={passportQr.id}>
-            <img src={passportQr.qrCodeUrl} alt="" />
-            <span>{passportQr.id}</span>
-          </article>
-        ))}
       </section>
     </>
   );

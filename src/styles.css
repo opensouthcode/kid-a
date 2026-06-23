@@ -1279,6 +1279,49 @@ h2 {
   display: none;
 }
 
+.print-page {
+  min-height: 100vh;
+  padding: 18mm 8mm 8mm;
+  background: #fff;
+  color: #000;
+}
+
+.print-page-actions {
+  position: fixed;
+  z-index: 2;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 10px;
+}
+
+.print-page .print-qr-sheet {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 3.5mm 4mm;
+  align-items: start;
+}
+
+.passport-print-qr {
+  display: grid;
+  gap: 1mm;
+  justify-items: center;
+  color: #000;
+  font-family: Arial, sans-serif;
+}
+
+.passport-print-qr img {
+  display: block;
+  width: 28mm;
+  height: 28mm;
+}
+
+.passport-print-qr span {
+  font-size: 7pt;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .last-kids-list {
   display: grid;
   gap: 8px;
@@ -2269,13 +2312,18 @@ h2 {
     visibility: hidden;
   }
 
-  #root > :not(.print-qr-sheet) {
-    display: none;
-  }
-
   .print-qr-sheet,
   .print-qr-sheet * {
     visibility: visible;
+  }
+
+  .print-page {
+    min-height: auto;
+    padding: 0;
+  }
+
+  .print-page-actions {
+    display: none;
   }
 
   .print-qr-sheet {
@@ -2293,24 +2341,7 @@ h2 {
   }
 
   .passport-print-qr {
-    display: grid;
     break-inside: avoid;
     page-break-inside: avoid;
-    gap: 1mm;
-    justify-items: center;
-    color: #000;
-    font-family: Arial, sans-serif;
-  }
-
-  .passport-print-qr img {
-    display: block;
-    width: 28mm;
-    height: 28mm;
-  }
-
-  .passport-print-qr span {
-    font-size: 7pt;
-    font-weight: 700;
-    line-height: 1;
   }
 }
