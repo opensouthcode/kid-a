@@ -1318,7 +1318,7 @@ h2 {
   display: grid;
   width: 100%;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 0;
+  gap: 8px;
   align-items: start;
   justify-items: center;
 }
@@ -1333,8 +1333,8 @@ h2 {
 
 .passport-print-qr img {
   display: block;
-  width: 26mm;
-  height: 26mm;
+  width: 24mm;
+  height: 24mm;
 }
 
 .passport-print-qr span {
@@ -2351,7 +2351,7 @@ h2 {
     display: grid;
     width: 100%;
     grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 0;
+    gap: 8px;
     align-items: start;
     justify-items: center;
     padding: 0;
