@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { PersonIcon, SmileyGrinIcon } from '@primer/octicons-react';
 import { useCurrentUser, useResetCurrentUser } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
-import { isSupportedLocale, supportedLocales } from '../i18n/messages';
+import { isSupportedLocale, supportedLocales, type MessageKey } from '../i18n/messages';
 
 type TopBarProps = {
   customButtons?: ReactNode;
@@ -11,6 +11,17 @@ type TopBarProps = {
   showLanguageSwitcher?: boolean;
   showUserMenu?: boolean;
 };
+
+function getCurrentUserLabel(
+  currentUser: ReturnType<typeof useCurrentUser>,
+  t: (key: MessageKey) => string,
+) {
+  if (currentUser.role === 'guest' || currentUser.role === 'kid') {
+    return currentUser.name;
+  }
+
+  return t(`access.role.${currentUser.role}`);
+}
 
 function LanguageSwitcher() {
   const { locale, setLocale, t } = useI18n();
@@ -50,6 +61,7 @@ export function TopBar({
   const resetCurrentUser = useResetCurrentUser();
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const currentUserLabel = getCurrentUserLabel(currentUser, t);
 
   useEffect(() => {
     if (!isUserMenuOpen) {
@@ -101,13 +113,13 @@ export function TopBar({
             onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
           >
             <SmileyGrinIcon size={22} aria-hidden="true" />
-            <span>{currentUser.name}</span>
+            <span>{currentUserLabel}</span>
           </button>
           {isUserMenuOpen ? (
             <section className="user-menu" aria-label={t('user.menu')}>
               <div className="user-menu-name">
                 <span>{t('user.nameLabel')}</span>
-                <strong>{currentUser.name}</strong>
+                <strong>{currentUserLabel}</strong>
               </div>
               {currentUser.role === 'kid' ? (
                 <div className="user-menu-name">

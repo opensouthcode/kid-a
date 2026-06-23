@@ -4,7 +4,9 @@ import type {
   PrizeAward,
   PrizeAwardSource,
   PrizeSettingsUpdate,
+  UserRole,
 } from './data-model';
+import { magicLinkRequestHeaders } from '../access/magic-links';
 
 const remoteDataCacheKey = 'kid-a:remote:data-cache';
 
@@ -24,6 +26,20 @@ type RemotePrizeAwardResponse = {
   award: PrizeAward;
   prizeAwards: PrizeAward[];
   prizes: Prize[];
+};
+
+export type RemoteMagicLinkSession = {
+  activityId?: number;
+  createdAt: string;
+  expiresAt: string;
+  role: UserRole;
+};
+
+export type CreatedRemoteMagicLink = {
+  activityId?: number;
+  expiresAt: string;
+  role: UserRole;
+  token: string;
 };
 
 function getApiBaseUrl() {
@@ -67,7 +83,8 @@ export function writeRemoteDataCache(snapshot: RemoteDataSnapshot) {
 }
 
 export async function fetchRemoteDataSnapshot(): Promise<RemoteDataSnapshot> {
-  const requestInit = { cache: 'no-store' } satisfies RequestInit;
+  const headers = magicLinkRequestHeaders();
+  const requestInit = { cache: 'no-store', headers } satisfies RequestInit;
   const [passportActivitiesByKid, prizes, prizeAwards] = await Promise.all([
     fetch(buildApiUrl('/passport'), requestInit).then((response) =>
       readJsonResponse<PassportActivitiesByKid>(response),
@@ -87,6 +104,49 @@ export async function fetchRemoteDataSnapshot(): Promise<RemoteDataSnapshot> {
   };
 }
 
+export async function fetchRemoteMagicLinkSession() {
+  const response = await fetch(buildApiUrl('/auth/session'), {
+    headers: magicLinkRequestHeaders(),
+  });
+
+  return readJsonResponse<RemoteMagicLinkSession>(response);
+}
+
+export async function verifyRemoteAdminPassword(password: string) {
+  const response = await fetch(buildApiUrl('/admin/session'), {
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Password': password,
+    },
+    method: 'POST',
+  });
+
+  return readJsonResponse<{ ok: true }>(response);
+}
+
+export async function createRemoteMagicLink({
+  activityId,
+  durationDays,
+  password,
+  role,
+}: {
+  activityId?: number;
+  durationDays: number;
+  password: string;
+  role: UserRole;
+}) {
+  const response = await fetch(buildApiUrl('/admin/magic-links'), {
+    body: JSON.stringify({ activityId, durationDays, role }),
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Admin-Password': password,
+    },
+    method: 'POST',
+  });
+
+  return readJsonResponse<CreatedRemoteMagicLink>(response);
+}
+
 export async function saveRemotePassportActivity(
   kidId: string,
   activityId: number,
@@ -99,6 +159,7 @@ export async function saveRemotePassportActivity(
       )}`,
     ),
     {
+      headers: magicLinkRequestHeaders(),
       method: 'POST',
     },
   );
@@ -115,6 +176,7 @@ export async function saveRemotePrize(
     body: JSON.stringify(updates),
     headers: {
       'Content-Type': 'application/json',
+      ...magicLinkRequestHeaders(),
     },
     method: 'POST',
   });
@@ -137,6 +199,7 @@ export async function saveRemotePrizeAward(
       body: JSON.stringify({ source }),
       headers: {
         'Content-Type': 'application/json',
+        ...magicLinkRequestHeaders(),
       },
       method: 'POST',
     },

@@ -15,6 +15,7 @@ import { TopBar } from '../components/TopBar';
 import {
   getPrizeRemaining,
   useAddPrize,
+  useAccessSessionStatus,
   useAwardPassportCompletionPrize,
   useAwardPrizeToKid,
   useCurrentUser,
@@ -102,6 +103,7 @@ function createWheelBackground(prizes: Prize[], segments: Prize[]) {
 
 export function WheelPage() {
   const addPrize = useAddPrize();
+  const accessSessionStatus = useAccessSessionStatus();
   const awardPassportCompletionPrize = useAwardPassportCompletionPrize();
   const awardPrizeToKid = useAwardPrizeToKid();
   const currentUser = useCurrentUser();
@@ -164,10 +166,14 @@ export function WheelPage() {
   );
 
   useEffect(() => {
+    if (accessSessionStatus.state === 'loading') {
+      return;
+    }
+
     if (currentUser.role !== 'wheel') {
       navigate('/', { replace: true });
     }
-  }, [currentUser.role, navigate]);
+  }, [accessSessionStatus.state, currentUser.role, navigate]);
 
   useEffect(() => {
     if (!isPrizeManagerOpen) {
@@ -520,7 +526,7 @@ export function WheelPage() {
     setManagementError('');
   };
 
-  if (currentUser.role !== 'wheel') {
+  if (accessSessionStatus.state === 'loading' || currentUser.role !== 'wheel') {
     return null;
   }
 

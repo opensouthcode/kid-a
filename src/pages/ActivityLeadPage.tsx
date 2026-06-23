@@ -7,6 +7,7 @@ import { KidList } from '../components/KidList';
 import { ProgressCounter } from '../components/ProgressCounter';
 import { TopBar } from '../components/TopBar';
 import {
+  useAccessSessionStatus,
   useActivitiesData,
   useCurrentUser,
   useGetPassportForKid,
@@ -17,6 +18,7 @@ import {
 import { useI18n } from '../i18n/I18nProvider';
 
 export function ActivityLeadPage() {
+  const accessSessionStatus = useAccessSessionStatus();
   const currentUser = useCurrentUser();
   const activities = useActivitiesData();
   const getPassportForKid = useGetPassportForKid();
@@ -89,12 +91,16 @@ export function ActivityLeadPage() {
     Boolean(leadActivity?.completedAt) && !hasJustCompletedActivity;
 
   useEffect(() => {
+    if (accessSessionStatus.state === 'loading') {
+      return;
+    }
+
     if (currentUser.role !== 'lead') {
       navigate('/', { replace: true });
     }
-  }, [currentUser.role, navigate]);
+  }, [accessSessionStatus.state, currentUser.role, navigate]);
 
-  if (currentUser.role !== 'lead') {
+  if (accessSessionStatus.state === 'loading' || currentUser.role !== 'lead') {
     return null;
   }
 

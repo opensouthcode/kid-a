@@ -7,6 +7,7 @@ import { RegisterKidForm } from '../components/RegisterKidForm';
 import { TopBar } from '../components/TopBar';
 import {
   useAddRegisteredKid,
+  useAccessSessionStatus,
   useCurrentUser,
   useKidsData,
 } from '../contexts/DataLayerContext';
@@ -33,6 +34,7 @@ const createPassportQrId = (number: number) =>
 
 export function DeskPage() {
   const addRegisteredKid = useAddRegisteredKid();
+  const accessSessionStatus = useAccessSessionStatus();
   const navigate = useNavigate();
   const currentUser = useCurrentUser();
   const kids = useKidsData();
@@ -56,10 +58,14 @@ export function DeskPage() {
   const kidCount = kids.length;
 
   useEffect(() => {
+    if (accessSessionStatus.state === 'loading') {
+      return;
+    }
+
     if (currentUser.role !== 'desk') {
       navigate('/', { replace: true });
     }
-  }, [currentUser.role, navigate]);
+  }, [accessSessionStatus.state, currentUser.role, navigate]);
 
   useEffect(() => {
     if (
@@ -76,11 +82,10 @@ export function DeskPage() {
         setShouldPrintQrSheet(false);
       });
     });
-
     return () => window.cancelAnimationFrame(animationFrameId);
   }, [isPrintQrSheetOpen, printablePassportQrs.length, shouldPrintQrSheet]);
 
-  if (currentUser.role !== 'desk') {
+  if (accessSessionStatus.state === 'loading' || currentUser.role !== 'desk') {
     return null;
   }
 

@@ -31,10 +31,17 @@ import {
   type PrizeAward,
   type PrizeSettingsUpdate,
   type User,
+  type UserRole,
   type WheelShotSummary,
 } from '../data/data-model';
 import {
+  clearMagicLinkSession,
+  getStoredMagicLinkToken,
+  resolveBuiltInMagicLink,
+} from '../access/magic-links';
+import {
   fetchRemoteDataSnapshot,
+  fetchRemoteMagicLinkSession,
   isRemoteDataLayerEnabled,
   readRemoteDataCache,
   saveRemotePassportActivity,
@@ -70,6 +77,7 @@ export type {
 } from '../data/data-model';
 
 type DataLayerContextValue = {
+  accessSessionStatus: AccessSessionStatus;
   activities: Activity[];
   addRegisteredKid: (registration: RegistrationInput) => Kid;
   addPrize: (title: string) => Prize;
@@ -92,6 +100,15 @@ type DataLayerContextValue = {
   setCurrentUser: (user: Kid | User) => void;
   updatePrize: (prizeId: string, updates: PrizeSettingsUpdate) => void;
 };
+
+type AccessSessionStatus =
+  | {
+      state: 'idle' | 'loading' | 'ready';
+    }
+  | {
+      error: string;
+      state: 'error';
+    };
 
 const initialActivities: Activity[] = activitiesJson;
 const initialKids: Kid[] = kidsJson as Kid[];
@@ -122,18 +139,6 @@ function createPrizeId(prizes: Prize[]) {
   return candidateId;
 }
 
-function getDefaultUser() {
-  const defaultUser =
-    initialUsers.find((user) => user.role === 'desk') ?? initialUsers[0];
-
-  if (!defaultUser) {
-    throw new Error('users.json must include at least one user');
-  }
-
-  return defaultUser;
-}
-
-const defaultUser = getDefaultUser();
 const guestUser: CurrentUser = {
   id: 'guest',
   name: 'Guest',
@@ -173,6 +178,29 @@ function wrapKid(kid: Kid): CurrentUser {
   };
 }
 
+function createMagicLinkUser(role: UserRole, activityId?: number): User {
+  return {
+    ...(activityId ? { activityId } : {}),
+    id: activityId ? `magic-link-${role}-${activityId}` : `magic-link-${role}`,
+    name: role,
+    role,
+  };
+}
+
+function getInitialMagicLinkUser(isRemoteDataLayer: boolean): CurrentUser | undefined {
+  if (isRemoteDataLayer) {
+    return undefined;
+  }
+
+  const builtInMagicLink = resolveBuiltInMagicLink(getStoredMagicLinkToken());
+
+  if (!builtInMagicLink) {
+    return undefined;
+  }
+
+  return createMagicLinkUser(builtInMagicLink.role, builtInMagicLink.activityId);
+}
+
 const emptyPassportTemplate =
   Object.values(initialPassportActivitiesByUser)[0]?.map((activity) => ({
     id: activity.id,
@@ -205,8 +233,19 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
           initialPassportActivitiesByUser,
       ),
   );
-  const [selectedCurrentUser, setSelectedCurrentUser] =
-    useState<CurrentUser>(guestUser);
+  const [selectedCurrentUser, setSelectedCurrentUser] = useState<CurrentUser>(
+    () => getInitialMagicLinkUser(isRemoteDataLayer) ?? guestUser,
+  );
+  const [accessSessionStatus, setAccessSessionStatus] =
+    useState<AccessSessionStatus>(() =>
+      getStoredMagicLinkToken()
+        ? isRemoteDataLayer
+          ? { state: 'loading' }
+          : getInitialMagicLinkUser(isRemoteDataLayer)
+            ? { state: 'ready' }
+            : { error: 'Unknown sample magic link', state: 'error' }
+        : { state: 'idle' },
+    );
   const prizes = useMemo<Prize[]>(
     () => syncPrizeGivenCache(prizeList, prizeAwards),
     [prizeAwards, prizeList],
@@ -218,6 +257,52 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     setPrizeAwards(clonePrizeAwards(snapshot.prizeAwards));
     setPrizeList(syncPrizeGivenCache(clonePrizes(snapshot.prizes), snapshot.prizeAwards));
   };
+
+  useEffect(() => {
+    const token = getStoredMagicLinkToken();
+
+    if (!token) {
+      setAccessSessionStatus({ state: 'idle' });
+      return;
+    }
+
+    if (!isRemoteDataLayer) {
+      const builtInMagicLink = resolveBuiltInMagicLink(token);
+
+      if (!builtInMagicLink) {
+        clearMagicLinkSession();
+        setSelectedCurrentUser(guestUser);
+        setAccessSessionStatus({
+          error: 'Unknown sample magic link',
+          state: 'error',
+        });
+        return;
+      }
+
+      setSelectedCurrentUser(
+        createMagicLinkUser(builtInMagicLink.role, builtInMagicLink.activityId),
+      );
+      setAccessSessionStatus({ state: 'ready' });
+      return;
+    }
+
+    setAccessSessionStatus({ state: 'loading' });
+    fetchRemoteMagicLinkSession()
+      .then((session) => {
+        setSelectedCurrentUser(
+          createMagicLinkUser(session.role, session.activityId),
+        );
+        setAccessSessionStatus({ state: 'ready' });
+      })
+      .catch((error) => {
+        clearMagicLinkSession();
+        setSelectedCurrentUser(guestUser);
+        setAccessSessionStatus({
+          error: error instanceof Error ? error.message : 'Invalid magic link',
+          state: 'error',
+        });
+      });
+  }, [isRemoteDataLayer]);
 
   useEffect(() => {
     if (!isRemoteDataLayer || initialRemoteSnapshot) {
@@ -256,7 +341,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
           kidList.find((kid) => kid.id === selectedCurrentUser.id) ?? defaultKid,
         )
       : (userList.find((user) => user.id === selectedCurrentUser.id) ??
-        defaultUser);
+        selectedCurrentUser);
   const setCurrentUser = (nextUser: Kid | User) => {
     const nextCurrentUser =
       'role' in nextUser ? nextUser : wrapKid(nextUser);
@@ -275,9 +360,13 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       throw new Error(`Unknown user: ${nextCurrentUser.id}`);
     }
 
+    clearMagicLinkSession();
+    setAccessSessionStatus({ state: 'idle' });
     setSelectedCurrentUser(nextCurrentUser);
   };
   const resetCurrentUser = () => {
+    clearMagicLinkSession();
+    setAccessSessionStatus({ state: 'idle' });
     setSelectedCurrentUser(guestUser);
   };
   const addRegisteredKid = (registration: RegistrationInput) => {
@@ -627,6 +716,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   };
   const value = useMemo<DataLayerContextValue>(
     () => ({
+      accessSessionStatus,
       activities: initialActivities,
       addRegisteredKid,
       addPrize,
@@ -660,6 +750,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       passportActivitiesByUser,
       prizes,
       userList,
+      accessSessionStatus,
     ],
   );
 
@@ -684,6 +775,10 @@ export function useConferenceData() {
 
 export function useActivitiesData() {
   return useDataLayer().activities;
+}
+
+export function useAccessSessionStatus() {
+  return useDataLayer().accessSessionStatus;
 }
 
 export function useCurrentUser() {

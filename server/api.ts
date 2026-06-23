@@ -1,5 +1,10 @@
 import { randomUUID, timingSafeEqual } from 'node:crypto';
 import type { IncomingHttpHeaders } from 'node:http';
+import {
+  createMagicLinkToken,
+  validateMagicLinkToken,
+  type MagicLinkSession,
+} from './access-tokens.js';
 import { readSnapshot, updatePassportForKid, updateSnapshot } from './store.js';
 import type {
   PassportActivitiesByKid,
@@ -9,6 +14,7 @@ import type {
   PrizeAwardSource,
   PrizeKind,
   StoreData,
+  UserRole,
 } from './types.js';
 
 export type ApiRequest = {
@@ -41,13 +47,17 @@ type AdminBackup = {
 };
 
 const apiPaths = new Set([
-  '/api/admin/export',
-  '/api/admin/import',
-  '/api/passport',
-  '/api/wheel-prizes',
-  '/api/prizes-won',
+  '/admin/session',
+  '/admin/magic-links',
+  '/admin/export',
+  '/admin/import',
+  '/auth/session',
+  '/passport',
+  '/wheel-prizes',
+  '/prizes-won',
 ]);
 const prizeKinds = new Set<PrizeKind>(['final', 'normal', 'valuable']);
+const staffRoles = new Set<UserRole>(['desk', 'lead', 'wheel']);
 
 export function normalizeApiPath(pathname: string) {
   if (pathname.startsWith('/.netlify/functions/api/')) {
@@ -66,7 +76,7 @@ export function normalizeApiPath(pathname: string) {
 }
 
 export function isApiPath(pathname: string) {
-  return apiPaths.has(pathname);
+  return apiPaths.has(normalizeApiPath(pathname));
 }
 
 function getHeader(
@@ -94,7 +104,8 @@ function corsHeaders(request: ApiRequest): Record<string, string> {
   }
 
   return {
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Admin-Token',
+    'Access-Control-Allow-Headers':
+      'Authorization, Content-Type, X-Access-Token, X-Admin-Password, X-Admin-Token',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
     'Access-Control-Allow-Origin': origin,
     Vary: 'Origin',
@@ -163,6 +174,62 @@ function requireAdminToken(request: ApiRequest) {
   }
 }
 
+function requireAdminPassword(
+  request: ApiRequest,
+  body: Record<string, unknown>,
+) {
+  const expectedPassword = process.env.ADMIN_PASSWORD?.trim();
+
+  if (!expectedPassword) {
+    throw new HttpError(503, 'Admin password is not configured');
+  }
+
+  const headerPassword = getHeader(request.headers, 'x-admin-password');
+  const bodyPassword = typeof body.password === 'string' ? body.password : undefined;
+  const candidatePassword = headerPassword ?? bodyPassword;
+
+  if (
+    !candidatePassword ||
+    !constantTimeEquals(candidatePassword, expectedPassword)
+  ) {
+    throw new HttpError(401, 'Unauthorized');
+  }
+}
+
+function getMagicLinkToken(request: ApiRequest, url: URL, allowQueryToken = false) {
+  const authorization = getHeader(request.headers, 'authorization');
+  const bearerToken = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+  const headerToken = getHeader(request.headers, 'x-access-token');
+  const queryToken = allowQueryToken ? url.searchParams.get('token') : undefined;
+
+  return headerToken ?? bearerToken ?? queryToken ?? undefined;
+}
+
+async function requireMagicLink(
+  request: ApiRequest,
+  url: URL,
+  allowedRoles: readonly UserRole[],
+  allowQueryToken = false,
+): Promise<MagicLinkSession> {
+  const token = getMagicLinkToken(request, url, allowQueryToken);
+
+  if (!token) {
+    throw new HttpError(401, 'Magic link token is required');
+  }
+
+  const session = await validateMagicLinkToken(token);
+
+  if (!session) {
+    throw new HttpError(401, 'Magic link token is invalid or expired');
+  }
+
+  if (!allowedRoles.includes(session.role)) {
+    throw new HttpError(403, 'Magic link cannot access this resource');
+  }
+
+  return session;
+}
+
 function parsePositiveInteger(value: string | null, label: string) {
   const numberValue = Number(value);
 
@@ -171,6 +238,42 @@ function parsePositiveInteger(value: string | null, label: string) {
   }
 
   return numberValue;
+}
+
+function normalizeDurationDays(value: unknown) {
+  if (value === undefined || value === null || value === '') {
+    return 1;
+  }
+
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue) || numberValue < 1 || numberValue > 30) {
+    throw new HttpError(400, 'durationDays must be between 1 and 30');
+  }
+
+  return numberValue;
+}
+
+function normalizeStaffRole(value: unknown) {
+  if (typeof value !== 'string' || !staffRoles.has(value as UserRole)) {
+    throw new HttpError(400, 'role must be desk, lead, or wheel');
+  }
+
+  return value as UserRole;
+}
+
+function normalizeOptionalActivityId(value: unknown, role: UserRole) {
+  if (role !== 'lead') {
+    return undefined;
+  }
+
+  const activityId = Number(value);
+
+  if (!Number.isInteger(activityId) || activityId <= 0) {
+    throw new HttpError(400, 'activityId is required for lead magic links');
+  }
+
+  return activityId;
 }
 
 function normalizeCount(value: unknown, label: string) {
@@ -401,6 +504,40 @@ async function handleAdmin(
   request: ApiRequest,
   path: string,
 ): Promise<ApiResponse> {
+  if (path === '/admin/session') {
+    if (request.method !== 'POST') {
+      throw new HttpError(405, 'Method not allowed');
+    }
+
+    requireAdminPassword(request, parseJsonBody(request.body));
+
+    return jsonResponse(request, 200, { ok: true });
+  }
+
+  if (path === '/admin/magic-links') {
+    if (request.method !== 'POST') {
+      throw new HttpError(405, 'Method not allowed');
+    }
+
+    const body = parseJsonBody(request.body);
+    requireAdminPassword(request, body);
+
+    const role = normalizeStaffRole(body.role);
+    const activityId = normalizeOptionalActivityId(body.activityId, role);
+    const durationDays = normalizeDurationDays(body.durationDays);
+    const createdMagicLink = await createMagicLinkToken(
+      { ...(activityId ? { activityId } : {}), role },
+      durationDays * 24 * 60 * 60 * 1000,
+    );
+
+    return jsonResponse(request, 201, {
+      activityId: createdMagicLink.activityId,
+      expiresAt: createdMagicLink.expiresAt,
+      role: createdMagicLink.role,
+      token: createdMagicLink.token,
+    });
+  }
+
   requireAdminToken(request);
 
   if (path === '/admin/export') {
@@ -432,6 +569,29 @@ async function handleAdmin(
   throw new HttpError(404, 'Not found');
 }
 
+async function handleAuth(
+  request: ApiRequest,
+  url: URL,
+  path: string,
+): Promise<ApiResponse> {
+  if (path !== '/auth/session') {
+    throw new HttpError(404, 'Not found');
+  }
+
+  if (request.method !== 'GET') {
+    throw new HttpError(405, 'Method not allowed');
+  }
+
+  const session = await requireMagicLink(
+    request,
+    url,
+    [...staffRoles],
+    true,
+  );
+
+  return jsonResponse(request, 200, session);
+}
+
 async function handlePassport(
   request: ApiRequest,
   url: URL,
@@ -442,6 +602,8 @@ async function handlePassport(
   }
 
   if (request.method === 'GET') {
+    await requireMagicLink(request, url, [...staffRoles]);
+
     const snapshot = await readSnapshot();
     return jsonResponse(request, 200, snapshot.passportActivitiesByKid);
   }
@@ -451,6 +613,11 @@ async function handlePassport(
   }
 
   const activityId = parsePositiveInteger(url.searchParams.get('activity'), 'activity');
+  const session = await requireMagicLink(request, url, ['lead']);
+
+  if (session.activityId !== activityId) {
+    throw new HttpError(403, 'Lead magic link cannot manage this activity');
+  }
 
   const snapshot = await readSnapshot();
   const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
@@ -481,6 +648,8 @@ async function handleWheelPrizes(
   url: URL,
 ): Promise<ApiResponse> {
   if (request.method === 'GET') {
+    await requireMagicLink(request, url, [...staffRoles]);
+
     const snapshot = await readSnapshot();
     return jsonResponse(
       request,
@@ -492,6 +661,8 @@ async function handleWheelPrizes(
   if (request.method !== 'POST') {
     throw new HttpError(405, 'Method not allowed');
   }
+
+  await requireMagicLink(request, url, ['wheel']);
 
   const body = parseJsonBody(request.body);
   const stock = url.searchParams.get('stock')?.trim();
@@ -579,6 +750,8 @@ async function handlePrizesWon(
   url: URL,
 ): Promise<ApiResponse> {
   if (request.method === 'GET') {
+    await requireMagicLink(request, url, [...staffRoles]);
+
     const snapshot = await readSnapshot();
     const kid = url.searchParams.get('kid');
 
@@ -597,6 +770,8 @@ async function handlePrizesWon(
   if (request.method !== 'POST') {
     throw new HttpError(405, 'Method not allowed');
   }
+
+  await requireMagicLink(request, url, ['wheel']);
 
   const body = parseJsonBody(request.body);
   const stock = url.searchParams.get('stock')?.trim();
@@ -664,6 +839,10 @@ export async function handleApiRequest(request: ApiRequest): Promise<ApiResponse
   try {
     if (path === '/passport') {
       return await handlePassport(request, requestUrl, path);
+    }
+
+    if (path === '/auth/session') {
+      return await handleAuth(request, requestUrl, path);
     }
 
     if (path === '/wheel-prizes') {

@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
+  isRemoteDataLayerEnabled,
+} from '../data/remote-data-client';
+import {
   useKidsData,
   useSetCurrentUser,
   useUsersData,
@@ -16,6 +19,7 @@ export function SampleAccessDialog() {
   const setCurrentUser = useSetCurrentUser();
   const { t } = useI18n();
   const users = useUsersData();
+  const isRemoteDataLayer = isRemoteDataLayerEnabled();
   const [isAccessDialogOpen, setIsAccessDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -57,14 +61,24 @@ export function SampleAccessDialog() {
 
   return (
     <div className="access-menu">
-      <button
-        className="access-button"
-        type="button"
-        aria-expanded={isAccessDialogOpen}
-        onClick={() => setIsAccessDialogOpen((isOpen) => !isOpen)}
-      >
-        {t('app.access')}
-      </button>
+      {isRemoteDataLayer ? (
+        <button
+          className="access-button"
+          type="button"
+          onClick={() => navigate('/admin')}
+        >
+          {t('admin.open')}
+        </button>
+      ) : (
+        <button
+          className="access-button"
+          type="button"
+          aria-expanded={isAccessDialogOpen}
+          onClick={() => setIsAccessDialogOpen((isOpen) => !isOpen)}
+        >
+          {t('app.access')}
+        </button>
+      )}
       <button
         className="secondary-button"
         type="button"
@@ -72,7 +86,7 @@ export function SampleAccessDialog() {
       >
         {t('registration.start')}
       </button>
-      {isAccessDialogOpen ? (
+      {isAccessDialogOpen && !isRemoteDataLayer ? (
         <section className="access-popover" aria-label={t('access.title')}>
           <h2>{t('access.title')}</h2>
           <div className="role-list">
