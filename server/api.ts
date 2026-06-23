@@ -5,7 +5,12 @@ import {
   validateMagicLinkToken,
   type MagicLinkSession,
 } from './access-tokens.js';
-import { readSnapshot, updatePassportForKid, updateSnapshot } from './store.js';
+import {
+  readSnapshot,
+  updatePassportForKid,
+  updatePrizeAwardsForKid,
+  updateSnapshot,
+} from './store.js';
 import type {
   Kid,
   PassportActivitiesByKid,
@@ -917,8 +922,9 @@ async function handlePrizesKid(
     throw new HttpError(400, 'stock is required');
   }
 
-  const response = await updateSnapshot((snapshot) => {
-    const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
+  const snapshot = await readSnapshot();
+  const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
+  const response = await updatePrizeAwardsForKid(kidId, (snapshot) => {
     const source = normalizeAwardSource(body.source);
     const syncedPrizes = syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards);
     const prize = syncedPrizes.find((entry) => entry.id === stock);
@@ -952,7 +958,7 @@ async function handlePrizesKid(
     snapshot.prizeAwards.push(award);
 
     return snapshot.prizeAwards.filter((award) => award.kidId === kidId);
-  }, ['prizeAwards']);
+  });
 
   return jsonResponse(request, 200, response);
 }

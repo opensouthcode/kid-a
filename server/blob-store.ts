@@ -14,6 +14,7 @@ import type {
 
 const defaultBlobStoreName = 'kid-a-data';
 const passportPrefix = 'passports/';
+const prizeAwardsPrefix = 'prizes-kid/';
 const seedMarkerKey = 'seeded-v1.json';
 const jsonDocumentKeys = {
   conference: 'conference.json',
@@ -76,6 +77,14 @@ function kidIdFromPassportKey(key: string) {
   return key.slice(passportPrefix.length, -'.json'.length);
 }
 
+function prizeAwardsKey(kidId: string) {
+  return `${prizeAwardsPrefix}${kidId}.json`;
+}
+
+function kidIdFromPrizeAwardsKey(key: string) {
+  return key.slice(prizeAwardsPrefix.length, -'.json'.length);
+}
+
 async function readRequiredBlobJson<T>(store: NetlifyBlobStore, key: string) {
   const value = (await store.get(key, {
     type: 'json',
@@ -86,6 +95,21 @@ async function readRequiredBlobJson<T>(store: NetlifyBlobStore, key: string) {
   }
 
   return value;
+}
+
+function groupPrizeAwardsByKid(prizeAwards: PrizeAward[]) {
+  return prizeAwards.reduce<Record<string, PrizeAward[]>>((groups, award) => {
+    const group = groups[award.kidId] ?? [];
+    group.push(award);
+    groups[award.kidId] = group;
+    return groups;
+  }, {});
+}
+
+function dedupePrizeAwards(prizeAwards: PrizeAward[]) {
+  return Array.from(
+    new Map(prizeAwards.map((award) => [award.id, award])).values(),
+  );
 }
 
 async function writeStoreFile(
@@ -116,6 +140,16 @@ async function writeStoreFile(
         ),
       ],
     );
+    return;
+  }
+
+  if (storeFile === 'prizeAwards') {
+    await Promise.all([
+      store.setJSON(jsonDocumentKeys.prizeAwards, snapshot.prizeAwards),
+      ...Object.entries(groupPrizeAwardsByKid(snapshot.prizeAwards)).map(
+        ([kidId, awards]) => store.setJSON(prizeAwardsKey(kidId), awards),
+      ),
+    ]);
     return;
   }
 
@@ -164,6 +198,13 @@ export function createBlobStore(
       await store.setJSON(jsonDocumentKeys.prizeAwards, seedSnapshot.prizeAwards);
       await store.setJSON(jsonDocumentKeys.prizes, seedSnapshot.prizes);
 
+      await Promise.all(
+        Object.entries(groupPrizeAwardsByKid(seedSnapshot.prizeAwards)).map(
+          ([kidId, awards]) =>
+            store.setJSON(prizeAwardsKey(kidId), awards, { onlyIfNew: true }),
+        ),
+      );
+
       for (const [kidId, passport] of Object.entries(
         seedSnapshot.passportActivitiesByKid,
       )) {
@@ -200,6 +241,36 @@ export function createBlobStore(
     return Object.fromEntries(passportEntries) as PassportActivitiesByKid;
   }
 
+  async function readPrizeAwards() {
+    const [legacyPrizeAwards, prizeAwardsByKid] = await Promise.all([
+      readRequiredBlobJson<PrizeAward[]>(store, jsonDocumentKeys.prizeAwards),
+      (async () => {
+        const awardEntries: PrizeAward[] = [];
+
+        for await (const prizeAwardsList of store.list({
+          paginate: true,
+          prefix: prizeAwardsPrefix,
+        })) {
+          awardEntries.push(
+            ...(await Promise.all(
+              prizeAwardsList.blobs.map(async ({ key }) => {
+                const awards = await readRequiredBlobJson<PrizeAward[]>(store, key);
+                return awards.map((award) => ({
+                  ...award,
+                  kidId: kidIdFromPrizeAwardsKey(key),
+                }));
+              }),
+            )).flat(),
+          );
+        }
+
+        return awardEntries;
+      })(),
+    ]);
+
+    return dedupePrizeAwards([...legacyPrizeAwards, ...prizeAwardsByKid]);
+  }
+
   async function readSnapshotUnlocked(): Promise<StoreData> {
     await ensureSeeded();
 
@@ -208,7 +279,7 @@ export function createBlobStore(
         readRequiredBlobJson<ConferenceData>(store, jsonDocumentKeys.conference),
         readRequiredBlobJson<Kid[]>(store, jsonDocumentKeys.kids),
         readPassportActivitiesByKid(),
-        readRequiredBlobJson<PrizeAward[]>(store, jsonDocumentKeys.prizeAwards),
+        readPrizeAwards(),
         readRequiredBlobJson<Prize[]>(store, jsonDocumentKeys.prizes),
       ]);
 
@@ -281,9 +352,35 @@ export function createBlobStore(
     return nextWrite;
   }
 
+  async function updatePrizeAwardsForKid<T>(
+    kidId: string,
+    mutator: (snapshot: StoreData) => T | Promise<T>,
+  ) {
+    const previousWrite = writeQueue;
+    const nextWrite = previousWrite
+      .catch(() => undefined)
+      .then(async () => {
+        const snapshot = await readSnapshotUnlocked();
+        const result = await mutator(snapshot);
+        const awards = snapshot.prizeAwards.filter((award) => award.kidId === kidId);
+
+        await store.setJSON(prizeAwardsKey(kidId), awards);
+
+        return result;
+      });
+
+    writeQueue = nextWrite.then(
+      () => undefined,
+      () => undefined,
+    );
+
+    return nextWrite;
+  }
+
   return {
     readSnapshot,
     updatePassportForKid,
+    updatePrizeAwardsForKid,
     updateSnapshot,
   };
 }

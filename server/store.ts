@@ -17,6 +17,10 @@ export type StoreAdapter = {
     kidId: string,
     mutator: (snapshot: StoreData) => T | Promise<T>,
   ): Promise<T>;
+  updatePrizeAwardsForKid<T>(
+    kidId: string,
+    mutator: (snapshot: StoreData) => T | Promise<T>,
+  ): Promise<T>;
   updateSnapshot<T>(
     mutator: (snapshot: StoreData) => T | Promise<T>,
     changedFiles: readonly StoreFile[],
@@ -147,9 +151,18 @@ export function createFileStore(): StoreAdapter {
     return updateSnapshot(mutator, ['passportActivitiesByKid']);
   }
 
+  async function updatePrizeAwardsForKid<T>(
+    kidId: string,
+    mutator: (snapshot: StoreData) => T | Promise<T>,
+  ) {
+    void kidId;
+    return updateSnapshot(mutator, ['prizeAwards']);
+  }
+
   return {
     readSnapshot,
     updatePassportForKid,
+    updatePrizeAwardsForKid,
     updateSnapshot,
   };
 }
@@ -176,4 +189,11 @@ export async function updatePassportForKid<T>(
   mutator: (snapshot: StoreData) => T | Promise<T>,
 ) {
   return activeStore.updatePassportForKid(kidId, mutator);
+}
+
+export async function updatePrizeAwardsForKid<T>(
+  kidId: string,
+  mutator: (snapshot: StoreData) => T | Promise<T>,
+) {
+  return activeStore.updatePrizeAwardsForKid(kidId, mutator);
 }
