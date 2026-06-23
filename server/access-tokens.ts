@@ -2,7 +2,7 @@ import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getStore, type Store as NetlifyBlobStore } from '@netlify/blobs';
-import type { User, UserRole } from './types.js';
+import type { UserRole } from './types.js';
 
 export type MagicLinkTokenRecord = {
   activityId?: number;
@@ -10,13 +10,17 @@ export type MagicLinkTokenRecord = {
   expiresAt: string;
   role: UserRole;
   tokenHash: string;
-  userId: string;
 };
 
 export type MagicLinkSession = Omit<MagicLinkTokenRecord, 'tokenHash'>;
 
 export type CreatedMagicLink = MagicLinkSession & {
   token: string;
+};
+
+export type MagicLinkScope = {
+  activityId?: number;
+  role: UserRole;
 };
 
 type MagicLinkTokenStore = {
@@ -59,7 +63,6 @@ function toSession(token: MagicLinkTokenRecord): MagicLinkSession {
     createdAt: token.createdAt,
     expiresAt: token.expiresAt,
     role: token.role,
-    userId: token.userId,
   };
 }
 
@@ -140,7 +143,7 @@ async function updateMagicTokens<T>(
 }
 
 export async function createMagicLinkToken(
-  user: User,
+  scope: MagicLinkScope,
   durationHours: number,
 ): Promise<CreatedMagicLink> {
   const token = randomBytes(24).toString('base64url');
@@ -149,12 +152,11 @@ export async function createMagicLinkToken(
     createdAt.getTime() + durationHours * 60 * 60 * 1000,
   ).toISOString();
   const record: MagicLinkTokenRecord = {
-    ...(user.activityId ? { activityId: user.activityId } : {}),
+    ...(scope.activityId ? { activityId: scope.activityId } : {}),
     createdAt: createdAt.toISOString(),
     expiresAt,
-    role: user.role,
+    role: scope.role,
     tokenHash: hashToken(token),
-    userId: user.id,
   };
 
   await updateMagicTokens((tokens) => {

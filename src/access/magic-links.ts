@@ -1,25 +1,34 @@
-import type { User } from '../data/data-model';
+import type { UserRole } from '../data/data-model';
 
 export type BuiltInMagicLink = {
+  activityId?: number;
   path: '/desk' | '/lead' | '/wheel';
+  role: UserRole;
   token: string;
-  userId: string;
 };
 
 const magicLinkTokenStorageKey = 'kid-a:magic-link:token';
 
 export const builtInMagicLinks: BuiltInMagicLink[] = [
-  { path: '/desk', token: 'sample-desk', userId: 'cia' },
-  { path: '/wheel', token: 'sample-wheel', userId: 'flash' },
-  { path: '/lead', token: 'sample-lead', userId: 'beny' },
+  { path: '/desk', role: 'desk', token: 'sample-desk' },
+  { path: '/wheel', role: 'wheel', token: 'sample-wheel' },
 ];
 
-export function getMagicLinkPath(user: User): BuiltInMagicLink['path'] {
-  return user.role === 'lead'
+export function getMagicLinkPath(role: UserRole): BuiltInMagicLink['path'] {
+  return role === 'lead'
     ? '/lead'
-    : user.role === 'wheel'
+    : role === 'wheel'
       ? '/wheel'
       : '/desk';
+}
+
+export function createBuiltInLeadMagicLink(activityId: number): BuiltInMagicLink {
+  return {
+    activityId,
+    path: '/lead',
+    role: 'lead',
+    token: `sample-lead-${activityId}`,
+  };
 }
 
 export function createMagicLinkUrl(path: BuiltInMagicLink['path'], token: string) {
@@ -61,7 +70,18 @@ export function resolveBuiltInMagicLink(token: string | undefined) {
     return undefined;
   }
 
-  return builtInMagicLinks.find((magicLink) => magicLink.token === token);
+  const builtInMagicLink = builtInMagicLinks.find(
+    (magicLink) => magicLink.token === token,
+  );
+
+  if (builtInMagicLink) {
+    return builtInMagicLink;
+  }
+
+  const leadTokenMatch = token.match(/^sample-lead-(\d+)$/);
+  const activityId = leadTokenMatch?.[1] ? Number(leadTokenMatch[1]) : undefined;
+
+  return activityId ? createBuiltInLeadMagicLink(activityId) : undefined;
 }
 
 export function magicLinkRequestHeaders(): Record<string, string> {

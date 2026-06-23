@@ -1,13 +1,17 @@
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
-import { BackHomeButton } from '../components/BackHomeButton';
-import { TopBar } from '../components/TopBar';
 import {
-  builtInMagicLinks,
+  createBuiltInLeadMagicLink,
   createMagicLinkUrl,
   getMagicLinkPath,
 } from '../access/magic-links';
-import { useUsersData, type User } from '../contexts/DataLayerContext';
+import { BackHomeButton } from '../components/BackHomeButton';
+import { TopBar } from '../components/TopBar';
+import {
+  useActivitiesData,
+  type Activity,
+  type UserRole,
+} from '../contexts/DataLayerContext';
 import {
   createRemoteMagicLink,
   isRemoteDataLayerEnabled,
@@ -16,35 +20,41 @@ import { useI18n } from '../i18n/I18nProvider';
 import type { MessageKey } from '../i18n/messages';
 
 type GeneratedMagicLink = {
+  activity?: Activity;
   expiresAt?: string;
+  role: UserRole;
   url: string;
-  user: User;
 };
 
-const roleLabelKeys: Record<User['role'], MessageKey> = {
+const roles: UserRole[] = ['desk', 'wheel', 'lead'];
+const roleLabelKeys: Record<UserRole, MessageKey> = {
   desk: 'access.role.desk',
   lead: 'access.role.lead',
   wheel: 'access.role.wheel',
 };
 
-function getBuiltInMagicLinkForUser(user: User) {
-  return builtInMagicLinks.find((magicLink) => magicLink.userId === user.id);
+function getBuiltInToken(role: UserRole, activityId: number) {
+  return role === 'lead' ? createBuiltInLeadMagicLink(activityId).token : `sample-${role}`;
 }
 
 export function AdminPage() {
-  const users = useUsersData();
-  const staffUsers = users.filter((user) => user.role !== 'lead' || user.activityId);
+  const activities = useActivitiesData();
   const { locale, t } = useI18n();
   const isRemoteDataLayer = isRemoteDataLayerEnabled();
   const [password, setPassword] = useState('');
   const [durationHours, setDurationHours] = useState(12);
-  const [selectedUserId, setSelectedUserId] = useState(staffUsers[0]?.id ?? '');
+  const [selectedRole, setSelectedRole] = useState<UserRole>('desk');
+  const [selectedActivityId, setSelectedActivityId] = useState(
+    Number(activities[0]?.id ?? 1),
+  );
   const [generatedMagicLink, setGeneratedMagicLink] =
     useState<GeneratedMagicLink>();
   const [qrSourceUrl, setQrSourceUrl] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
-  const selectedUser = staffUsers.find((user) => user.id === selectedUserId);
+  const selectedActivity = activities.find(
+    (activity) => Number(activity.id) === selectedActivityId,
+  );
   const formatExpiration = (expiresAt: string) =>
     new Intl.DateTimeFormat(locale, {
       dateStyle: 'short',
@@ -52,12 +62,12 @@ export function AdminPage() {
     }).format(new Date(expiresAt));
 
   useEffect(() => {
-    if (selectedUserId || !staffUsers[0]) {
+    if (activities.some((activity) => Number(activity.id) === selectedActivityId)) {
       return;
     }
 
-    setSelectedUserId(staffUsers[0].id);
-  }, [selectedUserId, staffUsers]);
+    setSelectedActivityId(Number(activities[0]?.id ?? 1));
+  }, [activities, selectedActivityId]);
 
   useEffect(() => {
     if (!qrSourceUrl) {
@@ -92,35 +102,44 @@ export function AdminPage() {
       .catch(() => setStatusMessage(t('admin.copy.error')));
   };
 
-  const generateRemoteMagicLink = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const generateMagicLink = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!selectedUser) {
-      setStatusMessage(t('admin.error.user'));
+    if (selectedRole === 'lead' && !selectedActivity) {
+      setStatusMessage(t('admin.error.activity'));
       return;
     }
 
-    setStatusMessage(t('admin.generating'));
+    setStatusMessage(isRemoteDataLayer ? t('admin.generating') : '');
     setGeneratedMagicLink(undefined);
     setQrSourceUrl('');
 
     try {
-      const createdMagicLink = await createRemoteMagicLink({
-        durationHours,
-        password,
-        userId: selectedUser.id,
-      });
+      const createdMagicLink = isRemoteDataLayer
+        ? await createRemoteMagicLink({
+            activityId:
+              selectedRole === 'lead' ? selectedActivityId : undefined,
+            durationHours,
+            password,
+            role: selectedRole,
+          })
+        : {
+            activityId:
+              selectedRole === 'lead' ? selectedActivityId : undefined,
+            expiresAt: undefined,
+            role: selectedRole,
+            token: getBuiltInToken(selectedRole, selectedActivityId),
+          };
       const url = createMagicLinkUrl(
-        getMagicLinkPath(selectedUser),
+        getMagicLinkPath(selectedRole),
         createdMagicLink.token,
       );
 
       setGeneratedMagicLink({
+        activity: selectedRole === 'lead' ? selectedActivity : undefined,
         expiresAt: createdMagicLink.expiresAt,
+        role: selectedRole,
         url,
-        user: selectedUser,
       });
       setStatusMessage(t('admin.generated'));
     } catch (error) {
@@ -133,8 +152,8 @@ export function AdminPage() {
   const renderMagicLinkCard = (magicLink: GeneratedMagicLink) => (
     <article className="magic-link-card" key={magicLink.url}>
       <div>
-        <span>{t(roleLabelKeys[magicLink.user.role])}</span>
-        <strong>{magicLink.user.name}</strong>
+        <span>{t(roleLabelKeys[magicLink.role])}</span>
+        {magicLink.activity ? <strong>{magicLink.activity.title}</strong> : null}
         {magicLink.expiresAt ? (
           <small>
             {t('admin.link.expires').replace(
@@ -166,19 +185,6 @@ export function AdminPage() {
     </article>
   );
 
-  const demoMagicLinks = staffUsers.flatMap((user) => {
-    const magicLink = getBuiltInMagicLinkForUser(user);
-
-    return magicLink
-      ? [
-          {
-            url: createMagicLinkUrl(magicLink.path, magicLink.token),
-            user,
-          },
-        ]
-      : [];
-  });
-
   return (
     <>
       <TopBar showLanguageSwitcher />
@@ -192,8 +198,8 @@ export function AdminPage() {
 
         <div className="admin-layout">
           <section className="admin-panel">
-            {isRemoteDataLayer ? (
-              <form className="admin-form" onSubmit={generateRemoteMagicLink}>
+            <form className="admin-form" onSubmit={generateMagicLink}>
+              {isRemoteDataLayer ? (
                 <label>
                   {t('admin.password')}
                   <input
@@ -203,41 +209,56 @@ export function AdminPage() {
                     onChange={(event) => setPassword(event.target.value)}
                   />
                 </label>
+              ) : (
+                <p>{t('admin.demo.notice')}</p>
+              )}
+              <label>
+                {t('admin.role')}
+                <select
+                  value={selectedRole}
+                  onChange={(event) => setSelectedRole(event.target.value as UserRole)}
+                >
+                  {roles.map((role) => (
+                    <option key={role} value={role}>
+                      {t(roleLabelKeys[role])}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              {selectedRole === 'lead' ? (
                 <label>
-                  {t('admin.user')}
+                  {t('admin.activity')}
                   <select
-                    value={selectedUserId}
-                    onChange={(event) => setSelectedUserId(event.target.value)}
+                    value={selectedActivityId}
+                    onChange={(event) =>
+                      setSelectedActivityId(Number(event.target.value))
+                    }
                   >
-                    {staffUsers.map((user) => (
-                      <option key={user.id} value={user.id}>
-                        {user.name} - {t(roleLabelKeys[user.role])}
+                    {activities.map((activity) => (
+                      <option key={activity.id} value={Number(activity.id)}>
+                        {activity.id.padStart(2, '0')} - {activity.title}
                       </option>
                     ))}
                   </select>
                 </label>
-                <label>
-                  {t('admin.duration')}
-                  <input
-                    min={1}
-                    max={168}
-                    type="number"
-                    value={durationHours}
-                    onChange={(event) =>
-                      setDurationHours(Math.max(1, Number(event.target.value)))
-                    }
-                  />
-                </label>
-                <button className="access-button" type="submit">
-                  {t('admin.generate')}
-                </button>
-              </form>
-            ) : (
-              <div className="admin-demo-links">
-                <p>{t('admin.demo.notice')}</p>
-                {demoMagicLinks.map(renderMagicLinkCard)}
-              </div>
-            )}
+              ) : null}
+              <label>
+                {t('admin.duration')}
+                <input
+                  min={1}
+                  max={168}
+                  type="number"
+                  value={durationHours}
+                  disabled={!isRemoteDataLayer}
+                  onChange={(event) =>
+                    setDurationHours(Math.max(1, Number(event.target.value)))
+                  }
+                />
+              </label>
+              <button className="access-button" type="submit">
+                {t('admin.generate')}
+              </button>
+            </form>
 
             {statusMessage ? (
               <p className="admin-status" role="status">

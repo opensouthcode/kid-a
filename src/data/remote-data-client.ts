@@ -33,7 +33,6 @@ export type RemoteMagicLinkSession = {
   createdAt: string;
   expiresAt: string;
   role: UserRole;
-  userId: string;
 };
 
 export type CreatedRemoteMagicLink = {
@@ -41,7 +40,6 @@ export type CreatedRemoteMagicLink = {
   expiresAt: string;
   role: UserRole;
   token: string;
-  userId: string;
 };
 
 function getApiBaseUrl() {
@@ -114,16 +112,18 @@ export async function fetchRemoteMagicLinkSession() {
 }
 
 export async function createRemoteMagicLink({
+  activityId,
   durationHours,
   password,
-  userId,
+  role,
 }: {
+  activityId?: number;
   durationHours: number;
   password: string;
-  userId: string;
+  role: UserRole;
 }) {
   const response = await fetch(buildApiUrl('/admin/magic-links'), {
-    body: JSON.stringify({ durationHours, password, userId }),
+    body: JSON.stringify({ activityId, durationHours, password, role }),
     headers: {
       'Content-Type': 'application/json',
     },

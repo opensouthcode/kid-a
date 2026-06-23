@@ -5,7 +5,6 @@ import {
   validateMagicLinkToken,
   type MagicLinkSession,
 } from './access-tokens.js';
-import { readStaffUsers } from './staff-users.js';
 import { readSnapshot, updatePassportForKid, updateSnapshot } from './store.js';
 import type {
   PassportActivitiesByKid,
@@ -253,6 +252,28 @@ function normalizeDurationHours(value: unknown) {
   return numberValue;
 }
 
+function normalizeStaffRole(value: unknown) {
+  if (typeof value !== 'string' || !staffRoles.has(value as UserRole)) {
+    throw new HttpError(400, 'role must be desk, lead, or wheel');
+  }
+
+  return value as UserRole;
+}
+
+function normalizeOptionalActivityId(value: unknown, role: UserRole) {
+  if (role !== 'lead') {
+    return undefined;
+  }
+
+  const activityId = Number(value);
+
+  if (!Number.isInteger(activityId) || activityId <= 0) {
+    throw new HttpError(400, 'activityId is required for lead magic links');
+  }
+
+  return activityId;
+}
+
 function normalizeCount(value: unknown, label: string) {
   const numberValue = Number(value);
 
@@ -489,23 +510,19 @@ async function handleAdmin(
     const body = parseJsonBody(request.body);
     requireAdminPassword(request, body);
 
-    const userId = asString(body.userId, 'userId');
+    const role = normalizeStaffRole(body.role);
+    const activityId = normalizeOptionalActivityId(body.activityId, role);
     const durationHours = normalizeDurationHours(body.durationHours);
-    const users = await readStaffUsers();
-    const user = users.find((entry) => entry.id === userId);
-
-    if (!user) {
-      throw new HttpError(404, `Unknown user: ${userId}`);
-    }
-
-    const createdMagicLink = await createMagicLinkToken(user, durationHours);
+    const createdMagicLink = await createMagicLinkToken(
+      { ...(activityId ? { activityId } : {}), role },
+      durationHours,
+    );
 
     return jsonResponse(request, 201, {
       activityId: createdMagicLink.activityId,
       expiresAt: createdMagicLink.expiresAt,
       role: createdMagicLink.role,
       token: createdMagicLink.token,
-      userId: createdMagicLink.userId,
     });
   }
 

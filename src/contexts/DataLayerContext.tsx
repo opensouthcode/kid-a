@@ -31,6 +31,7 @@ import {
   type PrizeAward,
   type PrizeSettingsUpdate,
   type User,
+  type UserRole,
   type WheelShotSummary,
 } from '../data/data-model';
 import {
@@ -137,18 +138,6 @@ function createPrizeId(prizes: Prize[]) {
   return candidateId;
 }
 
-function getDefaultUser() {
-  const defaultUser =
-    initialUsers.find((user) => user.role === 'desk') ?? initialUsers[0];
-
-  if (!defaultUser) {
-    throw new Error('users.json must include at least one user');
-  }
-
-  return defaultUser;
-}
-
-const defaultUser = getDefaultUser();
 const guestUser: CurrentUser = {
   id: 'guest',
   name: 'Guest',
@@ -188,10 +177,16 @@ function wrapKid(kid: Kid): CurrentUser {
   };
 }
 
-function getInitialMagicLinkUser(
-  isRemoteDataLayer: boolean,
-  users: User[],
-): CurrentUser | undefined {
+function createMagicLinkUser(role: UserRole, activityId?: number): User {
+  return {
+    ...(activityId ? { activityId } : {}),
+    id: activityId ? `magic-link-${role}-${activityId}` : `magic-link-${role}`,
+    name: role,
+    role,
+  };
+}
+
+function getInitialMagicLinkUser(isRemoteDataLayer: boolean): CurrentUser | undefined {
   if (isRemoteDataLayer) {
     return undefined;
   }
@@ -202,7 +197,7 @@ function getInitialMagicLinkUser(
     return undefined;
   }
 
-  return users.find((user) => user.id === builtInMagicLink.userId);
+  return createMagicLinkUser(builtInMagicLink.role, builtInMagicLink.activityId);
 }
 
 const emptyPassportTemplate =
@@ -238,14 +233,14 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       ),
   );
   const [selectedCurrentUser, setSelectedCurrentUser] = useState<CurrentUser>(
-    () => getInitialMagicLinkUser(isRemoteDataLayer, initialUsers) ?? guestUser,
+    () => getInitialMagicLinkUser(isRemoteDataLayer) ?? guestUser,
   );
   const [accessSessionStatus, setAccessSessionStatus] =
     useState<AccessSessionStatus>(() =>
       getStoredMagicLinkToken()
         ? isRemoteDataLayer
           ? { state: 'loading' }
-          : getInitialMagicLinkUser(isRemoteDataLayer, initialUsers)
+          : getInitialMagicLinkUser(isRemoteDataLayer)
             ? { state: 'ready' }
             : { error: 'Unknown sample magic link', state: 'error' }
         : { state: 'idle' },
@@ -272,11 +267,8 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     if (!isRemoteDataLayer) {
       const builtInMagicLink = resolveBuiltInMagicLink(token);
-      const builtInUser = builtInMagicLink
-        ? userList.find((user) => user.id === builtInMagicLink.userId)
-        : undefined;
 
-      if (!builtInUser) {
+      if (!builtInMagicLink) {
         clearMagicLinkSession();
         setSelectedCurrentUser(guestUser);
         setAccessSessionStatus({
@@ -286,7 +278,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
         return;
       }
 
-      setSelectedCurrentUser(builtInUser);
+      setSelectedCurrentUser(
+        createMagicLinkUser(builtInMagicLink.role, builtInMagicLink.activityId),
+      );
       setAccessSessionStatus({ state: 'ready' });
       return;
     }
@@ -294,18 +288,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     setAccessSessionStatus({ state: 'loading' });
     fetchRemoteMagicLinkSession()
       .then((session) => {
-        const sessionUser = userList.find(
-          (user) =>
-            user.id === session.userId &&
-            user.role === session.role &&
-            user.activityId === session.activityId,
+        setSelectedCurrentUser(
+          createMagicLinkUser(session.role, session.activityId),
         );
-
-        if (!sessionUser) {
-          throw new Error(`Unknown magic link user: ${session.userId}`);
-        }
-
-        setSelectedCurrentUser(sessionUser);
         setAccessSessionStatus({ state: 'ready' });
       })
       .catch((error) => {
@@ -316,7 +301,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
           state: 'error',
         });
       });
-  }, [isRemoteDataLayer, userList]);
+  }, [isRemoteDataLayer]);
 
   useEffect(() => {
     if (!isRemoteDataLayer || initialRemoteSnapshot) {
@@ -355,7 +340,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
           kidList.find((kid) => kid.id === selectedCurrentUser.id) ?? defaultKid,
         )
       : (userList.find((user) => user.id === selectedCurrentUser.id) ??
-        defaultUser);
+        selectedCurrentUser);
   const setCurrentUser = (nextUser: Kid | User) => {
     const nextCurrentUser =
       'role' in nextUser ? nextUser : wrapKid(nextUser);
