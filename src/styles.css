@@ -1297,9 +1297,11 @@ h2 {
 
 .print-page .print-qr-sheet {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 1mm;
+  width: 100%;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1.5mm 0.8mm;
   align-items: start;
+  justify-items: center;
 }
 
 .passport-print-qr {
@@ -1312,14 +1314,15 @@ h2 {
 
 .passport-print-qr img {
   display: block;
-  width: 24mm;
-  height: 24mm;
+  width: 23mm;
+  height: 23mm;
 }
 
 .passport-print-qr span {
-  font-size: 6pt;
+  font-size: 7pt;
   font-weight: 400;
-  line-height: 1;
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .last-kids-list {
@@ -2304,22 +2307,21 @@ h2 {
     margin: 8mm;
   }
 
+  html,
   body {
+    width: auto;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
     background: #fff;
   }
 
-  body * {
-    visibility: hidden;
-  }
-
-  .print-qr-sheet,
-  .print-qr-sheet * {
-    visibility: visible;
-  }
-
   .print-page {
+    width: auto;
     min-height: auto;
+    margin: 0;
     padding: 0;
+    background: #fff;
   }
 
   .print-page-actions {
@@ -2327,14 +2329,12 @@ h2 {
   }
 
   .print-qr-sheet {
-    position: absolute;
-    top: 0;
-    left: 0;
     display: grid;
     width: 100%;
-    grid-template-columns: repeat(7, 1fr);
-    gap: 1mm;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 1.5mm 0.8mm;
     align-items: start;
+    justify-items: center;
     padding: 0;
     background: #fff;
     color: #000;
