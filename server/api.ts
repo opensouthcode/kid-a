@@ -889,11 +889,7 @@ async function handlePrizesKid(
       );
 
       if (existingAward) {
-        return {
-          award: existingAward,
-          prizeAwards: snapshot.prizeAwards.filter((award) => award.kidId === kidId),
-          prizes: syncedPrizes,
-        };
+        return snapshot.prizeAwards.filter((award) => award.kidId === kidId);
       }
     }
 
@@ -911,11 +907,7 @@ async function handlePrizesKid(
 
     snapshot.prizeAwards.push(award);
 
-    return {
-      award,
-      prizeAwards: snapshot.prizeAwards.filter((award) => award.kidId === kidId),
-      prizes: syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards),
-    };
+    return snapshot.prizeAwards.filter((award) => award.kidId === kidId);
   }, ['prizeAwards']);
 
   return jsonResponse(request, 200, response);

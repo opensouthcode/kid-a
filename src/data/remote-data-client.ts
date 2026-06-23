@@ -19,12 +19,6 @@ type RemotePrizeResponse = {
   prizes: Prize[];
 };
 
-type RemotePrizeAwardResponse = {
-  award: PrizeAward;
-  prizeAwards: PrizeAward[];
-  prizes: Prize[];
-};
-
 export type RemoteMagicLinkSession = {
   activityId?: number;
   createdAt: string;
@@ -216,5 +210,5 @@ export async function saveRemotePrizeAward(
     },
   );
 
-  return readJsonResponse<RemotePrizeAwardResponse>(response);
+  return readJsonResponse<PrizeAward[]>(response);
 }

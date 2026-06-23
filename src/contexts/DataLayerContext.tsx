@@ -640,9 +640,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     if (isRemoteDataLayer) {
       saveRemotePrizeAward(kidId, prizeId)
-        .then((response) => {
-          applyRemotePrizeAwards(kidId, response.prizeAwards);
-          setPrizeList(clonePrizes(response.prizes));
+        .then((awards) => {
+          applyRemotePrizeAwards(kidId, awards);
+          refreshPrizes();
         })
         .catch((error) => {
           console.error('Unable to save remote prize award.', error);
@@ -704,9 +704,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     if (isRemoteDataLayer) {
       saveRemotePrizeAward(kidId, prize.id, 'passportCompletion')
-        .then((response) => {
-          applyRemotePrizeAwards(kidId, response.prizeAwards);
-          setPrizeList(clonePrizes(response.prizes));
+        .then((awards) => {
+          applyRemotePrizeAwards(kidId, awards);
+          refreshPrizes();
         })
         .catch((error) => {
           console.error('Unable to save remote passport completion prize.', error);
