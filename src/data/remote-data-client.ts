@@ -25,12 +25,6 @@ type RemotePrizeAwardResponse = {
   prizes: Prize[];
 };
 
-type RemoteRegisteredKidResponse = {
-  kid: Kid;
-  kids: Kid[];
-  passport: PassportActivity[];
-};
-
 export type RemoteMagicLinkSession = {
   activityId?: number;
   createdAt: string;
@@ -181,7 +175,7 @@ export async function saveRemoteRegisteredKid(registration: RegistrationInput) {
     method: 'POST',
   });
 
-  return readJsonResponse<RemoteRegisteredKidResponse>(response);
+  return readJsonResponse<Kid>(response);
 }
 
 export async function saveRemotePrize(

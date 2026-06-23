@@ -587,11 +587,7 @@ async function handleKids(request: ApiRequest, url: URL): Promise<ApiResponse> {
     snapshot.kids.push(kid);
     snapshot.passportActivitiesByKid[kid.id] = passport;
 
-    return {
-      kid,
-      kids: snapshot.kids,
-      passport,
-    };
+    return kid;
   }, ['kids', 'passportActivitiesByKid']);
 
   return jsonResponse(request, 201, response);

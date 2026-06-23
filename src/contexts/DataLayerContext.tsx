@@ -141,6 +141,12 @@ function createPrizeId(prizes: Prize[]) {
   return candidateId;
 }
 
+function mergeKid(kids: Kid[], kid: Kid) {
+  return kids.some((currentKid) => currentKid.id === kid.id)
+    ? kids.map((currentKid) => (currentKid.id === kid.id ? kid : currentKid))
+    : [...kids, kid];
+}
+
 const guestUser: CurrentUser = {
   id: 'guest',
   name: 'Guest',
@@ -384,12 +390,11 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   };
   const addRegisteredKid = async (registration: RegistrationInput) => {
     if (isRemoteDataLayer) {
-      const response = await saveRemoteRegisteredKid(registration);
+      const registeredKid = await saveRemoteRegisteredKid(registration);
 
-      setKidList(response.kids);
-      applyRemotePassport(response.kid.id, response.passport);
+      setKidList((currentKids) => mergeKid(currentKids, registeredKid));
 
-      return response.kid;
+      return registeredKid;
     }
 
     const kidId = getNextKidId(kidList, conferenceJson.kidIdPrefix);
