@@ -1281,7 +1281,7 @@ h2 {
 
 .print-page {
   min-height: 100vh;
-  padding: 0;
+  padding: 1in;
   background: #fff;
   color: #000;
 }
@@ -1333,8 +1333,8 @@ h2 {
 
 .passport-print-qr img {
   display: block;
-  width: 28mm;
-  height: 28mm;
+  width: 21mm;
+  height: 21mm;
 }
 
 .passport-print-qr span {
@@ -2323,7 +2323,7 @@ h2 {
 @media print {
   @page {
     size: A4;
-    margin: 0;
+    margin: 1in;
   }
 
   html,
