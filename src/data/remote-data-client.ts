@@ -67,14 +67,15 @@ export function writeRemoteDataCache(snapshot: RemoteDataSnapshot) {
 }
 
 export async function fetchRemoteDataSnapshot(): Promise<RemoteDataSnapshot> {
+  const requestInit = { cache: 'no-store' } satisfies RequestInit;
   const [passportActivitiesByKid, prizes, prizeAwards] = await Promise.all([
-    fetch(buildApiUrl('/passport')).then((response) =>
+    fetch(buildApiUrl('/passport'), requestInit).then((response) =>
       readJsonResponse<PassportActivitiesByKid>(response),
     ),
-    fetch(buildApiUrl('/wheel-prizes')).then((response) =>
+    fetch(buildApiUrl('/wheel-prizes'), requestInit).then((response) =>
       readJsonResponse<Prize[]>(response),
     ),
-    fetch(buildApiUrl('/prizes-won')).then((response) =>
+    fetch(buildApiUrl('/prizes-won'), requestInit).then((response) =>
       readJsonResponse<PrizeAward[]>(response),
     ),
   ]);

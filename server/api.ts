@@ -41,11 +41,11 @@ type AdminBackup = {
 };
 
 const apiPaths = new Set([
-  '/admin/export',
-  '/admin/import',
-  '/passport',
-  '/wheel-prizes',
-  '/prizes-won',
+  '/api/admin/export',
+  '/api/admin/import',
+  '/api/passport',
+  '/api/wheel-prizes',
+  '/api/prizes-won',
 ]);
 const prizeKinds = new Set<PrizeKind>(['final', 'normal', 'valuable']);
 
@@ -58,15 +58,15 @@ export function normalizeApiPath(pathname: string) {
     return '/';
   }
 
-  if (pathname.startsWith('/kid-a/')) {
-    return pathname.slice('/kid-a'.length) || '/';
+  if (pathname.startsWith('/api/')) {
+    return pathname.slice('/api'.length) || '/';
   }
 
   return pathname;
 }
 
 export function isApiPath(pathname: string) {
-  return apiPaths.has(normalizeApiPath(pathname));
+  return apiPaths.has(pathname);
 }
 
 function getHeader(
@@ -110,6 +110,7 @@ function jsonResponse(
     body: JSON.stringify(value),
     headers: {
       ...corsHeaders(request),
+      'Cache-Control': 'no-store',
       'Content-Type': 'application/json; charset=utf-8',
     },
     status,

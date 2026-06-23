@@ -27,7 +27,18 @@ function getSeedDataDirs() {
     return [path.resolve(process.env.KID_A_SEED_DATA_DIR)];
   }
 
-  return [path.resolve('server/data'), path.resolve('src/data')];
+  const runtimeRoots = [process.cwd(), process.env.LAMBDA_TASK_ROOT].filter(
+    (runtimeRoot): runtimeRoot is string => Boolean(runtimeRoot),
+  );
+
+  return Array.from(
+    new Set(
+      runtimeRoots.flatMap((runtimeRoot) => [
+        path.resolve(runtimeRoot, 'server/data'),
+        path.resolve(runtimeRoot, 'src/data'),
+      ]),
+    ),
+  );
 }
 
 function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {
@@ -67,7 +78,6 @@ function kidIdFromPassportKey(key: string) {
 
 async function readRequiredBlobJson<T>(store: NetlifyBlobStore, key: string) {
   const value = (await store.get(key, {
-    consistency: 'strong',
     type: 'json',
   })) as T | null;
 
@@ -134,19 +144,14 @@ async function readSeedSnapshot(): Promise<StoreData> {
 }
 
 export function createBlobStore(
-  store = getStore({
-    consistency: 'strong',
-    name: process.env.KID_A_BLOBS_STORE ?? defaultBlobStoreName,
-  }),
+  store = getStore(process.env.KID_A_BLOBS_STORE ?? defaultBlobStoreName),
 ): StoreAdapter {
   let seedPromise: Promise<void> | undefined;
   let writeQueue: Promise<void> = Promise.resolve();
 
   async function ensureSeeded() {
     seedPromise ??= (async () => {
-      const seedMarker = await store.getMetadata(seedMarkerKey, {
-        consistency: 'strong',
-      });
+      const seedMarker = await store.getMetadata(seedMarkerKey);
 
       if (seedMarker) {
         return;
@@ -154,22 +159,16 @@ export function createBlobStore(
 
       const seedSnapshot = await readSeedSnapshot();
 
-      await Promise.all([
-        store.setJSON(jsonDocumentKeys.conference, seedSnapshot.conference, {
-          onlyIfNew: true,
-        }),
-        store.setJSON(jsonDocumentKeys.kids, seedSnapshot.kids, { onlyIfNew: true }),
-        store.setJSON(jsonDocumentKeys.prizeAwards, seedSnapshot.prizeAwards, {
-          onlyIfNew: true,
-        }),
-        store.setJSON(jsonDocumentKeys.prizes, seedSnapshot.prizes, {
-          onlyIfNew: true,
-        }),
-        ...Object.entries(seedSnapshot.passportActivitiesByKid).map(
-          ([kidId, passport]) =>
-            store.setJSON(passportKey(kidId), passport, { onlyIfNew: true }),
-        ),
-      ]);
+      await store.setJSON(jsonDocumentKeys.conference, seedSnapshot.conference);
+      await store.setJSON(jsonDocumentKeys.kids, seedSnapshot.kids);
+      await store.setJSON(jsonDocumentKeys.prizeAwards, seedSnapshot.prizeAwards);
+      await store.setJSON(jsonDocumentKeys.prizes, seedSnapshot.prizes);
+
+      for (const [kidId, passport] of Object.entries(
+        seedSnapshot.passportActivitiesByKid,
+      )) {
+        await store.setJSON(passportKey(kidId), passport);
+      }
 
       await store.setJSON(
         seedMarkerKey,
