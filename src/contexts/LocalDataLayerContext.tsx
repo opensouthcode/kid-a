@@ -7,11 +7,6 @@ import {
   type PropsWithChildren,
 } from 'react';
 
-type FriendRecord = {
-  addedAt: string;
-  kidId: string;
-};
-
 type LocalDataLayerContextValue = {
   getFriendIds: () => string[];
   isFriend: (friendKidId: string) => boolean;
@@ -24,33 +19,13 @@ const LocalDataLayerContext = createContext<
   LocalDataLayerContextValue | undefined
 >(undefined);
 
-function isFriendRecord(value: unknown): value is FriendRecord {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'kidId' in value &&
-    'addedAt' in value &&
-    typeof value.kidId === 'string' &&
-    typeof value.addedAt === 'string'
+function dedupeFriendIds(friendIds: string[]) {
+  return friendIds.filter(
+    (friendId, index, allFriendIds) => allFriendIds.indexOf(friendId) === index,
   );
 }
 
-function sortFriendsByAddedOrder(friends: FriendRecord[]) {
-  return friends.sort(
-    (firstFriend, secondFriend) =>
-      new Date(firstFriend.addedAt).getTime() -
-      new Date(secondFriend.addedAt).getTime(),
-  );
-}
-
-function dedupeFriends(friends: FriendRecord[]) {
-  return sortFriendsByAddedOrder(friends).filter(
-    (friend, index, sortedFriends) =>
-      sortedFriends.findIndex((entry) => entry.kidId === friend.kidId) === index,
-  );
-}
-
-function readStoredFriends(): FriendRecord[] {
+function readStoredFriends(): string[] {
   const storedFriends = window.localStorage.getItem(friendsStorageKey);
 
   if (!storedFriends) {
@@ -61,15 +36,8 @@ function readStoredFriends(): FriendRecord[] {
     const parsedFriends: unknown = JSON.parse(storedFriends);
 
     if (Array.isArray(parsedFriends)) {
-      return dedupeFriends(parsedFriends.filter(isFriendRecord));
-    }
-
-    if (typeof parsedFriends === 'object' && parsedFriends !== null) {
-      return dedupeFriends(
-        Object.values(parsedFriends)
-          .filter(Array.isArray)
-          .flat()
-          .filter(isFriendRecord),
+      return dedupeFriendIds(
+        parsedFriends.filter((friendId) => typeof friendId === 'string'),
       );
     }
 
@@ -81,21 +49,21 @@ function readStoredFriends(): FriendRecord[] {
   }
 }
 
-function writeStoredFriends(friends: FriendRecord[]) {
+function writeStoredFriends(friends: string[]) {
   window.localStorage.setItem(friendsStorageKey, JSON.stringify(friends));
 }
 
 export function LocalDataLayerProvider({ children }: PropsWithChildren) {
-  const [friends, setFriends] = useState<FriendRecord[]>(() => readStoredFriends());
+  const [friendIds, setFriendIds] = useState<string[]>(() => readStoredFriends());
 
   useEffect(() => {
-    writeStoredFriends(friends);
-  }, [friends]);
+    writeStoredFriends(friendIds);
+  }, [friendIds]);
 
   useEffect(() => {
     const readFriendsFromAnotherTab = (event: StorageEvent) => {
       if (event.key === friendsStorageKey) {
-        setFriends(readStoredFriends());
+        setFriendIds(readStoredFriends());
       }
     };
 
@@ -106,27 +74,18 @@ export function LocalDataLayerProvider({ children }: PropsWithChildren) {
 
   const value = useMemo<LocalDataLayerContextValue>(
     () => ({
-      getFriendIds: () => friends.map((friend) => friend.kidId),
-      isFriend: (friendKidId) =>
-        friends.some((friend) => friend.kidId === friendKidId),
+      getFriendIds: () => friendIds,
+      isFriend: (friendKidId) => friendIds.includes(friendKidId),
       toggleFriend: (friendKidId) => {
-        setFriends((currentFriends) => {
-          const isCurrentFriend = currentFriends.some(
-            (friend) => friend.kidId === friendKidId,
-          );
+        setFriendIds((currentFriendIds) => {
+          const isCurrentFriend = currentFriendIds.includes(friendKidId);
           return isCurrentFriend
-            ? currentFriends.filter((friend) => friend.kidId !== friendKidId)
-            : [
-                ...currentFriends,
-                {
-                  addedAt: new Date().toISOString(),
-                  kidId: friendKidId,
-                },
-              ];
+            ? currentFriendIds.filter((friendId) => friendId !== friendKidId)
+            : [...currentFriendIds, friendKidId];
         });
       },
     }),
-    [friends],
+    [friendIds],
   );
 
   return (
