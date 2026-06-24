@@ -36,7 +36,7 @@ import {
 } from '../data/data-model';
 import {
   clearMagicLinkSession,
-  getStoredMagicLinkToken,
+  getActiveMagicLinkToken,
   resolveBuiltInMagicLink,
 } from '../access/magic-links';
 import {
@@ -190,7 +190,7 @@ function getInitialMagicLinkUser(isRemoteDataLayer: boolean): CurrentUser | unde
     return undefined;
   }
 
-  const builtInMagicLink = resolveBuiltInMagicLink(getStoredMagicLinkToken());
+  const builtInMagicLink = resolveBuiltInMagicLink(getActiveMagicLinkToken());
 
   if (!builtInMagicLink) {
     return undefined;
@@ -226,7 +226,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   );
   const [accessSessionStatus, setAccessSessionStatus] =
     useState<AccessSessionStatus>(() =>
-      getStoredMagicLinkToken()
+      getActiveMagicLinkToken()
         ? isRemoteDataLayer
           ? { state: 'loading' }
           : getInitialMagicLinkUser(isRemoteDataLayer)
@@ -247,7 +247,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   };
 
   useEffect(() => {
-    const token = getStoredMagicLinkToken();
+    const token = getActiveMagicLinkToken();
 
     if (!token) {
       setAccessSessionStatus({ state: 'idle' });
@@ -293,7 +293,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   }, [isRemoteDataLayer]);
 
   useEffect(() => {
-    if (!isRemoteDataLayer) {
+    if (!isRemoteDataLayer || accessSessionStatus.state !== 'ready') {
       return;
     }
 
@@ -302,7 +302,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       .catch((error) => {
         console.error('Unable to load remote event data.', error);
       });
-  }, [isRemoteDataLayer]);
+  }, [accessSessionStatus.state, isRemoteDataLayer]);
 
   const persistRemoteSnapshot = (snapshotPromise: Promise<RemoteDataSnapshot>) => {
     snapshotPromise.then(applyRemoteSnapshot).catch((error) => {
