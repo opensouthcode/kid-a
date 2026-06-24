@@ -38,7 +38,8 @@ runs linting, builds the app, uploads the Pages artifact, and deploys from
 ### Alternate Node/Netlify deployment
 
 The static GitHub Pages deployment remains unchanged. For a stateful local Node
-deployment, set `NETLIFY_DATABASE_URL`, build both the frontend and server, then
+deployment, run it through `netlify dev` or set `NETLIFY_DB_URL`, build both the
+frontend and server, then
 run the compiled HTTP server:
 
 ```bash
@@ -59,7 +60,7 @@ migrations and seeds an empty DB from committed JSON in `src/data`. To force a
 non-production reset later, run:
 
 ```bash
-NETLIFY_DATABASE_URL=... npm run data:reset-db
+NETLIFY_DB_URL=... npm run data:reset-db
 ```
 
 Set `ADMIN_PASSWORD` to enable the `/admin` page to generate 1-day desk, wheel,

@@ -1,7 +1,11 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { neon } from '@netlify/neon';
-import { createDbMagicTokenStore, createDbStore } from './db-store.js';
+import {
+  createDbMagicTokenStore,
+  createDbStore,
+  createSqlClient,
+  type SqlClient,
+} from './db-store.js';
 import { getStoreFileName, syncPrizeGivenCache } from './store.js';
 import type {
   ConferenceData,
@@ -11,8 +15,6 @@ import type {
   PrizeAward,
   StoreData,
 } from './types.js';
-
-type SqlClient = ReturnType<typeof neon>;
 
 const migrationsDir = path.resolve('db/migrations');
 const seedDataDir = path.resolve(process.env.KID_A_SEED_DATA_DIR ?? 'src/data');
@@ -50,7 +52,7 @@ function splitSqlStatements(sqlText: string) {
     .filter(Boolean);
 }
 
-export async function applyDbSchema(sql: SqlClient = neon()) {
+export async function applyDbSchema(sql: SqlClient = createSqlClient()) {
   const migrationFiles = (await readdir(migrationsDir))
     .filter((fileName) => fileName.endsWith('.sql'))
     .sort();
@@ -76,7 +78,7 @@ async function hasSeedData(sql: SqlClient) {
   return rows[0]?.has_conference === true;
 }
 
-export async function resetDb(sql: SqlClient = neon()) {
+export async function resetDb(sql: SqlClient = createSqlClient()) {
   const seedSnapshot = await readSeedSnapshot();
 
   await applyDbSchema(sql);
@@ -84,7 +86,7 @@ export async function resetDb(sql: SqlClient = neon()) {
   await createDbMagicTokenStore(sql).writeTokens([]);
 }
 
-export async function ensureDbInitialized(sql: SqlClient = neon()) {
+export async function ensureDbInitialized(sql: SqlClient = createSqlClient()) {
   initializationPromise ??= (async () => {
     await applyDbSchema(sql);
 

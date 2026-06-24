@@ -1,7 +1,7 @@
-import { neon } from '@netlify/neon';
 import { resetDb } from './db-bootstrap.js';
+import { createSqlClient } from './db-store.js';
 
-resetDb(neon())
+resetDb(createSqlClient())
   .then(() => {
     console.log('Reset DB store from seed data');
     console.log('Cleared DB magic-link tokens');

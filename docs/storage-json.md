@@ -21,7 +21,7 @@ The app is not in production yet, so testing data can be discarded. To force a
 reset from committed seed JSON and clear magic-link tokens, run:
 
 ```sh
-NETLIFY_DATABASE_URL=... npm run data:reset-db
+NETLIFY_DB_URL=... npm run data:reset-db
 ```
 
 ## Schema

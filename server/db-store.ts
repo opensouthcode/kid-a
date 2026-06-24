@@ -1,7 +1,9 @@
-import { neon } from '@netlify/neon';
+import { getConnectionString } from '@netlify/database';
 import type {
+  NeonQueryFunction,
   NeonQueryFunctionInTransaction,
 } from '@neondatabase/serverless';
+import { neon } from '@neondatabase/serverless';
 import type {
   MagicLinkTokenRecord,
   MagicLinkTokenStore,
@@ -28,13 +30,17 @@ import type {
   StoreData,
 } from './types.js';
 
-type SqlClient = ReturnType<typeof neon>;
+export type SqlClient = NeonQueryFunction<false, false>;
 type TransactionSql = NeonQueryFunctionInTransaction<false, false>;
 type Row = Record<string, unknown>;
 
 const kidRegistrationRetryDelayMs = 250;
 const maxKidRegistrationAttempts = 20;
 const generatedIdLookahead = 1000;
+
+export function createSqlClient() {
+  return neon(process.env.NETLIFY_DATABASE_URL ?? getConnectionString());
+}
 
 function delay(ms: number) {
   return new Promise((resolve) => {
@@ -233,7 +239,7 @@ function prizeQueries(tx: TransactionSql, prizes: Prize[]) {
   ];
 }
 
-export function createDbStore(sql: SqlClient = neon()): StoreAdapter {
+export function createDbStore(sql: SqlClient = createSqlClient()): StoreAdapter {
   async function readSnapshot(): Promise<StoreData> {
     const [conferenceRows, kidRows, passportRows, prizeRows, prizeAwardRows] =
       await Promise.all([
@@ -560,7 +566,7 @@ export function createDbStore(sql: SqlClient = neon()): StoreAdapter {
   };
 }
 
-export function createDbMagicTokenStore(sql: SqlClient = neon()) {
+export function createDbMagicTokenStore(sql: SqlClient = createSqlClient()) {
   return {
     async appendToken(token: MagicLinkTokenRecord) {
       await sql`
