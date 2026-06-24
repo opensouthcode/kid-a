@@ -1,9 +1,10 @@
 [build]
-  command = "npm run data:reset-db && npm run build:netlify"
+  command = "npm run build:netlify"
   publish = "dist"
 
 [functions]
   directory = "netlify/functions"
+  included_files = ["db/migrations/*.sql", "src/data/*.json"]
 
 [[redirects]]
   from = "/api/passport"

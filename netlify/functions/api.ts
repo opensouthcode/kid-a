@@ -1,5 +1,6 @@
 import { setMagicTokenStore } from '../../server/access-tokens.js';
 import { handleApiRequest } from '../../server/api.js';
+import { ensureDbInitialized } from '../../server/db-bootstrap.js';
 import { createDbMagicTokenStore, createDbStore } from '../../server/db-store.js';
 import { setStoreAdapter } from '../../server/store.js';
 
@@ -17,6 +18,7 @@ function configureStores() {
 }
 
 export async function handler(event: NetlifyEvent) {
+  await ensureDbInitialized();
   configureStores();
   const response = await handleApiRequest({
     body: event.body,

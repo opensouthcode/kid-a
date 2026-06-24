@@ -1,8 +1,8 @@
 # Storage reference
 
 The app uses Netlify DB/Postgres as the only writable server-side storage
-backend. Committed JSON files in `src/data` are demo seed data and can be used to
-reset a non-production DB.
+backend. On startup, the server applies DB migrations and seeds an empty DB from
+committed JSON files in `src/data`.
 
 ## Runtime data
 
@@ -17,9 +17,8 @@ reset a non-production DB.
 
 ## Resetting non-production data
 
-The app is not in production yet, so testing data can be discarded. To apply the
-DB schema, reset writable data from committed seed JSON, and clear magic-link
-tokens, run:
+The app is not in production yet, so testing data can be discarded. To force a
+reset from committed seed JSON and clear magic-link tokens, run:
 
 ```sh
 NETLIFY_DATABASE_URL=... npm run data:reset-db

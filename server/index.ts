@@ -4,6 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { setMagicTokenStore } from './access-tokens.js';
 import { handleApiRequest, isApiPath } from './api.js';
+import { ensureDbInitialized } from './db-bootstrap.js';
 import { createDbMagicTokenStore, createDbStore } from './db-store.js';
 import { setStoreAdapter } from './store.js';
 
@@ -14,6 +15,7 @@ const serverRoot = path.dirname(currentFilePath);
 
 setStoreAdapter(createDbStore());
 setMagicTokenStore(createDbMagicTokenStore());
+await ensureDbInitialized();
 
 const mimeTypes: Record<string, string> = {
   '.css': 'text/css; charset=utf-8',

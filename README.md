@@ -54,8 +54,9 @@ Node endpoints instead of bundled mutable sample data. The Node server serves
 
 `netlify.toml` also routes those endpoints to `netlify/functions/api.ts`.
 Netlify Functions and the local Node server use Netlify DB/Postgres for writable
-state and staff magic-link token hashes. Apply the schema and reset
-non-production data from committed seed JSON with:
+state and staff magic-link token hashes. On startup, the server applies DB
+migrations and seeds an empty DB from committed JSON in `src/data`. To force a
+non-production reset later, run:
 
 ```bash
 NETLIFY_DATABASE_URL=... npm run data:reset-db
