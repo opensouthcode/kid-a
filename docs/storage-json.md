@@ -6,6 +6,9 @@ This app has two writable storage backends:
   when files are missing.
 - Netlify deployments use Netlify Blobs in the `kid-a-data` store by default,
   seeded from committed JSON files in `server/data` or `src/data`.
+- Netlify deployments can use Netlify DB/Postgres by setting
+  `KID_A_STORE_BACKEND=db`. Magic-link tokens follow the same backend unless
+  `KID_A_TOKEN_BACKEND` is set explicitly.
 
 Netlify Blobs are optimized for reads and infrequent writes. Avoid
 read-modify-write on shared JSON blobs for high-frequency event data because
@@ -45,3 +48,11 @@ app for DB and dual-write backends.
 2. Add migration and verification tooling from file/blob JSON to DB rows.
 3. Enable config-driven dual writes before switching reads to DB.
 4. Keep blobs as a rollback target until DB reads are verified.
+
+## Netlify DB schema
+
+The first DB migration lives in `db/migrations/0001_netlify_db.sql`. It keeps
+app-owned IDs for kids, prizes, prize awards, and magic-link token hashes; the
+database does not auto-generate user-facing IDs or maintain a separate kid ID
+counter table. The DB adapter derives prize `given` counts from `prize_awards`
+and builds passport responses from `passport_activities` rows.
