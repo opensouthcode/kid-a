@@ -23,7 +23,7 @@ export type MagicLinkScope = {
   role: UserRole;
 };
 
-type MagicLinkTokenStore = {
+export type MagicLinkTokenStore = {
   readTokens(): Promise<MagicLinkTokenRecord[]>;
   writeTokens(tokens: MagicLinkTokenRecord[]): Promise<void>;
 };
