@@ -4,61 +4,12 @@
 
 [functions]
   directory = "netlify/functions"
-  included_files = ["server/data/*.json", "src/data/*.json"]
+  included_files = ["netlify/database/migrations/*.sql", "src/data/*.json"]
 
-[[redirects]]
-  from = "/api/passport"
-  to = "/.netlify/functions/api/passport"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/wheel-prizes"
-  to = "/.netlify/functions/api/wheel-prizes"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/prizes-kid"
-  to = "/.netlify/functions/api/prizes-kid"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/kids"
-  to = "/.netlify/functions/api/kids"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/auth/session"
-  to = "/.netlify/functions/api/auth/session"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/admin/session"
-  to = "/.netlify/functions/api/admin/session"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/admin/magic-links"
-  to = "/.netlify/functions/api/admin/magic-links"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/admin/export"
-  to = "/.netlify/functions/api/admin/export"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/admin/import"
-  to = "/.netlify/functions/api/admin/import"
-  status = 200
-  force = true
+[dev]
+  command = "npm run dev:remote"
+  targetPort = 5173
+  port = 8888
 
 [[redirects]]
   from = "/kid-a"

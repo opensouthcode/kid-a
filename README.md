@@ -37,44 +37,34 @@ runs linting, builds the app, uploads the Pages artifact, and deploys from
 
 ### Alternate Node/Netlify deployment
 
-The static GitHub Pages deployment remains unchanged. For a stateful local Node
-deployment, build both the frontend and server, then run the compiled HTTP
-server:
+The static GitHub Pages deployment remains unchanged. For stateful local
+development, install the Netlify CLI and run Netlify Dev so functions and
+Netlify Database use the same runtime model as deploys:
 
 ```bash
-npm run build:node
-npm run start:node
+netlify dev
 ```
 
-`build:node` and `build:netlify` build the frontend with `VITE_DATA_LAYER=remote`,
-`VITE_BASE_PATH=/`, and `VITE_API_BASE_URL=/api`, so the same React app uses the
-Node endpoints instead of bundled mutable sample data. The Node server serves
-`dist` with SPA fallback and exposes JSON endpoints at `/api/passport`,
-`/api/kids`, `/api/wheel-prizes`, and `/api/prizes-kid`. It stores writable event data in
-`server/data`, seeded from `src/data` when files are missing. Set
-`KID_A_DATA_DIR` to use a different local data directory.
+`build:netlify` builds the frontend with `VITE_DATA_LAYER=remote`,
+`VITE_BASE_PATH=/`, and `VITE_API_BASE_URL=/api`, so the same React app uses
+function endpoints instead of bundled mutable sample data.
 
 `netlify.toml` also routes those endpoints to `netlify/functions/api.ts`.
-Netlify Functions use Netlify Blobs for durable production writes while keeping
-the same frontend API contract. On first read, the blob store is seeded from the
-committed JSON data in `server/data` or `src/data`. Passports are stored as one
-blob per kid at `passports/{kidId}.json`, so completing an activity only writes
-that kid's passport. Prize catalog settings are stored in one shared blob, and
-prize awards are stored by kid and exposed through kid-scoped API responses.
+Netlify Functions use Netlify DB/Postgres for writable state and staff
+magic-link token hashes. Netlify applies migrations from
+`netlify/database/migrations`, and the function seeds an empty DB from committed
+JSON in `src/data`. To force a non-production reset later, run:
 
-The default blob store name is `kid-a-data`. Set `KID_A_BLOBS_STORE` in Netlify
-to use a different store name. Netlify automatically provides the Blobs runtime
-context to the function; local Node deployments continue to use `server/data`
-and `KID_A_DATA_DIR`. Staff magic-link tokens are role-scoped and stored as
-SHA-256 hashes in
-the same blob store under `admin/magic-tokens.json`, or in
-`server/data/magicTokens.json` for local Node. Set `ADMIN_PASSWORD` to enable
-the `/admin` page to generate 1-day desk, wheel, or activity-specific lead
-links by default; the duration in days can be changed when generating a link. The
-`build:gh-pages` static deployment still uses bundled sample data and does not
-call the remote endpoints; it exposes built-in demo links for the same roles.
-See [`docs/storage-json.md`](docs/storage-json.md) for the JSON storage layout
-and concurrency notes.
+```bash
+NETLIFY_DB_URL=... npm run data:reset-db
+```
+
+Set `ADMIN_PASSWORD` to enable the `/admin` page to generate 1-day desk, wheel,
+or activity-specific lead links by default; the duration in days can be changed
+when generating a link. The `build:gh-pages` static deployment still uses
+bundled sample data and does not call the remote endpoints; it exposes built-in
+demo links for the same roles. See [`docs/storage-json.md`](docs/storage-json.md)
+for the DB storage layout.
 
 Set `KID_A_ADMIN_TOKEN` to enable protected admin backup and restore endpoints.
 The export includes `exportedAt`, `passports`, `wheelPrizes`, and `prizesWon`.

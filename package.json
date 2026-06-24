@@ -5,19 +5,18 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:remote": "VITE_DATA_LAYER=remote VITE_BASE_PATH=/ VITE_API_BASE_URL=http://localhost:8888/api vite",
+    "dev:netlify": "netlify dev",
     "build": "tsc -b && vite build && node -e \"require('node:fs').copyFileSync('dist/index.html', 'dist/404.html')\"",
     "build:gh-pages": "npm run build",
     "build:netlify": "VITE_DATA_LAYER=remote VITE_BASE_PATH=/ VITE_API_BASE_URL=/api npm run build && npm run build:server",
-    "build:node": "VITE_DATA_LAYER=remote VITE_BASE_PATH=/ VITE_API_BASE_URL=/api npm run build && npm run build:server",
-    "build:server": "tsc -p tsconfig.server.json",
-    "data:reset-stores": "npm run build:server && node dist-server/server/reset-stores.js",
+    "build:server": "node -e \"require('node:fs').rmSync('dist-server', { recursive: true, force: true })\" && tsc -p tsconfig.server.json",
+    "data:reset-db": "npm run build:server && node dist-server/server/reset-db.js",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "start:node": "node dist-server/server/index.js"
+    "preview": "vite preview"
   },
   "dependencies": {
-    "@netlify/blobs": "^10.7.9",
-    "@netlify/neon": "^0.1.2",
+    "@netlify/database": "^1.1.0",
     "@primer/octicons-react": "^19.28.1",
     "@types/qrcode": "^1.5.6",
     "jsqr": "^1.4.0",
