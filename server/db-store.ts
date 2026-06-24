@@ -1,9 +1,4 @@
-import { getConnectionString } from '@netlify/database';
-import type {
-  NeonQueryFunction,
-  NeonQueryFunctionInTransaction,
-} from '@neondatabase/serverless';
-import { neon } from '@neondatabase/serverless';
+import { getDatabase } from '@netlify/database';
 import type {
   MagicLinkTokenRecord,
   MagicLinkTokenStore,
@@ -30,9 +25,33 @@ import type {
   StoreData,
 } from './types.js';
 
-export type SqlClient = NeonQueryFunction<false, false>;
-type TransactionSql = NeonQueryFunctionInTransaction<false, false>;
 type Row = Record<string, unknown>;
+type Query = {
+  text: string;
+  values: unknown[];
+};
+type QueryResult = {
+  rows: unknown[];
+};
+type PoolClientLike = {
+  query(text: string, values?: unknown[]): Promise<QueryResult>;
+  release(): void;
+};
+type PoolLike = {
+  connect(): Promise<PoolClientLike>;
+  query(text: string, values?: unknown[]): Promise<QueryResult>;
+};
+type TransactionSql = (
+  strings: TemplateStringsArray,
+  ...values: unknown[]
+) => Query;
+export type SqlClient = {
+  (strings: TemplateStringsArray, ...values: unknown[]): Promise<Row[]>;
+  query(text: string, values?: unknown[]): Promise<Row[]>;
+  transaction(
+    buildQueries: (sql: TransactionSql) => Query[],
+  ): Promise<Row[][]>;
+};
 
 const kidRegistrationRetryDelayMs = 250;
 const maxKidRegistrationAttempts = 20;
@@ -43,21 +62,66 @@ function isPostgresUrl(value: string | undefined): value is string {
     value?.startsWith('postgresql://') === true;
 }
 
+function toQuery(strings: TemplateStringsArray, values: unknown[]): Query {
+  return {
+    text: strings.reduce(
+      (sql, segment, index) =>
+        `${sql}${segment}${index < values.length ? `$${index + 1}` : ''}`,
+      '',
+    ),
+    values,
+  };
+}
+
+function createPoolSqlClient(pool: PoolLike): SqlClient {
+  const sql = (async (strings: TemplateStringsArray, ...values: unknown[]) => {
+    const query = toQuery(strings, values);
+    const result = await pool.query(query.text, query.values);
+    return result.rows as Row[];
+  }) as SqlClient;
+
+  sql.query = async (text: string, values: unknown[] = []) => {
+    const result = await pool.query(text, values);
+    return result.rows as Row[];
+  };
+
+  sql.transaction = async (buildQueries: (tx: TransactionSql) => Query[]) => {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      const tx: TransactionSql = (strings, ...values) => toQuery(strings, values);
+      const results: Row[][] = [];
+
+      for (const query of buildQueries(tx)) {
+        const result = await client.query(query.text, query.values);
+        results.push(result.rows as Row[]);
+      }
+
+      await client.query('COMMIT');
+      return results;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
+    }
+  };
+
+  return sql;
+}
+
 export function createSqlClient() {
   const connectionString = [
     process.env.NETLIFY_DB_URL,
     process.env.NETLIFY_DATABASE_URL,
     process.env.DATABASE_URL,
   ].find(isPostgresUrl);
-  const netlifyConnectionString = connectionString ?? getConnectionString();
+  const database = connectionString
+    ? getDatabase({ connectionString })
+    : getDatabase();
 
-  if (!isPostgresUrl(netlifyConnectionString)) {
-    throw new Error(
-      'Netlify Database is not configured with a Postgres connection URL. Run `netlify database status` and ensure the database is enabled.',
-    );
-  }
-
-  return neon(netlifyConnectionString);
+  return createPoolSqlClient(database.pool as unknown as PoolLike);
 }
 
 function delay(ms: number) {

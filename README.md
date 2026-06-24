@@ -37,27 +37,23 @@ runs linting, builds the app, uploads the Pages artifact, and deploys from
 
 ### Alternate Node/Netlify deployment
 
-The static GitHub Pages deployment remains unchanged. For a stateful local Node
-deployment, run it through `netlify dev` or set `NETLIFY_DB_URL`, build both the
-frontend and server, then
-run the compiled HTTP server:
+The static GitHub Pages deployment remains unchanged. For stateful local
+development, install the Netlify CLI and run Netlify Dev so functions and
+Netlify Database use the same runtime model as deploys:
 
 ```bash
-npm run build:node
-npm run start:node
+netlify dev
 ```
 
-`build:node` and `build:netlify` build the frontend with `VITE_DATA_LAYER=remote`,
-`VITE_BASE_PATH=/`, and `VITE_API_BASE_URL=/api`, so the same React app uses the
-Node endpoints instead of bundled mutable sample data. The Node server serves
-`dist` with SPA fallback and exposes JSON endpoints at `/api/passport`,
-`/api/kids`, `/api/wheel-prizes`, and `/api/prizes-kid`.
+`build:netlify` builds the frontend with `VITE_DATA_LAYER=remote`,
+`VITE_BASE_PATH=/`, and `VITE_API_BASE_URL=/api`, so the same React app uses
+function endpoints instead of bundled mutable sample data.
 
 `netlify.toml` also routes those endpoints to `netlify/functions/api.ts`.
-Netlify Functions and the local Node server use Netlify DB/Postgres for writable
-state and staff magic-link token hashes. On startup, the server applies DB
-migrations and seeds an empty DB from committed JSON in `src/data`. To force a
-non-production reset later, run:
+Netlify Functions use Netlify DB/Postgres for writable state and staff
+magic-link token hashes. On startup, the function applies DB migrations and
+seeds an empty DB from committed JSON in `src/data`. To force a non-production
+reset later, run:
 
 ```bash
 NETLIFY_DB_URL=... npm run data:reset-db
