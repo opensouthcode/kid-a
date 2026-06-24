@@ -38,8 +38,26 @@ const kidRegistrationRetryDelayMs = 250;
 const maxKidRegistrationAttempts = 20;
 const generatedIdLookahead = 1000;
 
+function isPostgresUrl(value: string | undefined): value is string {
+  return value?.startsWith('postgres://') === true ||
+    value?.startsWith('postgresql://') === true;
+}
+
 export function createSqlClient() {
-  return neon(process.env.NETLIFY_DATABASE_URL ?? getConnectionString());
+  const connectionString = [
+    process.env.NETLIFY_DB_URL,
+    process.env.NETLIFY_DATABASE_URL,
+    process.env.DATABASE_URL,
+  ].find(isPostgresUrl);
+  const netlifyConnectionString = connectionString ?? getConnectionString();
+
+  if (!isPostgresUrl(netlifyConnectionString)) {
+    throw new Error(
+      'Netlify Database is not configured with a Postgres connection URL. Run `netlify database status` and ensure the database is enabled.',
+    );
+  }
+
+  return neon(netlifyConnectionString);
 }
 
 function delay(ms: number) {
