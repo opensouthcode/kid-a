@@ -6,13 +6,18 @@ import {
   type MagicLinkSession,
 } from './access-tokens.js';
 import {
+  awardPrize,
+  completePassportActivity,
+  KidIdAllocationError,
+  PrizeOutOfStockError,
   readSnapshot,
-  updatePassportForKid,
-  updatePrizeAwardsForKid,
-  updateSnapshot,
+  registerKid,
+  restoreWritableData,
+  savePrize,
+  syncPrizeGivenCache,
+  UnknownPrizeError,
 } from './store.js';
 import type {
-  Kid,
   PassportActivitiesByKid,
   PassportActivity,
   Prize,
@@ -45,8 +50,6 @@ class HttpError extends Error {
   }
 }
 
-class StaleKidIdReadError extends Error {}
-
 type AdminBackup = {
   exportedAt: string;
   passports: PassportActivitiesByKid;
@@ -66,8 +69,6 @@ const apiPaths = new Set([
   '/prizes-kid',
 ]);
 const kidGenders = new Set(['boy', 'girl', 'preferNotToSay']);
-const kidRegistrationRetryDelayMs = 250;
-const maxKidRegistrationAttempts = 20;
 const prizeKinds = new Set<PrizeKind>(['final', 'normal', 'valuable']);
 const staffRoles = new Set<UserRole>(['desk', 'lead', 'wheel']);
 const supportedLocales = new Set(['en', 'es']);
@@ -336,25 +337,6 @@ function normalizeOptionalLastKnownKidId(value: unknown) {
   return value.trim().toLowerCase();
 }
 
-function delay(ms: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-function getNextKidId(existingKids: Kid[], kidIdPrefix: string) {
-  const existingIds = new Set(existingKids.map((kid) => kid.id.toLowerCase()));
-  let sequence = existingKids.length + 1;
-  let nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
-
-  while (existingIds.has(nextId.toLowerCase())) {
-    sequence += 1;
-    nextId = `${kidIdPrefix}${sequence.toString().padStart(4, '0')}`;
-  }
-
-  return nextId;
-}
-
 function passportResponse(
   passportActivitiesByKid: PassportActivitiesByKid,
   kidId: string,
@@ -372,40 +354,6 @@ function passportTemplate(
   );
 }
 
-function ensurePassportForKid(
-  passportActivitiesByKid: PassportActivitiesByKid,
-  kidId: string,
-  activityId: number,
-) {
-  const existingPassport = passportActivitiesByKid[kidId];
-
-  if (existingPassport) {
-    return existingPassport;
-  }
-
-  const template = passportTemplate(passportActivitiesByKid);
-  const passport =
-    template.length > 0 ? template : ([{ id: activityId }] satisfies PassportActivity[]);
-
-  passportActivitiesByKid[kidId] = passport;
-  return passport;
-}
-
-function getPrizeGiven(prizeAwards: PrizeAward[], prizeId: string) {
-  return prizeAwards.filter((award) => award.prizeId === prizeId).length;
-}
-
-function syncPrizeGivenCache(prizes: Prize[], prizeAwards: PrizeAward[]) {
-  return prizes.map((prize) => ({
-    ...prize,
-    given: getPrizeGiven(prizeAwards, prize.id),
-  }));
-}
-
-function getPrizeRemaining(prize: Prize) {
-  return Math.max(prize.initialUnits - prize.given, 0);
-}
-
 function normalizePrizeKind(value: unknown) {
   if (value === undefined) {
     return undefined;
@@ -416,26 +364,6 @@ function normalizePrizeKind(value: unknown) {
   }
 
   return value as PrizeKind;
-}
-
-function createPrizeId(prizes: Prize[]) {
-  let suffix = prizes.length + 1;
-  let candidate = `prize-${suffix}`;
-
-  while (prizes.some((prize) => prize.id === candidate)) {
-    suffix += 1;
-    candidate = `prize-${suffix}`;
-  }
-
-  return candidate;
-}
-
-function snapshotPrizeResponse(snapshot: StoreData, prize?: Prize) {
-  return {
-    prize,
-    prizeAwards: snapshot.prizeAwards,
-    prizes: syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards),
-  };
 }
 
 function createAdminBackup(snapshot: StoreData): AdminBackup {
@@ -596,50 +524,24 @@ async function handleKids(request: ApiRequest, url: URL): Promise<ApiResponse> {
   await requireMagicLink(request, url, ['desk']);
 
   const registration = normalizeRegistrationInput(parseJsonBody(request.body));
-  let response: Kid | undefined;
 
-  for (let attempt = 1; attempt <= maxKidRegistrationAttempts; attempt += 1) {
-    try {
-      response = await updateSnapshot((snapshot) => {
-        const kidId = getNextKidId(snapshot.kids, snapshot.conference.kidIdPrefix);
+  try {
+    const response = await registerKid({
+      age: registration.age,
+      gender: registration.gender,
+      language: registration.language,
+      lastKnownKidId: registration.lastKnownKidId,
+      name: registration.nickname,
+    });
 
-        if (kidId.toLowerCase() === registration.lastKnownKidId) {
-          throw new StaleKidIdReadError();
-        }
-
-        const kid: Kid = {
-          age: registration.age,
-          gender: registration.gender,
-          id: kidId,
-          language: registration.language,
-          name: registration.nickname,
-        };
-        const passport = passportTemplate(snapshot.passportActivitiesByKid);
-
-        snapshot.kids.push(kid);
-        snapshot.passportActivitiesByKid[kid.id] = passport;
-
-        return kid;
-      }, ['kids', 'passportActivitiesByKid']);
-      break;
-    } catch (error) {
-      if (
-        error instanceof StaleKidIdReadError &&
-        attempt < maxKidRegistrationAttempts
-      ) {
-        await delay(kidRegistrationRetryDelayMs);
-        continue;
-      }
-
-      throw error;
+    return jsonResponse(request, 201, response);
+  } catch (error) {
+    if (error instanceof KidIdAllocationError) {
+      throw new HttpError(409, 'Unable to allocate a fresh kid id');
     }
-  }
 
-  if (!response) {
-    throw new HttpError(409, 'Unable to allocate a fresh kid id');
+    throw error;
   }
-
-  return jsonResponse(request, 201, response);
 }
 
 async function handleAdmin(
@@ -697,13 +599,13 @@ async function handleAdmin(
     }
 
     const backup = parseAdminBackup(parseJsonBody(request.body));
-    const restoredBackup = await updateSnapshot((snapshot) => {
-      snapshot.passportActivitiesByKid = backup.passports;
-      snapshot.prizeAwards = backup.prizesWon;
-      snapshot.prizes = syncPrizeGivenCache(backup.wheelPrizes, backup.prizesWon);
-
-      return createAdminBackup(snapshot);
-    }, ['passportActivitiesByKid', 'prizeAwards', 'prizes']);
+    const restoredBackup = createAdminBackup(
+      await restoreWritableData({
+        passportActivitiesByKid: backup.passports,
+        prizeAwards: backup.prizesWon,
+        prizes: backup.wheelPrizes,
+      }),
+    );
 
     return jsonResponse(request, 200, restoredBackup);
   }
@@ -770,22 +672,10 @@ async function handlePassport(
   const snapshot = await readSnapshot();
   const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
 
-  const passport = await updatePassportForKid(kidId, (snapshot) => {
-    const passport = ensurePassportForKid(
-      snapshot.passportActivitiesByKid,
-      kidId,
-      activityId,
-    );
-    const matchingActivity = passport.find((activity) => activity.id === activityId);
-
-    if (matchingActivity) {
-      matchingActivity.completedAt ??= new Date().toISOString();
-    } else {
-      passport.push({ completedAt: new Date().toISOString(), id: activityId });
-      passport.sort((left, right) => left.id - right.id);
-    }
-
-    return passport;
+  const passport = await completePassportActivity({
+    activityId,
+    completedAt: new Date().toISOString(),
+    kidId,
   });
 
   return jsonResponse(request, 200, passport);
@@ -815,72 +705,63 @@ async function handleWheelPrizes(
   const body = parseJsonBody(request.body);
   const stock = url.searchParams.get('stock')?.trim();
 
-  const response = await updateSnapshot((snapshot) => {
-    const syncedPrizes = syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards);
-
-    if (!stock) {
-      if (typeof body.title !== 'string' || !body.title.trim()) {
-        throw new HttpError(400, 'title is required when stock is omitted');
-      }
-
-      const initialUnits =
-        body.initialUnits === undefined
-          ? 1
-          : normalizeCount(body.initialUnits, 'initialUnits');
-      const prize: Prize = {
-        given: 0,
-        id: createPrizeId(snapshot.prizes),
-        initialUnits,
-        kind: 'normal',
-        title: body.title.trim(),
-      };
-
-      snapshot.prizes.push(prize);
-      return snapshotPrizeResponse(snapshot, prize);
+  if (!stock) {
+    if (typeof body.title !== 'string' || !body.title.trim()) {
+      throw new HttpError(400, 'title is required when stock is omitted');
     }
 
-    const prize = syncedPrizes.find((entry) => entry.id === stock);
+    const initialUnits =
+      body.initialUnits === undefined
+        ? 1
+        : normalizeCount(body.initialUnits, 'initialUnits');
 
-    if (!prize) {
+    return jsonResponse(
+      request,
+      200,
+      await savePrize({
+        initialUnits,
+        title: body.title.trim(),
+        type: 'create',
+      }),
+    );
+  }
+
+  const snapshot = await readSnapshot();
+  const prize = syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards).find(
+    (entry) => entry.id === stock,
+  );
+
+  if (!prize) {
+    throw new HttpError(404, `Unknown prize: ${stock}`);
+  }
+
+  const title = body.title === undefined ? prize.title : String(body.title).trim();
+
+  if (!title) {
+    throw new HttpError(400, 'title cannot be empty');
+  }
+
+  try {
+    const response = await savePrize({
+      initialUnits:
+        body.initialUnits === undefined
+          ? undefined
+          : normalizeCount(body.initialUnits, 'initialUnits'),
+      prizeId: stock,
+      prizeKind: normalizePrizeKind(body.kind) ?? prize.kind,
+      title,
+      type: 'update',
+    });
+
+    return jsonResponse(request, 200, response);
+  } catch (error) {
+    if (error instanceof UnknownPrizeError) {
       throw new HttpError(404, `Unknown prize: ${stock}`);
     }
 
-    const title = body.title === undefined ? prize.title : String(body.title).trim();
-
-    if (!title) {
-      throw new HttpError(400, 'title cannot be empty');
-    }
-
-    const kind = normalizePrizeKind(body.kind) ?? prize.kind;
-    const initialUnits =
-      body.initialUnits === undefined
-        ? prize.initialUnits
-        : Math.max(
-            normalizeCount(body.initialUnits, 'initialUnits'),
-            getPrizeGiven(snapshot.prizeAwards, prize.id),
-          );
-
-    snapshot.prizes = snapshot.prizes.map((entry) =>
-      entry.id === prize.id
-        ? {
-            ...entry,
-            given: getPrizeGiven(snapshot.prizeAwards, prize.id),
-            initialUnits,
-            kind,
-            title,
-          }
-        : entry,
-    );
-
-    return snapshotPrizeResponse(
-      snapshot,
-      snapshot.prizes.find((entry) => entry.id === prize.id),
-    );
-  }, ['prizes']);
-
-  return jsonResponse(request, 200, response);
+    throw error;
+  }
 }
-
 function normalizeAwardSource(value: unknown) {
   if (value === undefined || value === null || value === '') {
     return undefined;
@@ -924,43 +805,29 @@ async function handlePrizesKid(
 
   const snapshot = await readSnapshot();
   const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
-  const response = await updatePrizeAwardsForKid(kidId, (snapshot) => {
-    const source = normalizeAwardSource(body.source);
-    const syncedPrizes = syncPrizeGivenCache(snapshot.prizes, snapshot.prizeAwards);
-    const prize = syncedPrizes.find((entry) => entry.id === stock);
+  const source = normalizeAwardSource(body.source);
 
-    if (!prize) {
+  try {
+    const response = await awardPrize({
+      awardId: `${kidId}-${source === 'passportCompletion' ? 'passport-complete' : 'wheel'}-${randomUUID()}`,
+      awardedAt: new Date().toISOString(),
+      kidId,
+      prizeId: stock,
+      ...(source ? { source } : {}),
+    });
+
+    return jsonResponse(request, 200, response);
+  } catch (error) {
+    if (error instanceof UnknownPrizeError) {
       throw new HttpError(404, `Unknown prize: ${stock}`);
     }
 
-    if (source === 'passportCompletion') {
-      const existingAward = snapshot.prizeAwards.find(
-        (award) => award.kidId === kidId && award.source === 'passportCompletion',
-      );
-
-      if (existingAward) {
-        return snapshot.prizeAwards.filter((award) => award.kidId === kidId);
-      }
-    }
-
-    if (getPrizeRemaining(prize) <= 0) {
+    if (error instanceof PrizeOutOfStockError) {
       throw new HttpError(409, `Prize is out of stock: ${stock}`);
     }
 
-    const award: PrizeAward = {
-      awardedAt: new Date().toISOString(),
-      id: `${kidId}-${source === 'passportCompletion' ? 'passport-complete' : 'wheel'}-${randomUUID()}`,
-      kidId,
-      prizeId: prize.id,
-      ...(source ? { source } : {}),
-    };
-
-    snapshot.prizeAwards.push(award);
-
-    return snapshot.prizeAwards.filter((award) => award.kidId === kidId);
-  });
-
-  return jsonResponse(request, 200, response);
+    throw error;
+  }
 }
 
 export async function handleApiRequest(request: ApiRequest): Promise<ApiResponse> {

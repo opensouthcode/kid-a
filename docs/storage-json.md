@@ -11,6 +11,11 @@ Netlify Blobs are optimized for reads and infrequent writes. Avoid
 read-modify-write on shared JSON blobs for high-frequency event data because
 same-key writes are last-write-wins and reads may be stale.
 
+Server code should write through the command-oriented store methods in
+`server/store.ts` instead of calling generic snapshot mutators from API
+handlers. This keeps IDs and timestamps explicit where needed and prepares the
+app for DB and dual-write backends.
+
 ## Current documents
 
 | Data | Local Node JSON | Netlify Blob key | Pattern | Notes |
@@ -36,9 +41,7 @@ same-key writes are last-write-wins and reads may be stale.
 
 ## Follow-up migration targets
 
-1. Move kids from `kids.json` to `kids/{kidId}.json` with `onlyIfNew` ID claims.
-2. Consider per-prize blobs for `wheel-prizes.json` if concurrent catalog editing
-   becomes common.
-3. Consider one blob per passport activity completion if concurrent same-kid
-   activity updates become common.
-4. Consider one blob per magic token if concurrent admin link generation matters.
+1. Move writable event state to Netlify DB/Postgres behind the store interface.
+2. Add migration and verification tooling from file/blob JSON to DB rows.
+3. Enable config-driven dual writes before switching reads to DB.
+4. Keep blobs as a rollback target until DB reads are verified.
