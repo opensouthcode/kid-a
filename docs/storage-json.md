@@ -7,8 +7,11 @@ This app has two writable storage backends:
 - Netlify deployments use Netlify Blobs in the `kid-a-data` store by default,
   seeded from committed JSON files in `server/data` or `src/data`.
 - Netlify deployments can use Netlify DB/Postgres by setting
-  `KID_A_STORE_BACKEND=db`. Magic-link tokens follow the same backend unless
-  `KID_A_TOKEN_BACKEND` is set explicitly.
+  `KID_A_STORE_BACKEND=db`.
+- Netlify deployments can read from one backend and dual-write to Blobs and DB
+  by setting `KID_A_STORE_BACKEND=dual`. `KID_A_STORE_READ=blob` keeps Blob
+  reads while shadow-writing DB; `KID_A_STORE_READ=db` reads from DB instead.
+  Magic-link tokens always follow the same backend mode as app data.
 
 Netlify Blobs are optimized for reads and infrequent writes. Avoid
 read-modify-write on shared JSON blobs for high-frequency event data because
@@ -44,9 +47,9 @@ app for DB and dual-write backends.
 
 ## Follow-up migration targets
 
-1. Move writable event state to Netlify DB/Postgres behind the store interface.
-2. Add migration and verification tooling from file/blob JSON to DB rows.
-3. Enable config-driven dual writes before switching reads to DB.
+1. Reset Blob and DB writable state from committed seed JSON.
+2. Enable config-driven dual writes with Blob reads.
+3. Switch reads to DB after live verification.
 4. Keep blobs as a rollback target until DB reads are verified.
 
 ## Netlify DB schema
@@ -56,3 +59,19 @@ app-owned IDs for kids, prizes, prize awards, and magic-link token hashes; the
 database does not auto-generate user-facing IDs or maintain a separate kid ID
 counter table. The DB adapter derives prize `given` counts from `prize_awards`
 and builds passport responses from `passport_activities` rows.
+
+The app is not in production yet, so existing Blob and DB testing data can be
+discarded. To apply the DB schema, reset both stores from committed seed JSON,
+and clear magic-link tokens in both places, run:
+
+```sh
+NETLIFY_DATABASE_URL=... npm run data:reset-stores
+```
+
+After reset, start the rollout with Blob reads and dual writes:
+
+```sh
+KID_A_STORE_BACKEND=dual
+KID_A_STORE_READ=blob
+KID_A_DUAL_WRITE_STRICT=true
+```

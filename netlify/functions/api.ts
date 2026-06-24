@@ -3,6 +3,7 @@ import { createBlobMagicTokenStore, setMagicTokenStore } from '../../server/acce
 import { handleApiRequest } from '../../server/api.js';
 import { createBlobStore } from '../../server/blob-store.js';
 import { createDbMagicTokenStore, createDbStore } from '../../server/db-store.js';
+import { createDualMagicTokenStore, createDualStore } from '../../server/dual-store.js';
 import { setStoreAdapter } from '../../server/store.js';
 
 type NetlifyEvent = {
@@ -24,19 +25,43 @@ function definedHeaders(headers: NetlifyEvent['headers']) {
 
 function configureStores() {
   const storeBackend = process.env.KID_A_STORE_BACKEND ?? 'blob';
-  const tokenBackend = process.env.KID_A_TOKEN_BACKEND ?? storeBackend;
+  const storeRead = process.env.KID_A_STORE_READ ?? 'blob';
+  const strictDualWrites = process.env.KID_A_DUAL_WRITE_STRICT !== 'false';
 
-  if (storeBackend !== 'blob' && storeBackend !== 'db') {
-    throw new Error('KID_A_STORE_BACKEND must be blob or db');
+  if (storeBackend !== 'blob' && storeBackend !== 'db' && storeBackend !== 'dual') {
+    throw new Error('KID_A_STORE_BACKEND must be blob, db, or dual');
   }
 
-  if (tokenBackend !== 'blob' && tokenBackend !== 'db') {
-    throw new Error('KID_A_TOKEN_BACKEND must be blob or db');
+  if (storeRead !== 'blob' && storeRead !== 'db') {
+    throw new Error('KID_A_STORE_READ must be blob or db');
+  }
+
+  if (storeBackend === 'dual') {
+    const blobStore = createBlobStore();
+    const dbStore = createDbStore();
+    const blobTokenStore = createBlobMagicTokenStore();
+    const dbTokenStore = createDbMagicTokenStore();
+    const primary = storeRead === 'db' ? dbStore : blobStore;
+    const secondary = storeRead === 'db' ? blobStore : dbStore;
+    const primaryTokenStore = storeRead === 'db' ? dbTokenStore : blobTokenStore;
+    const secondaryTokenStore = storeRead === 'db' ? blobTokenStore : dbTokenStore;
+
+    setStoreAdapter(
+      createDualStore({ primary, secondary, strict: strictDualWrites }),
+    );
+    setMagicTokenStore(
+      createDualMagicTokenStore({
+        primary: primaryTokenStore,
+        secondary: secondaryTokenStore,
+        strict: strictDualWrites,
+      }),
+    );
+    return;
   }
 
   setStoreAdapter(storeBackend === 'db' ? createDbStore() : createBlobStore());
   setMagicTokenStore(
-    tokenBackend === 'db' ? createDbMagicTokenStore() : createBlobMagicTokenStore(),
+    storeBackend === 'db' ? createDbMagicTokenStore() : createBlobMagicTokenStore(),
   );
 }
 
