@@ -1,14 +1,8 @@
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { neon } from '@netlify/neon';
-import { createBlobMagicTokenStore } from './access-tokens.js';
-import { createBlobStore } from './blob-store.js';
 import { createDbMagicTokenStore, createDbStore } from './db-store.js';
-import {
-  getStoreFileName,
-  syncPrizeGivenCache,
-  type StoreAdapter,
-} from './store.js';
+import { getStoreFileName, syncPrizeGivenCache } from './store.js';
 import type {
   ConferenceData,
   Kid,
@@ -69,34 +63,15 @@ async function applySchema(sql: SqlClient) {
   }
 }
 
-async function resetStore(name: string, store: StoreAdapter) {
-  const seedSnapshot = await readSeedSnapshot();
-
-  await store.updateSnapshot(
-    (snapshot) => {
-      snapshot.conference = seedSnapshot.conference;
-      snapshot.kids = seedSnapshot.kids;
-      snapshot.passportActivitiesByKid = seedSnapshot.passportActivitiesByKid;
-      snapshot.prizeAwards = seedSnapshot.prizeAwards;
-      snapshot.prizes = seedSnapshot.prizes;
-    },
-    ['conference', 'kids', 'passportActivitiesByKid', 'prizeAwards', 'prizes'],
-  );
-
-  console.log(`Reset ${name} store from ${seedDataDir}`);
-}
-
 async function main() {
   const sql = neon();
+  const seedSnapshot = await readSeedSnapshot();
 
   await applySchema(sql);
-  await resetStore('blob', createBlobStore());
-  await resetStore('db', createDbStore(sql));
-  await Promise.all([
-    createBlobMagicTokenStore().writeTokens([]),
-    createDbMagicTokenStore(sql).writeTokens([]),
-  ]);
-  console.log('Cleared blob and DB magic-link tokens');
+  await createDbStore(sql).resetData(seedSnapshot);
+  await createDbMagicTokenStore(sql).writeTokens([]);
+  console.log(`Reset DB store from ${seedDataDir}`);
+  console.log('Cleared DB magic-link tokens');
 }
 
 main().catch((error: unknown) => {

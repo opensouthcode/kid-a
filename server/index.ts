@@ -2,12 +2,18 @@ import { createServer, type IncomingMessage } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { setMagicTokenStore } from './access-tokens.js';
 import { handleApiRequest, isApiPath } from './api.js';
+import { createDbMagicTokenStore, createDbStore } from './db-store.js';
+import { setStoreAdapter } from './store.js';
 
 const port = Number(process.env.PORT ?? 3000);
 const distDir = path.resolve(process.env.KID_A_DIST_DIR ?? 'dist');
 const currentFilePath = fileURLToPath(import.meta.url);
 const serverRoot = path.dirname(currentFilePath);
+
+setStoreAdapter(createDbStore());
+setMagicTokenStore(createDbMagicTokenStore());
 
 const mimeTypes: Record<string, string> = {
   '.css': 'text/css; charset=utf-8',

@@ -1,7 +1,4 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { getStore, type Store as NetlifyBlobStore } from '@netlify/blobs';
 import type { UserRole } from './types.js';
 
 export type MagicLinkTokenRecord = {
@@ -24,20 +21,10 @@ export type MagicLinkScope = {
 };
 
 export type MagicLinkTokenStore = {
+  appendToken(token: MagicLinkTokenRecord): Promise<void>;
   readTokens(): Promise<MagicLinkTokenRecord[]>;
   writeTokens(tokens: MagicLinkTokenRecord[]): Promise<void>;
 };
-
-const defaultBlobStoreName = 'kid-a-data';
-const magicTokensBlobKey = 'admin/magic-tokens.json';
-const defaultMagicTokensFile = path.resolve(
-  process.env.KID_A_MAGIC_TOKENS_FILE ??
-    path.join(process.env.KID_A_DATA_DIR ?? 'server/data', 'magicTokens.json'),
-);
-
-function isMissingFileError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && 'code' in error && error.code === 'ENOENT';
-}
 
 function hashToken(token: string) {
   return createHash('sha256').update(token).digest('hex');
@@ -66,83 +53,18 @@ function toSession(token: MagicLinkTokenRecord): MagicLinkSession {
   };
 }
 
-function createFileMagicTokenStore(filePath = defaultMagicTokensFile) {
-  return {
-    async readTokens() {
-      try {
-        return JSON.parse(await readFile(filePath, 'utf8')) as MagicLinkTokenRecord[];
-      } catch (error) {
-        if (isMissingFileError(error)) {
-          return [];
-        }
-
-        throw error;
-      }
-    },
-    async writeTokens(tokens: MagicLinkTokenRecord[]) {
-      await mkdir(path.dirname(filePath), { recursive: true });
-
-      const tempPath = `${filePath}.${process.pid}.${Date.now()}.tmp`;
-      await writeFile(tempPath, `${JSON.stringify(tokens, null, 2)}\n`);
-      await rename(tempPath, filePath);
-    },
-  } satisfies MagicLinkTokenStore;
-}
-
-export function createBlobMagicTokenStore(
-  store: NetlifyBlobStore = getStore(
-    process.env.KID_A_BLOBS_STORE ?? defaultBlobStoreName,
-  ),
-) {
-  return {
-    async readTokens() {
-      const tokens = (await store.get(magicTokensBlobKey, {
-        type: 'json',
-      })) as MagicLinkTokenRecord[] | null;
-
-      if (tokens) {
-        return tokens;
-      }
-
-      await store.setJSON(magicTokensBlobKey, [], { onlyIfNew: true });
-      return [];
-    },
-    async writeTokens(tokens: MagicLinkTokenRecord[]) {
-      await store.setJSON(magicTokensBlobKey, tokens);
-    },
-  } satisfies MagicLinkTokenStore;
-}
-
-let activeMagicTokenStore: MagicLinkTokenStore = createFileMagicTokenStore();
-let writeQueue: Promise<void> = Promise.resolve();
+let activeMagicTokenStore: MagicLinkTokenStore | undefined;
 
 export function setMagicTokenStore(store: MagicLinkTokenStore) {
   activeMagicTokenStore = store;
-  writeQueue = Promise.resolve();
 }
 
-async function updateMagicTokens<T>(
-  mutator: (tokens: MagicLinkTokenRecord[]) => T | Promise<T>,
-) {
-  const nextWrite = writeQueue
-    .catch(() => undefined)
-    .then(async () => {
-      const activeTokens = (await activeMagicTokenStore.readTokens()).filter(
-        isActiveToken,
-      );
-      const result = await mutator(activeTokens);
+function requireMagicTokenStore() {
+  if (!activeMagicTokenStore) {
+    throw new Error('Magic token store has not been configured');
+  }
 
-      await activeMagicTokenStore.writeTokens(activeTokens);
-
-      return result;
-    });
-
-  writeQueue = nextWrite.then(
-    () => undefined,
-    () => undefined,
-  );
-
-  return nextWrite;
+  return activeMagicTokenStore;
 }
 
 export async function createMagicLinkToken(
@@ -160,9 +82,7 @@ export async function createMagicLinkToken(
     tokenHash: hashToken(token),
   };
 
-  await updateMagicTokens((tokens) => {
-    tokens.push(record);
-  });
+  await requireMagicTokenStore().appendToken(record);
 
   return {
     ...toSession(record),
@@ -180,7 +100,7 @@ export async function validateMagicLinkToken(
   }
 
   const tokenHash = hashToken(token);
-  const records = await activeMagicTokenStore.readTokens();
+  const records = await requireMagicTokenStore().readTokens();
   const record = records.find(
     (entry) => isActiveToken(entry) && constantTimeEquals(entry.tokenHash, tokenHash),
   );

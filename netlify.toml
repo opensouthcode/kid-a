@@ -4,7 +4,6 @@
 
 [functions]
   directory = "netlify/functions"
-  included_files = ["server/data/*.json", "src/data/*.json"]
 
 [[redirects]]
   from = "/api/passport"

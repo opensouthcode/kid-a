@@ -1,7 +1,6 @@
 import { neon } from '@netlify/neon';
 import type {
   NeonQueryFunctionInTransaction,
-  NeonQueryInTransaction,
 } from '@neondatabase/serverless';
 import type {
   MagicLinkTokenRecord,
@@ -17,7 +16,6 @@ import {
   type RegisterKidCommand,
   type SavePrizeCommand,
   type StoreAdapter,
-  type StoreFile,
   type WritableStoreData,
 } from './store.js';
 import type {
@@ -233,108 +231,6 @@ function prizeQueries(tx: TransactionSql, prizes: Prize[]) {
       `,
     ),
   ];
-}
-
-async function writeStoreFiles(
-  sql: SqlClient,
-  snapshot: StoreData,
-  changedFiles: readonly StoreFile[],
-) {
-  await sql.transaction((tx) => {
-    const queries: NeonQueryInTransaction[] = [];
-
-    if (changedFiles.includes('conference')) {
-      queries.push(tx`
-        INSERT INTO conference_settings (id, kid_id_prefix, short_name, title)
-        VALUES (
-          'default',
-          ${snapshot.conference.kidIdPrefix},
-          ${snapshot.conference.shortName},
-          ${snapshot.conference.title}
-        )
-        ON CONFLICT (id) DO UPDATE
-        SET kid_id_prefix = EXCLUDED.kid_id_prefix,
-            short_name = EXCLUDED.short_name,
-            title = EXCLUDED.title
-      `);
-    }
-
-    if (changedFiles.includes('kids')) {
-      queries.push(tx`DELETE FROM kids`);
-      queries.push(
-        ...snapshot.kids.map(
-          (kid) => tx`
-            INSERT INTO kids (id, name, age, gender, language)
-            VALUES (${kid.id}, ${kid.name}, ${kid.age}, ${kid.gender}, ${kid.language})
-            ON CONFLICT (id) DO UPDATE
-            SET name = EXCLUDED.name,
-                age = EXCLUDED.age,
-                gender = EXCLUDED.gender,
-                language = EXCLUDED.language
-          `,
-        ),
-      );
-    }
-
-    if (changedFiles.includes('prizeAwards')) {
-      queries.push(...prizeAwardQueries(tx, snapshot.prizeAwards));
-    }
-
-    if (changedFiles.includes('prizes')) {
-      queries.push(...prizeQueries(tx, snapshot.prizes));
-    }
-
-    if (changedFiles.includes('passportActivitiesByKid')) {
-      queries.push(tx`DELETE FROM passport_activities`);
-      for (const [kidId, passport] of Object.entries(snapshot.passportActivitiesByKid)) {
-        queries.push(
-          ...passport.map(
-            (activity) => tx`
-              INSERT INTO passport_activities (kid_id, activity_id, completed_at)
-              VALUES (
-                ${kidId},
-                ${activity.id},
-                ${activity.completedAt ?? null}::timestamptz
-              )
-            `,
-          ),
-        );
-      }
-    }
-
-    return queries;
-  });
-}
-
-async function replacePassport(
-  sql: SqlClient,
-  kidId: string,
-  passport: PassportActivity[],
-) {
-  await sql.transaction((tx) => passportQueries(tx, kidId, passport));
-}
-
-async function replacePrizeAwardsForKid(
-  sql: SqlClient,
-  kidId: string,
-  prizeAwards: PrizeAward[],
-) {
-  await sql.transaction((tx) => [
-    tx`DELETE FROM prize_awards WHERE kid_id = ${kidId}`,
-    ...prizeAwards.map(
-      (award) => tx`
-        INSERT INTO prize_awards (id, kid_id, prize_id, source, awarded_at)
-        VALUES (
-          ${award.id},
-          ${award.kidId},
-          ${award.prizeId},
-          ${award.source ?? null},
-          ${award.awardedAt}::timestamptz
-        )
-        ON CONFLICT DO NOTHING
-      `,
-    ),
-  ]);
 }
 
 export function createDbStore(sql: SqlClient = neon()): StoreAdapter {
@@ -613,52 +509,44 @@ export function createDbStore(sql: SqlClient = neon()): StoreAdapter {
 
   async function restoreWritableData(data: WritableStoreData) {
     const snapshot = await readSnapshot();
-    await writeStoreFiles(
-      sql,
-      {
-        ...snapshot,
-        passportActivitiesByKid: data.passportActivitiesByKid,
-        prizeAwards: data.prizeAwards,
-        prizes: syncPrizeGivenCache(data.prizes, data.prizeAwards),
-      },
-      ['passportActivitiesByKid', 'prizeAwards', 'prizes'],
-    );
+    return resetData({
+      ...snapshot,
+      passportActivitiesByKid: data.passportActivitiesByKid,
+      prizeAwards: data.prizeAwards,
+      prizes: syncPrizeGivenCache(data.prizes, data.prizeAwards),
+    });
+  }
+
+  async function resetData(data: StoreData) {
+    await sql.transaction((tx) => [
+      tx`DELETE FROM prize_awards`,
+      tx`DELETE FROM passport_activities`,
+      tx`DELETE FROM prizes`,
+      tx`DELETE FROM kids`,
+      tx`DELETE FROM conference_settings`,
+      tx`
+        INSERT INTO conference_settings (id, kid_id_prefix, short_name, title)
+        VALUES (
+          'default',
+          ${data.conference.kidIdPrefix},
+          ${data.conference.shortName},
+          ${data.conference.title}
+        )
+      `,
+      ...data.kids.map(
+        (kid) => tx`
+          INSERT INTO kids (id, name, age, gender, language)
+          VALUES (${kid.id}, ${kid.name}, ${kid.age}, ${kid.gender}, ${kid.language})
+        `,
+      ),
+      ...Object.entries(data.passportActivitiesByKid).flatMap(([kidId, passport]) =>
+        passportQueries(tx, kidId, passport),
+      ),
+      ...prizeQueries(tx, syncPrizeGivenCache(data.prizes, data.prizeAwards)).slice(1),
+      ...prizeAwardQueries(tx, data.prizeAwards).slice(1),
+    ]);
 
     return readSnapshot();
-  }
-
-  async function updatePassportForKid<T>(
-    kidId: string,
-    mutator: (snapshot: StoreData) => T | Promise<T>,
-  ) {
-    const snapshot = await readSnapshot();
-    const result = await mutator(snapshot);
-    await replacePassport(sql, kidId, snapshot.passportActivitiesByKid[kidId] ?? []);
-    return result;
-  }
-
-  async function updatePrizeAwardsForKid<T>(
-    kidId: string,
-    mutator: (snapshot: StoreData) => T | Promise<T>,
-  ) {
-    const snapshot = await readSnapshot();
-    const result = await mutator(snapshot);
-    await replacePrizeAwardsForKid(
-      sql,
-      kidId,
-      snapshot.prizeAwards.filter((award) => award.kidId === kidId),
-    );
-    return result;
-  }
-
-  async function updateSnapshot<T>(
-    mutator: (snapshot: StoreData) => T | Promise<T>,
-    changedFiles: readonly StoreFile[],
-  ) {
-    const snapshot = await readSnapshot();
-    const result = await mutator(snapshot);
-    await writeStoreFiles(sql, snapshot, changedFiles);
-    return result;
   }
 
   return {
@@ -666,16 +554,33 @@ export function createDbStore(sql: SqlClient = neon()): StoreAdapter {
     completePassportActivity,
     readSnapshot,
     registerKid,
+    resetData,
     restoreWritableData,
     savePrize,
-    updatePassportForKid,
-    updatePrizeAwardsForKid,
-    updateSnapshot,
   };
 }
 
 export function createDbMagicTokenStore(sql: SqlClient = neon()) {
   return {
+    async appendToken(token: MagicLinkTokenRecord) {
+      await sql`
+        INSERT INTO magic_link_tokens (
+          token_hash,
+          role,
+          activity_id,
+          created_at,
+          expires_at
+        )
+        VALUES (
+          ${token.tokenHash},
+          ${token.role},
+          ${token.activityId ?? null},
+          ${token.createdAt}::timestamptz,
+          ${token.expiresAt}::timestamptz
+        )
+        ON CONFLICT DO NOTHING
+      `;
+    },
     async readTokens() {
       const rows = (await sql`
         SELECT
