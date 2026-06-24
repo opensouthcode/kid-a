@@ -7,8 +7,7 @@ This app has two writable storage backends:
 - Netlify deployments use Netlify Blobs in the `kid-a-data` store by default,
   seeded from committed JSON files in `server/data` or `src/data`.
 - Netlify deployments can use Netlify DB/Postgres by setting
-  `KID_A_STORE_BACKEND=db`. Magic-link tokens follow the same backend unless
-  `KID_A_TOKEN_BACKEND` is set explicitly.
+  `KID_A_STORE_BACKEND=db`. Magic-link tokens always follow the same backend.
 
 Netlify Blobs are optimized for reads and infrequent writes. Avoid
 read-modify-write on shared JSON blobs for high-frequency event data because
@@ -56,3 +55,17 @@ app-owned IDs for kids, prizes, prize awards, and magic-link token hashes; the
 database does not auto-generate user-facing IDs or maintain a separate kid ID
 counter table. The DB adapter derives prize `given` counts from `prize_awards`
 and builds passport responses from `passport_activities` rows.
+
+Apply the schema and populate Netlify DB from the current source with:
+
+```sh
+NETLIFY_DATABASE_URL=... KID_A_MIGRATION_SOURCE=file npm run db:migrate
+```
+
+Set `KID_A_MIGRATION_SOURCE=blob` to migrate from Netlify Blobs instead of local
+JSON files. The same command verifies DB parity after writing. To verify later
+without writing, run:
+
+```sh
+NETLIFY_DATABASE_URL=... KID_A_MIGRATION_SOURCE=file npm run db:verify
+```

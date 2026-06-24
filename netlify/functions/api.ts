@@ -24,19 +24,14 @@ function definedHeaders(headers: NetlifyEvent['headers']) {
 
 function configureStores() {
   const storeBackend = process.env.KID_A_STORE_BACKEND ?? 'blob';
-  const tokenBackend = process.env.KID_A_TOKEN_BACKEND ?? storeBackend;
 
   if (storeBackend !== 'blob' && storeBackend !== 'db') {
     throw new Error('KID_A_STORE_BACKEND must be blob or db');
   }
 
-  if (tokenBackend !== 'blob' && tokenBackend !== 'db') {
-    throw new Error('KID_A_TOKEN_BACKEND must be blob or db');
-  }
-
   setStoreAdapter(storeBackend === 'db' ? createDbStore() : createBlobStore());
   setMagicTokenStore(
-    tokenBackend === 'db' ? createDbMagicTokenStore() : createBlobMagicTokenStore(),
+    storeBackend === 'db' ? createDbMagicTokenStore() : createBlobMagicTokenStore(),
   );
 }
 

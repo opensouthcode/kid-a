@@ -66,7 +66,7 @@ function toSession(token: MagicLinkTokenRecord): MagicLinkSession {
   };
 }
 
-function createFileMagicTokenStore(filePath = defaultMagicTokensFile) {
+export function createFileMagicTokenStore(filePath = defaultMagicTokensFile) {
   return {
     async readTokens() {
       try {
