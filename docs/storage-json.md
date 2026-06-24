@@ -26,7 +26,7 @@ NETLIFY_DB_URL=... npm run data:reset-db
 
 ## Schema
 
-The DB schema lives in `db/migrations/0001_netlify_db.sql`. It keeps app-owned
-IDs for kids, prizes, prize awards, and magic-link token hashes. The database
-does not auto-generate user-facing IDs or maintain a separate kid ID counter
-table.
+The DB schema lives in `netlify/database/migrations/0001_netlify_db.sql` so
+Netlify Database can detect and apply it during deploys. It keeps app-owned IDs
+for kids, prizes, prize awards, and magic-link token hashes. The database does
+not auto-generate user-facing IDs or maintain a separate kid ID counter table.

@@ -51,9 +51,9 @@ function endpoints instead of bundled mutable sample data.
 
 `netlify.toml` also routes those endpoints to `netlify/functions/api.ts`.
 Netlify Functions use Netlify DB/Postgres for writable state and staff
-magic-link token hashes. On startup, the function applies DB migrations and
-seeds an empty DB from committed JSON in `src/data`. To force a non-production
-reset later, run:
+magic-link token hashes. Netlify applies migrations from
+`netlify/database/migrations`, and the function seeds an empty DB from committed
+JSON in `src/data`. To force a non-production reset later, run:
 
 ```bash
 NETLIFY_DB_URL=... npm run data:reset-db

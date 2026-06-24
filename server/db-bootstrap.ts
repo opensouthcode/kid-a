@@ -16,7 +16,7 @@ import type {
   StoreData,
 } from './types.js';
 
-const migrationsDir = path.resolve('db/migrations');
+const migrationsDir = path.resolve('netlify/database/migrations');
 const seedDataDir = path.resolve(process.env.KID_A_SEED_DATA_DIR ?? 'src/data');
 let initializationPromise: Promise<void> | undefined;
 
