@@ -1,7 +1,16 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { getStore, type Store as NetlifyBlobStore } from '@netlify/blobs';
-import { getStoreFileName, type StoreAdapter, type StoreFile } from './store.js';
+import {
+  getStoreFileName,
+  runAwardPrizeCommand,
+  runCompletePassportActivityCommand,
+  runRegisterKidCommand,
+  runRestoreWritableDataCommand,
+  runSavePrizeCommand,
+  type StoreAdapter,
+  type StoreFile,
+} from './store.js';
 import type {
   ConferenceData,
   Kid,
@@ -378,7 +387,13 @@ export function createBlobStore(
   }
 
   return {
+    awardPrize: (command) => runAwardPrizeCommand(command, updatePrizeAwardsForKid),
+    completePassportActivity: (command) =>
+      runCompletePassportActivityCommand(command, updatePassportForKid),
     readSnapshot,
+    registerKid: (command) => runRegisterKidCommand(command, updateSnapshot),
+    restoreWritableData: (data) => runRestoreWritableDataCommand(data, updateSnapshot),
+    savePrize: (command) => runSavePrizeCommand(command, updateSnapshot),
     updatePassportForKid,
     updatePrizeAwardsForKid,
     updateSnapshot,
