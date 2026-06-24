@@ -4,32 +4,29 @@ import { ensureDbInitialized } from '../../server/db-bootstrap.js';
 import { createDbMagicTokenStore, createDbStore } from '../../server/db-store.js';
 import { setStoreAdapter } from '../../server/store.js';
 
-type NetlifyEvent = {
-  body?: string | null;
-  headers?: Record<string, string | undefined>;
-  httpMethod: string;
-  rawUrl?: string;
-  path: string;
-};
-
 function configureStores() {
   setStoreAdapter(createDbStore());
   setMagicTokenStore(createDbMagicTokenStore());
 }
 
-export async function handler(event: NetlifyEvent) {
+export default async function handler(request: Request) {
   await ensureDbInitialized();
   configureStores();
   const response = await handleApiRequest({
-    body: event.body,
-    headers: event.headers,
-    method: event.httpMethod,
-    url: event.rawUrl ?? event.path,
+    body: request.method === 'GET' || request.method === 'HEAD'
+      ? undefined
+      : await request.text(),
+    headers: Object.fromEntries(request.headers),
+    method: request.method,
+    url: request.url,
   });
 
-  return {
-    body: response.body,
+  return new Response(response.body, {
     headers: response.headers,
-    statusCode: response.status,
-  };
+    status: response.status,
+  });
 }
+
+export const config = {
+  path: '/api/*',
+};
