@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:remote": "VITE_DATA_LAYER=remote VITE_BASE_PATH=/ VITE_API_BASE_URL=http://localhost:8888/api vite",
     "dev:netlify": "netlify dev",
     "build": "tsc -b && vite build && node -e \"require('node:fs').copyFileSync('dist/index.html', 'dist/404.html')\"",
     "build:gh-pages": "npm run build",

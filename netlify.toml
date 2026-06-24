@@ -6,6 +6,11 @@
   directory = "netlify/functions"
   included_files = ["db/migrations/*.sql", "src/data/*.json"]
 
+[dev]
+  command = "npm run dev:remote"
+  targetPort = 5173
+  port = 8888
+
 [[redirects]]
   from = "/api/passport"
   to = "/.netlify/functions/api/passport"
