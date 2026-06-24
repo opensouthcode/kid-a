@@ -48,13 +48,26 @@ export function getStoredMagicLinkToken() {
   return window.sessionStorage.getItem(magicLinkTokenStorageKey) ?? undefined;
 }
 
+function getUrlMagicLinkToken() {
+  if (typeof window === 'undefined') {
+    return undefined;
+  }
+
+  const url = new URL(window.location.href);
+  return url.searchParams.get('token')?.trim() || undefined;
+}
+
+export function getActiveMagicLinkToken() {
+  return getUrlMagicLinkToken() ?? getStoredMagicLinkToken();
+}
+
 export function clearMagicLinkSession() {
   window.sessionStorage.removeItem(magicLinkTokenStorageKey);
 }
 
 export function initializeMagicLinkSession() {
   const url = new URL(window.location.href);
-  const token = url.searchParams.get('token')?.trim();
+  const token = getUrlMagicLinkToken();
 
   if (!token) {
     return;
@@ -85,7 +98,7 @@ export function resolveBuiltInMagicLink(token: string | undefined) {
 }
 
 export function magicLinkRequestHeaders(): Record<string, string> {
-  const token = getStoredMagicLinkToken();
+  const token = getActiveMagicLinkToken();
 
   return token ? { 'X-Access-Token': token } : {};
 }
