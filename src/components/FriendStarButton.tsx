@@ -1,8 +1,5 @@
 import { StarFillIcon, StarIcon } from '@primer/octicons-react';
-import {
-  useCurrentUser,
-  type Kid,
-} from '../contexts/DataLayerContext';
+import type { Kid } from '../contexts/DataLayerContext';
 import { useIsFriend, useToggleFriend } from '../contexts/LocalDataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 
@@ -11,21 +8,13 @@ type FriendStarButtonProps = {
 };
 
 export function FriendStarButton({ kid }: FriendStarButtonProps) {
-  const currentUser = useCurrentUser();
   const isFriend = useIsFriend();
   const toggleFriend = useToggleFriend();
   const { t } = useI18n();
-  const canToggleFriend =
-    currentUser.role === 'guest' ||
-    (currentUser.role === 'kid' && currentUser.id !== kid.id);
   const friendSelected = isFriend(kid.id);
   const label = friendSelected
     ? t('friends.star.remove').replace('{name}', kid.name)
     : t('friends.star.add').replace('{name}', kid.name);
-
-  if (!canToggleFriend) {
-    return null;
-  }
 
   return (
     <button
@@ -36,7 +25,7 @@ export function FriendStarButton({ kid }: FriendStarButtonProps) {
       title={label}
       onClick={(event) => {
         event.stopPropagation();
-        toggleFriend(kid.id);
+        toggleFriend(kid);
       }}
     >
       {friendSelected ? (

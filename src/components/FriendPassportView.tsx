@@ -6,6 +6,7 @@ import {
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { FriendStarButton } from './FriendStarButton';
+import { KidGenderIcon } from './KidGenderIcon';
 import { PassportActivityMosaic } from './PassportActivityMosaic';
 import { ProgressCounter } from './ProgressCounter';
 
@@ -30,10 +31,9 @@ export function FriendPassportView({ kid }: FriendPassportViewProps) {
     <section className="friend-passport-view" aria-labelledby="friend-passport-title">
       <div className="friend-passport-header">
         <div>
-          <span
-            className={`kid-gender-icon ${kid.gender}`}
-            aria-label={t(`registration.gender.${kid.gender}`)}
-            role="img"
+          <KidGenderIcon
+            gender={kid.gender}
+            label={t(`registration.gender.${kid.gender}`)}
           />
           <h3 id="friend-passport-title">{kid.name}</h3>
           <FriendStarButton kid={kid} />

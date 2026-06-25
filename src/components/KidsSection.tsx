@@ -1,14 +1,15 @@
+import { SyncIcon } from '@primer/octicons-react';
 import { useEffect, useState } from 'react';
 import {
   useGetPassportForKid,
-  useKidsData,
-  useReloadPassportActivities,
+  useReloadPassportActivitiesForKids,
   type Kid,
 } from '../contexts/DataLayerContext';
-import { useGetFriendIds } from '../contexts/LocalDataLayerContext';
+import { useGetFriendKids } from '../contexts/LocalDataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { FriendPassportView } from './FriendPassportView';
 import { KidFinder } from './KidFinder';
+import { KidGenderIcon } from './KidGenderIcon';
 import { ProgressCounter } from './ProgressCounter';
 
 type KidsSectionProps = {
@@ -20,25 +21,53 @@ export function KidsSection({
   blockedKidId = '',
   onKidSelected,
 }: KidsSectionProps) {
-  const getFriendIds = useGetFriendIds();
+  const getFriendKids = useGetFriendKids();
   const getPassportForKid = useGetPassportForKid();
-  const kids = useKidsData();
-  const reloadPassportActivities = useReloadPassportActivities();
+  const reloadPassportActivitiesForKids = useReloadPassportActivitiesForKids();
   const { t } = useI18n();
   const [isFriendPickerOpen, setIsFriendPickerOpen] = useState(false);
-  const friends = getFriendIds()
-    .map((friendId) => kids.find((kid) => kid.id === friendId))
-    .filter((kid): kid is Kid => kid !== undefined && kid.id !== blockedKidId);
+  const [isRefreshingFriends, setIsRefreshingFriends] = useState(false);
+  const friends = getFriendKids().filter((kid) => kid.id !== blockedKidId);
   const friendKidIds = friends.map((kid) => kid.id).join(',');
 
+  const refreshFriendPassports = async () => {
+    if (!friendKidIds) {
+      return;
+    }
+
+    setIsRefreshingFriends(true);
+
+    try {
+      await reloadPassportActivitiesForKids(friends.map((kid) => kid.id));
+    } catch (error) {
+      console.error('Unable to refresh friends passport progress.', error);
+    } finally {
+      setIsRefreshingFriends(false);
+    }
+  };
+
   useEffect(() => {
-    friends.forEach((kid) => reloadPassportActivities(kid.id));
+    void refreshFriendPassports();
   }, [friendKidIds]);
 
   return (
     <section className="welcome-friends-list" aria-label={t('friends.home.title')}>
       <div className="welcome-friends-header">
         <h2>{t('friends.home.title')}</h2>
+        {friends.length > 0 ? (
+          <button
+            className="welcome-friends-refresh-button"
+            type="button"
+            aria-label={t('friends.refresh')}
+            title={t('friends.refresh')}
+            disabled={isRefreshingFriends}
+            onClick={() => {
+              void refreshFriendPassports();
+            }}
+          >
+            <SyncIcon size={16} aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
       {friends.length > 0 ? (
         <ol>
@@ -55,10 +84,9 @@ export function KidsSection({
                   type="button"
                   onClick={() => onKidSelected(kid)}
                 >
-                  <span
-                    className={`kid-gender-icon ${kid.gender}`}
-                    aria-label={t(`registration.gender.${kid.gender}`)}
-                    role="img"
+                  <KidGenderIcon
+                    gender={kid.gender}
+                    label={t(`registration.gender.${kid.gender}`)}
                   />
                   <strong>{kid.name}</strong>
                   <ProgressCounter

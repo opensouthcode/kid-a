@@ -110,7 +110,32 @@ h2 {
 }
 
 .welcome-friends-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   margin-bottom: 10px;
+}
+
+.welcome-friends-refresh-button {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(90 66 40 / 10%);
+  color: #5a4228;
+  cursor: pointer;
+}
+
+.welcome-friends-refresh-button:hover,
+.welcome-friends-refresh-button:focus-visible {
+  background: rgb(90 66 40 / 18%);
+}
+
+.welcome-friends-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .welcome-activity-list h2 {
@@ -1498,67 +1523,32 @@ h2 {
 }
 
 .kid-gender-icon {
-  position: relative;
-  display: inline-block;
-  width: 30px;
-  height: 30px;
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
+  place-items: center;
   transform: translateY(6px);
-  overflow: hidden;
-  border: 2px solid #4e6f2b;
-  border-radius: 50%;
-  background: #e5f0d0;
+  color: #5a4228;
 }
 
-.kid-gender-icon::before {
-  position: absolute;
-  z-index: 1;
-  right: 6px;
-  bottom: 3px;
-  left: 6px;
-  height: 19px;
-  border-radius: 50% 50% 45% 45%;
-  background: #ccefb8;
-  content: "";
+.kid-gender-icon svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.8;
 }
 
-.kid-gender-icon::after {
-  position: absolute;
-  content: "";
+.kid-gender-shoulders {
+  stroke-width: 3;
 }
 
-.kid-gender-icon.boy::after {
-  top: 4px;
-  right: 6px;
-  left: 6px;
-  height: 9px;
-  border-radius: 12px 12px 5px 5px;
-  background:
-    radial-gradient(circle at 28% 80%, #d9482f 0 3px, transparent 4px),
-    radial-gradient(circle at 50% 82%, #d9482f 0 3px, transparent 4px),
-    radial-gradient(circle at 72% 80%, #d9482f 0 3px, transparent 4px),
-    #d9482f;
-}
-
-.kid-gender-icon.girl::after {
-  top: 3px;
-  right: 4px;
-  bottom: 2px;
-  left: 4px;
-  border-radius: 14px 14px 9px 9px;
-  background:
-    radial-gradient(ellipse at 18% 58%, #ffd84d 0 5px, transparent 6px),
-    radial-gradient(ellipse at 82% 58%, #ffd84d 0 5px, transparent 6px),
-    linear-gradient(#ffd84d 0 48%, transparent 49%);
-}
-
-.kid-gender-icon.preferNotToSay {
-  background: transparent;
-}
-
-.kid-gender-icon.preferNotToSay::before,
-.kid-gender-icon.preferNotToSay::after {
-  display: none;
+.kid-gender-hair {
+  stroke-width: 3.2;
 }
 
 .kid-count-card {

@@ -508,9 +508,23 @@ function parseAdminBackup(body: Record<string, unknown>): AdminBackup {
 }
 
 async function handleKids(request: ApiRequest, url: URL): Promise<ApiResponse> {
-  void url;
-
   if (request.method === 'GET') {
+    const searchedKid = url.searchParams.get('kid')?.trim();
+
+    if (searchedKid) {
+      const snapshot = await readSnapshot();
+      const normalizedKidId = normalizeKidId(searchedKid, snapshot);
+      const kid = snapshot.kids.find(
+        (entry) => entry.id.toLowerCase() === normalizedKidId.toLowerCase(),
+      );
+
+      if (!kid) {
+        throw new HttpError(404, `Unknown kid: ${normalizedKidId}`);
+      }
+
+      return jsonResponse(request, 200, kid);
+    }
+
     await requireMagicLink(request, url, [...staffRoles]);
 
     const snapshot = await readSnapshot();
@@ -646,9 +660,26 @@ async function handlePassport(
   }
 
   if (request.method === 'GET') {
-    await requireMagicLink(request, url, [...staffRoles]);
-
     const snapshot = await readSnapshot();
+    const batchKidIds = url.searchParams
+      .getAll('kids')
+      .flatMap((kidIds) => kidIds.split(','))
+      .map((kidId) => kidId.trim())
+      .filter(Boolean);
+
+    if (batchKidIds.length > 0) {
+      const passportsByKid = Object.fromEntries(
+        [...new Set(batchKidIds)]
+          .map((kidId) => normalizeKidId(kidId, snapshot))
+          .map((kidId) => [
+            kidId,
+            passportResponse(snapshot.passportActivitiesByKid, kidId),
+          ]),
+      );
+
+      return jsonResponse(request, 200, passportsByKid);
+    }
+
     const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
 
     return jsonResponse(

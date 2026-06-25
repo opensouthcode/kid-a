@@ -1,5 +1,6 @@
 import type { Kid } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
+import { KidGenderIcon } from './KidGenderIcon';
 
 type KidListProps = {
   animatedKidId?: string;
@@ -28,10 +29,9 @@ export function KidList({
             }
           }}
         >
-          <span
-            className={`kid-gender-icon ${kid.gender}`}
-            aria-label={t(`registration.gender.${kid.gender}`)}
-            role="img"
+          <KidGenderIcon
+            gender={kid.gender}
+            label={t(`registration.gender.${kid.gender}`)}
           />
           <code>{kid.id}</code>
           <strong>{kid.name}</strong>
