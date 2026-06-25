@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { PersonIcon, SmileyGrinIcon } from '@primer/octicons-react';
+import { useNavigate } from 'react-router-dom';
 import { useCurrentUser, useResetCurrentUser } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import { isSupportedLocale, supportedLocales, type MessageKey } from '../i18n/messages';
 
 type TopBarProps = {
   customButtons?: ReactNode;
+  navigateOnAvatar?: boolean;
   onLogout?: () => void;
   showGuestAvatar?: boolean;
   showLanguageSwitcher?: boolean;
@@ -51,6 +53,7 @@ function LanguageSwitcher() {
 
 export function TopBar({
   customButtons,
+  navigateOnAvatar = false,
   onLogout,
   showGuestAvatar = false,
   showLanguageSwitcher = false,
@@ -58,6 +61,7 @@ export function TopBar({
 }: TopBarProps) {
   const { t } = useI18n();
   const currentUser = useCurrentUser();
+  const navigate = useNavigate();
   const resetCurrentUser = useResetCurrentUser();
   const userMenuRef = useRef<HTMLDivElement>(null);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -97,6 +101,21 @@ export function TopBar({
     resetCurrentUser();
     onLogout?.();
   };
+  const openCurrentUserPage = () => {
+    if (currentUser.role === 'guest') {
+      return;
+    }
+
+    navigate(
+      currentUser.role === 'kid'
+        ? '/passport'
+        : currentUser.role === 'lead'
+          ? '/lead'
+          : currentUser.role === 'wheel'
+            ? '/wheel'
+            : '/desk',
+    );
+  };
 
   return (
     <div className="user-toolbar" aria-label={t('user.toolbar')}>
@@ -110,12 +129,19 @@ export function TopBar({
             aria-label={t('user.menu')}
             aria-expanded={isUserMenuOpen}
             type="button"
-            onClick={() => setIsUserMenuOpen((isOpen) => !isOpen)}
+            onClick={() => {
+              if (navigateOnAvatar) {
+                openCurrentUserPage();
+                return;
+              }
+
+              setIsUserMenuOpen((isOpen) => !isOpen);
+            }}
           >
             <SmileyGrinIcon size={22} aria-hidden="true" />
             <span>{currentUserLabel}</span>
           </button>
-          {isUserMenuOpen ? (
+          {isUserMenuOpen && !navigateOnAvatar ? (
             <section className="user-menu" aria-label={t('user.menu')}>
               <div className="user-menu-name">
                 <span>{t('user.nameLabel')}</span>

@@ -61,15 +61,7 @@ export function SampleAccessDialog() {
 
   return (
     <div className="access-menu">
-      {isRemoteDataLayer ? (
-        <button
-          className="access-button"
-          type="button"
-          onClick={() => navigate('/admin')}
-        >
-          {t('admin.open')}
-        </button>
-      ) : (
+      {!isRemoteDataLayer ? (
         <button
           className="access-button"
           type="button"
@@ -78,7 +70,7 @@ export function SampleAccessDialog() {
         >
           {t('app.access')}
         </button>
-      )}
+      ) : null}
       <button
         className="secondary-button"
         type="button"

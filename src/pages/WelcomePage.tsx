@@ -21,7 +21,11 @@ export function WelcomePage() {
 
   return (
     <>
-      <TopBar showLanguageSwitcher showGuestAvatar />
+      <TopBar
+        navigateOnAvatar
+        showLanguageSwitcher
+        showUserMenu={currentUser.role !== 'guest'}
+      />
       <section className="welcome-content">
         <p className="eyebrow">{conference.shortName}</p>
         <h1>
