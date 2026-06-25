@@ -1,4 +1,5 @@
 import type { Activity } from '../contexts/DataLayerContext';
+import { useI18n } from '../i18n/I18nProvider';
 
 type ActivityHeroProps = {
   activity: Activity;
@@ -11,6 +12,8 @@ function getIssueLabel(issueUrl: string) {
 }
 
 export function ActivityHero({ activity, eyebrow, headingId }: ActivityHeroProps) {
+  const { t } = useI18n();
+
   return (
     <section className="activity-hero" aria-labelledby={headingId}>
       <p className="eyebrow">{eyebrow}</p>
@@ -22,7 +25,7 @@ export function ActivityHero({ activity, eyebrow, headingId }: ActivityHeroProps
           rel="noreferrer"
           target="_blank"
         >
-          {getIssueLabel(activity.issueUrl)}
+          {t('activity.detail.moreDetails')} {getIssueLabel(activity.issueUrl)}
         </a>
       </h1>
       {activity.details ? (
