@@ -255,6 +255,16 @@ h2 {
   margin-top: 24px;
 }
 
+.activity-heading-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.activity-heading-row .activity-heading {
+  flex: 1 1 auto;
+}
+
 .activity-heading span {
   color: #4e6f2b;
   font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
@@ -279,9 +289,47 @@ h2 {
   background: #dfecc2;
 }
 
-.title-issue-link {
-  margin-left: 12px;
-  vertical-align: middle;
+.activity-details-link {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: center;
+  gap: 8px;
+  max-width: 132px;
+  color: #5a4228;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.activity-details-link:hover .issue-link,
+.activity-details-link:focus-visible .issue-link {
+  background: #dfecc2;
+}
+
+.activity-details-label {
+  line-height: 1.1;
+}
+
+.activity-details-qr {
+  width: 112px;
+  height: 112px;
+  border: 1px solid #8c6b3f;
+  border-radius: 10px;
+  background: #fff;
+  image-rendering: pixelated;
+}
+
+@media (max-width: 720px) {
+  .activity-heading-row {
+    display: grid;
+  }
+
+  .activity-details-link {
+    justify-self: start;
+  }
 }
 
 .user-toolbar {
