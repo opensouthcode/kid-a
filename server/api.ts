@@ -63,6 +63,7 @@ const apiPaths = new Set([
   '/admin/export',
   '/admin/import',
   '/auth/session',
+  '/activity-kids',
   '/kids',
   '/passport',
   '/wheel-prizes',
@@ -352,6 +353,33 @@ function passportTemplate(
       id: activity.id,
     })) ?? []
   );
+}
+
+function getActivityCompletionSummary(snapshot: StoreData, activityId: number) {
+  const completedEntries = snapshot.kids
+    .map((kid) => {
+      const completedAt = snapshot.passportActivitiesByKid[kid.id]?.find(
+        (activity) => activity.id === activityId,
+      )?.completedAt;
+
+      return completedAt ? { completedAt, kid } : undefined;
+    })
+    .filter((entry): entry is { completedAt: string; kid: StoreData['kids'][number] } =>
+      Boolean(entry),
+    )
+    .sort(
+      (firstEntry, secondEntry) =>
+        new Date(secondEntry.completedAt).getTime() -
+        new Date(firstEntry.completedAt).getTime(),
+    );
+
+  return {
+    count: completedEntries.length,
+    kids: completedEntries.slice(0, 5).map((entry) => ({
+      completedAt: entry.completedAt,
+      kid: entry.kid,
+    })),
+  };
 }
 
 function normalizePrizeKind(value: unknown) {
@@ -650,6 +678,28 @@ async function handleAuth(
   return jsonResponse(request, 200, session);
 }
 
+async function handleActivityKids(
+  request: ApiRequest,
+  url: URL,
+): Promise<ApiResponse> {
+  if (request.method !== 'GET') {
+    throw new HttpError(405, 'Method not allowed');
+  }
+
+  const session = await requireMagicLink(request, url, ['lead']);
+  const activityId = parsePositiveInteger(url.searchParams.get('activity'), 'activity');
+
+  if (session.activityId !== activityId) {
+    throw new HttpError(403, 'Lead magic link cannot view this activity');
+  }
+
+  return jsonResponse(
+    request,
+    200,
+    getActivityCompletionSummary(await readSnapshot(), activityId),
+  );
+}
+
 async function handlePassport(
   request: ApiRequest,
   url: URL,
@@ -872,6 +922,10 @@ export async function handleApiRequest(request: ApiRequest): Promise<ApiResponse
   try {
     if (path === '/passport') {
       return await handlePassport(request, requestUrl, path);
+    }
+
+    if (path === '/activity-kids') {
+      return await handleActivityKids(request, requestUrl);
     }
 
     if (path === '/auth/session') {

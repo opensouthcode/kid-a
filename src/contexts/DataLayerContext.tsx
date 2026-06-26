@@ -41,6 +41,7 @@ import {
 } from '../access/magic-links';
 import {
   fetchRemoteDataSnapshot,
+  fetchRemoteActivityKids,
   fetchRemoteKid,
   fetchRemoteMagicLinkSession,
   fetchRemotePassport,
@@ -51,6 +52,7 @@ import {
   saveRemotePrize,
   saveRemotePrizeAward,
   saveRemoteRegisteredKid,
+  type RemoteActivityKidsSummary,
   type RemoteDataSnapshot,
 } from '../data/remote-data-client';
 import {
@@ -90,6 +92,7 @@ type DataLayerContextValue = {
   findKidById: (kidId: string) => Promise<Kid | undefined>;
   findKidByManualNumber: (rawSearchValue: string) => Promise<Kid | undefined>;
   findKidByQrIdData: (qrPayload: string) => Promise<Kid | undefined>;
+  getActivityCompletedKids: (activityId: number) => Promise<RemoteActivityKidsSummary>;
   getPassportForKid: (kidId: string) => PassportData;
   getWheelShotSummaryForKid: (kidId: string) => WheelShotSummary;
   kids: Kid[];
@@ -338,7 +341,11 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   }, [isRemoteDataLayer]);
 
   useEffect(() => {
-    if (!isRemoteDataLayer || accessSessionStatus.state !== 'ready') {
+    if (
+      !isRemoteDataLayer ||
+      accessSessionStatus.state !== 'ready' ||
+      selectedCurrentUser.role === 'lead'
+    ) {
       return;
     }
 
@@ -347,7 +354,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       .catch((error) => {
         console.error('Unable to load remote event data.', error);
       });
-  }, [accessSessionStatus.state, isRemoteDataLayer]);
+  }, [accessSessionStatus.state, isRemoteDataLayer, selectedCurrentUser.role]);
 
   const persistRemoteSnapshot = (snapshotPromise: Promise<RemoteDataSnapshot>) => {
     snapshotPromise.then(applyRemoteSnapshot).catch((error) => {
@@ -465,6 +472,35 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   const getPassportForKid = (kidId: string): PassportData => ({
     activities: passportActivitiesByUser[kidId] ?? [],
   });
+  const getActivityCompletedKids = async (
+    activityId: number,
+  ): Promise<RemoteActivityKidsSummary> => {
+    if (isRemoteDataLayer) {
+      return fetchRemoteActivityKids(activityId);
+    }
+
+    const completedEntries = kidList
+      .map((kid) => {
+        const completedAt = passportActivitiesByUser[kid.id]?.find(
+          (activity) => activity.id === activityId,
+        )?.completedAt;
+
+        return completedAt ? { completedAt, kid } : undefined;
+      })
+      .filter(
+        (entry): entry is { completedAt: string; kid: Kid } => entry !== undefined,
+      )
+      .sort(
+        (firstEntry, secondEntry) =>
+          new Date(secondEntry.completedAt).getTime() -
+          new Date(firstEntry.completedAt).getTime(),
+      );
+
+    return {
+      count: completedEntries.length,
+      kids: completedEntries.slice(0, 5),
+    };
+  };
   const getWheelShotSummaryForKid = (kidId: string): WheelShotSummary => {
     const kidActivities = passportActivitiesByUser[kidId];
     const awards = prizeAwards
@@ -838,6 +874,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       findKidById,
       findKidByManualNumber,
       findKidByQrIdData,
+      getActivityCompletedKids,
       getPassportForKid,
       getWheelShotSummaryForKid,
       kids: kidList,
@@ -929,6 +966,10 @@ export function useReloadPassportActivitiesForKids() {
 
 export function useGetPassportForKid() {
   return useDataLayer().getPassportForKid;
+}
+
+export function useGetActivityCompletedKids() {
+  return useDataLayer().getActivityCompletedKids;
 }
 
 export function useUsersData() {

@@ -16,6 +16,14 @@ export type RemoteDataSnapshot = {
 
 export type RemotePassportsByKid = Record<string, PassportActivity[]>;
 
+export type RemoteActivityKidsSummary = {
+  count: number;
+  kids: Array<{
+    completedAt: string;
+    kid: Kid;
+  }>;
+};
+
 type RemotePrizeResponse = {
   prize?: Prize;
   prizes: Prize[];
@@ -119,6 +127,22 @@ export async function fetchRemotePassports(kidIds: string[]) {
   });
 
   return readJsonResponse<RemotePassportsByKid>(response);
+}
+
+export async function fetchRemoteActivityKids(activityId: number) {
+  const response = await fetch(
+    buildApiUrl(
+      `/activity-kids?activity=${encodeURIComponent(
+        String(activityId).padStart(2, '0'),
+      )}`,
+    ),
+    {
+      cache: 'no-store',
+      headers: magicLinkRequestHeaders(),
+    },
+  );
+
+  return readJsonResponse<RemoteActivityKidsSummary>(response);
 }
 
 export async function fetchRemotePrizeAwardsForKid(kidId: string) {
