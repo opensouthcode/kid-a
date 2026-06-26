@@ -180,12 +180,24 @@ export function PassportPage() {
         <section className="kid-content" aria-label={t('kid.title')}>
           <p className="eyebrow">{conference.title}</p>
           {publicKid ? (
-            <FriendPassportView kid={publicKid} />
+            <>
+              <FriendPassportView kid={publicKid} />
+              <KidsSection
+                blockedKidId={publicKid.id}
+                onKidSelected={setSelectedFriendKid}
+              />
+            </>
           ) : publicKidStatus === 'notFound' ? (
             <h1>{t('kid.notFound')}</h1>
           ) : null}
-        {passportQrButton}
+          {passportQrButton}
         </section>
+        {selectedFriendKid ? (
+          <SelectedKidPassport
+            kid={selectedFriendKid}
+            onClose={() => setSelectedFriendKid(undefined)}
+          />
+        ) : null}
         {passportQrModal}
       </>
     );
