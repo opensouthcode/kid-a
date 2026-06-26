@@ -37,14 +37,11 @@ export type Prize = {
 };
 
 export type PrizeSettingsUpdate = Partial<Omit<Prize, 'given'>>;
-export type PrizeAwardSource = 'passportCompletion' | 'wheel';
-
 export type PrizeAward = {
   awardedAt: string;
   id: string;
   kidId: string;
   prizeId: string;
-  source?: PrizeAwardSource;
 };
 
 export type PrizeAwardRecord = PrizeAward & {
@@ -121,10 +118,6 @@ export function getPrizeRemaining(prize: Prize) {
 
 export function getPrizeGiven(prizeAwards: PrizeAward[], prizeId: string) {
   return prizeAwards.filter((award) => award.prizeId === prizeId).length;
-}
-
-export function isWheelAward(award: PrizeAward) {
-  return (award.source ?? 'wheel') === 'wheel';
 }
 
 export function syncPrizeGivenCache(

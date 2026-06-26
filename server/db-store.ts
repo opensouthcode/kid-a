@@ -196,14 +196,11 @@ function mapPrize(row: Row): Prize {
 }
 
 function mapPrizeAward(row: Row): PrizeAward {
-  const source = asOptionalString(row.source, 'prize_awards.source');
-
   return {
     awardedAt: asString(row.awarded_at, 'prize_awards.awarded_at'),
     id: asString(row.id, 'prize_awards.id'),
     kidId: asString(row.kid_id, 'prize_awards.kid_id'),
     prizeId: asString(row.prize_id, 'prize_awards.prize_id'),
-    ...(source ? { source: source as PrizeAward['source'] } : {}),
   };
 }
 
@@ -292,12 +289,11 @@ function prizeAwardQueries(tx: TransactionSql, prizeAwards: PrizeAward[]) {
     tx`DELETE FROM prize_awards`,
     ...prizeAwards.map(
       (award) => tx`
-        INSERT INTO prize_awards (id, kid_id, prize_id, source, awarded_at)
+        INSERT INTO prize_awards (id, kid_id, prize_id, awarded_at)
         VALUES (
           ${award.id},
           ${award.kidId},
           ${award.prizeId},
-          ${award.source ?? null},
           ${award.awardedAt}::timestamptz
         )
         ON CONFLICT DO NOTHING
@@ -352,10 +348,10 @@ export function createDbStore(sql: SqlClient = createSqlClient()): StoreAdapter 
           FROM prizes p
           LEFT JOIN prize_awards a ON a.prize_id = p.id
           GROUP BY p.id, p.title, p.kind, p.initial_units
-          ORDER BY p.id
+          ORDER BY p.created_at, p.id
         `,
         sql`
-          SELECT id, kid_id, prize_id, source, awarded_at::text AS awarded_at
+          SELECT id, kid_id, prize_id, awarded_at::text AS awarded_at
           FROM prize_awards
           ORDER BY awarded_at, id
         `,
@@ -491,6 +487,21 @@ export function createDbStore(sql: SqlClient = createSqlClient()): StoreAdapter 
       throw new Error('Unable to allocate a fresh prize id');
     }
 
+    if (command.type === 'deleteIfUnawarded') {
+      await sql`
+        DELETE FROM prizes
+        WHERE id = ${command.prizeId}
+          AND NOT EXISTS (
+            SELECT 1
+            FROM prize_awards
+            WHERE prize_awards.prize_id = prizes.id
+          )
+      `;
+
+      const snapshot = await readSnapshot();
+      return prizeResponse(snapshot);
+    }
+
     const rows = (await sql`
       UPDATE prizes
       SET title = COALESCE(${command.title ?? null}, title),
@@ -519,28 +530,27 @@ export function createDbStore(sql: SqlClient = createSqlClient()): StoreAdapter 
   }
 
   async function awardPrize(command: AwardPrizeCommand) {
-    const source = command.source ?? null;
     const rows = (await sql`
       WITH locked_prize AS (
-        SELECT id, initial_units
+        SELECT id, kind, initial_units
         FROM prizes
         WHERE id = ${command.prizeId}
         FOR UPDATE
       ),
       existing_passport_completion AS (
         SELECT 1
-        FROM prize_awards
-        WHERE ${source} = 'passportCompletion'
-          AND kid_id = ${command.kidId}
-          AND source = 'passportCompletion'
+        FROM locked_prize, prize_awards existing_award
+        JOIN prizes awarded_prize ON awarded_prize.id = existing_award.prize_id
+        WHERE locked_prize.kind = 'final'
+          AND existing_award.kid_id = ${command.kidId}
+          AND awarded_prize.kind = 'final'
       ),
       inserted AS (
-        INSERT INTO prize_awards (id, kid_id, prize_id, source, awarded_at)
+        INSERT INTO prize_awards (id, kid_id, prize_id, awarded_at)
         SELECT
           ${command.awardId},
           ${command.kidId},
           locked_prize.id,
-          ${source},
           ${command.awardedAt}::timestamptz
         FROM locked_prize
         WHERE NOT EXISTS (SELECT 1 FROM existing_passport_completion)

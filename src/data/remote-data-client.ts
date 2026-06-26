@@ -3,7 +3,6 @@ import type {
   PassportData,
   Prize,
   PrizeAward,
-  PrizeAwardSource,
   PrizeSettingsUpdate,
   UserRole,
 } from './data-model';
@@ -273,7 +272,6 @@ export async function saveRemotePrize(
 export async function saveRemotePrizeAward(
   kidId: string,
   prizeId: string,
-  source?: PrizeAwardSource,
 ) {
   const response = await fetch(
     buildApiUrl(
@@ -282,7 +280,6 @@ export async function saveRemotePrizeAward(
       )}`,
     ),
     {
-      body: JSON.stringify({ source }),
       headers: {
         'Content-Type': 'application/json',
         ...magicLinkRequestHeaders(),

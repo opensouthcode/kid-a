@@ -22,7 +22,6 @@ import type {
   PassportActivity,
   Prize,
   PrizeAward,
-  PrizeAwardSource,
   PrizeKind,
   StoreData,
   UserRole,
@@ -362,8 +361,13 @@ function getPassportWheelShotSummary(snapshot: StoreData, kidId: string) {
     Math.max(passportActivities.length - 1, 0),
   );
   const earnedShots = Math.floor(spinEligibleActivities / 4);
+  const finalPrizeIds = new Set(
+    snapshot.prizes
+      .filter((prize) => prize.kind === 'final')
+      .map((prize) => prize.id),
+  );
   const usedShots = snapshot.prizeAwards.filter(
-    (award) => award.kidId === kidId && award.source === 'wheel',
+    (award) => award.kidId === kidId && !finalPrizeIds.has(award.prizeId),
   ).length;
 
   return {
@@ -544,14 +548,11 @@ function normalizeBackupPrizes(value: unknown): Prize[] {
 function normalizeBackupPrizeAwards(value: unknown): PrizeAward[] {
   return asArray(value, 'prizesWon').map((entry, index) => {
     const award = asObject(entry, `prizesWon.${index}`);
-    const source = normalizeAwardSource(award.source);
-
     return {
       awardedAt: asString(award.awardedAt, `prizesWon.${index}.awardedAt`),
       id: asString(award.id, `prizesWon.${index}.id`),
       kidId: asString(award.kidId, `prizesWon.${index}.kidId`),
       prizeId: asString(award.prizeId, `prizesWon.${index}.prizeId`),
-      ...(source ? { source } : {}),
     };
   });
 }
@@ -861,7 +862,7 @@ async function handleWheelPrizes(
   const stock = url.searchParams.get('stock')?.trim();
 
   if (!stock) {
-    if (typeof body.title !== 'string' || !body.title.trim()) {
+    if (typeof body.title !== 'string') {
       throw new HttpError(400, 'title is required when stock is omitted');
     }
 
@@ -892,8 +893,15 @@ async function handleWheelPrizes(
 
   const title = body.title === undefined ? prize.title : String(body.title).trim();
 
-  if (!title) {
-    throw new HttpError(400, 'title cannot be empty');
+  if (!title && prize.given === 0) {
+    return jsonResponse(
+      request,
+      200,
+      await savePrize({
+        prizeId: stock,
+        type: 'deleteIfUnawarded',
+      }),
+    );
   }
 
   try {
@@ -917,18 +925,6 @@ async function handleWheelPrizes(
     throw error;
   }
 }
-function normalizeAwardSource(value: unknown) {
-  if (value === undefined || value === null || value === '') {
-    return undefined;
-  }
-
-  if (value !== 'passportCompletion' && value !== 'wheel') {
-    throw new HttpError(400, 'source must be passportCompletion or wheel');
-  }
-
-  return value as PrizeAwardSource;
-}
-
 async function handlePrizesKid(
   request: ApiRequest,
   url: URL,
@@ -951,7 +947,6 @@ async function handlePrizesKid(
 
   await requireMagicLink(request, url, ['wheel']);
 
-  const body = parseJsonBody(request.body);
   const stock = url.searchParams.get('stock')?.trim();
 
   if (!stock) {
@@ -960,15 +955,15 @@ async function handlePrizesKid(
 
   const snapshot = await readSnapshot();
   const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
-  const source = normalizeAwardSource(body.source);
+  const prize = snapshot.prizes.find((entry) => entry.id === stock);
+  const awardKind = prize?.kind === 'final' ? 'passport-complete' : 'wheel';
 
   try {
     const response = await awardPrize({
-      awardId: `${kidId}-${source === 'passportCompletion' ? 'passport-complete' : 'wheel'}-${randomUUID()}`,
+      awardId: `${kidId}-${awardKind}-${randomUUID()}`,
       awardedAt: new Date().toISOString(),
       kidId,
       prizeId: stock,
-      ...(source ? { source } : {}),
     });
 
     return jsonResponse(request, 200, response);

@@ -193,7 +193,7 @@ export function WheelPage() {
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsPrizeManagerOpen(false);
+        closePrizeManager();
       }
     };
 
@@ -533,8 +533,14 @@ export function WheelPage() {
     setManagementError('');
   };
   const addManagedPrize = () => {
-    addPrize(t('wheel.manage.newPrize'));
+    addPrize();
     setManagementError('');
+  };
+  const closePrizeManager = () => {
+    prizes
+      .filter((prize) => !prize.title.trim() && prize.given === 0)
+      .forEach((prize) => updatePrize(prize.id, { title: '' }));
+    setIsPrizeManagerOpen(false);
   };
 
   if (accessSessionStatus.state === 'loading' || currentUser.role !== 'wheel') {
@@ -715,7 +721,7 @@ export function WheelPage() {
           <div
             className="prize-manager-overlay"
             role="presentation"
-            onClick={() => setIsPrizeManagerOpen(false)}
+            onClick={closePrizeManager}
           >
             <section
               className="prize-manager"
@@ -740,7 +746,7 @@ export function WheelPage() {
                 <button
                   className="secondary-button prize-manager-close"
                   type="button"
-                  onClick={() => setIsPrizeManagerOpen(false)}
+                  onClick={closePrizeManager}
                 >
                   {t('wheel.manage.close')}
                 </button>
@@ -763,11 +769,6 @@ export function WheelPage() {
                       <input
                         value={prize.title}
                         onChange={(event) => {
-                          if (!event.target.value.trim()) {
-                            setManagementError(t('wheel.manage.error.title'));
-                            return;
-                          }
-
                           updateManagedPrize(prize.id, {
                             title: event.target.value,
                           });
