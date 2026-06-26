@@ -49,8 +49,11 @@ export function PassportPage() {
   const completedActivities = passport.activities.filter(
     (activity) => activity.completedAt,
   ).length;
-  const kidPassportPayload =
-    currentUser.role === 'kid' ? createKidPassportUrl(currentUser.id) : '';
+  const displayedKidId =
+    publicKid?.id ?? (currentUser.role === 'kid' ? currentUser.id : '');
+  const kidPassportPayload = displayedKidId
+    ? createKidPassportUrl(displayedKidId)
+    : '';
   const wheelShotSummary =
     currentUser.role === 'kid'
       ? getWheelShotSummaryForKid(currentUser.id)
@@ -133,6 +136,43 @@ export function PassportPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isQrExpanded]);
 
+  const passportQrButton = qrCodeUrl ? (
+    <button
+      className="kid-qr-corner-button"
+      type="button"
+      aria-label={t('kid.qr.open')}
+      title={t('kid.qr.open')}
+      onClick={() => setIsQrExpanded(true)}
+    >
+      <img src={qrCodeUrl} alt={t('kid.qr.alt')} />
+    </button>
+  ) : null;
+  const passportQrModal = isQrExpanded ? (
+    <div
+      className="kid-qr-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="kid-qr-title"
+      onClick={() => setIsQrExpanded(false)}
+    >
+      <section
+        className="kid-qr-dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="kid-qr-title">{t('kid.qr.title')}</h2>
+        <img src={qrCodeUrl} alt={t('kid.qr.alt')} />
+        <p>{t('kid.qr.instructions')}</p>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => setIsQrExpanded(false)}
+        >
+          {t('kid.qr.close')}
+        </button>
+      </section>
+    </div>
+  ) : null;
+
   if (publicKidId) {
     return (
       <>
@@ -144,7 +184,9 @@ export function PassportPage() {
           ) : publicKidStatus === 'notFound' ? (
             <h1>{t('kid.notFound')}</h1>
           ) : null}
+        {passportQrButton}
         </section>
+        {passportQrModal}
       </>
     );
   }
@@ -236,43 +278,9 @@ export function PassportPage() {
             </div>
           ) : null}
         </section>
-        {qrCodeUrl ? (
-          <button
-            className="kid-qr-corner-button"
-            type="button"
-            aria-label={t('kid.qr.open')}
-            title={t('kid.qr.open')}
-            onClick={() => setIsQrExpanded(true)}
-          >
-            <img src={qrCodeUrl} alt={t('kid.qr.alt')} />
-          </button>
-        ) : null}
+        {passportQrButton}
         {qrError ? <p className="form-error">{qrError}</p> : null}
-        {isQrExpanded ? (
-          <div
-            className="kid-qr-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="kid-qr-title"
-            onClick={() => setIsQrExpanded(false)}
-          >
-            <section
-              className="kid-qr-dialog"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <h2 id="kid-qr-title">{t('kid.qr.title')}</h2>
-              <img src={qrCodeUrl} alt={t('kid.qr.alt')} />
-              <p>{t('kid.qr.instructions')}</p>
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setIsQrExpanded(false)}
-              >
-                {t('kid.qr.close')}
-              </button>
-            </section>
-          </div>
-        ) : null}
+        {passportQrModal}
 
         <section
           className="activity-section"
