@@ -29,6 +29,8 @@ export type RemoteActivityKidsSummary = {
 
 export type RemoteActivityCounts = Record<string, number>;
 
+let activityCountsRequest: Promise<RemoteActivityCounts> | undefined;
+
 type RemotePrizeResponse = {
   prize?: Prize;
   prizes: Prize[];
@@ -151,11 +153,11 @@ export async function fetchRemoteActivityKids(activityId: number) {
 }
 
 export async function fetchRemoteActivityCounts() {
-  const response = await fetch(buildApiUrl('/activity-count'), {
+  activityCountsRequest ??= fetch(buildApiUrl('/activity-count'), {
     cache: 'no-store',
-  });
+  }).then((response) => readJsonResponse<RemoteActivityCounts>(response));
 
-  return readJsonResponse<RemoteActivityCounts>(response);
+  return activityCountsRequest;
 }
 
 export async function fetchRemotePrizeAwardsForKid(kidId: string) {

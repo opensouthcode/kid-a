@@ -1,5 +1,5 @@
 import { AlertIcon } from '@primer/octicons-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ActivityHero } from '../components/ActivityHero';
 import { KidFinder } from '../components/KidFinder';
@@ -29,7 +29,7 @@ export function ActivityLeadPage() {
   const navigate = useNavigate();
   const { locale, t } = useI18n();
   const leadActivityId = currentUser.role === 'lead' ? currentUser.activityId : undefined;
-  const activityId = leadActivityId ?? 1;
+  const activityId = leadActivityId ?? 0;
   const [confirmedKidId, setConfirmedKidId] = useState('');
   const [confirmedKid, setConfirmedKid] = useState<Kid | undefined>();
   const [passportCompletedKidId, setPassportCompletedKidId] = useState('');
@@ -89,21 +89,26 @@ export function ActivityLeadPage() {
   }, [accessSessionStatus.state, currentUser.role, navigate]);
 
   useEffect(() => {
-    if (confirmedKidId) {
+    if (confirmedKidId && currentUser.role === 'lead') {
       reloadPassportActivities(confirmedKidId);
     }
-  }, [confirmedKidId, reloadPassportActivities]);
+  }, [confirmedKidId, currentUser.role]);
 
-  const refreshActivityCompletedKids = useCallback(() =>
-    getActivityCompletedKids(activityId)
+  useEffect(() => {
+    if (
+      accessSessionStatus.state !== 'ready' ||
+      currentUser.role !== 'lead' ||
+      !leadActivityId
+    ) {
+      return;
+    }
+
+    getActivityCompletedKids(leadActivityId)
       .then(setActivityCompletedKids)
       .catch((error) => {
         console.error('Unable to load activity completed kids.', error);
-      }), [activityId, getActivityCompletedKids]);
-
-  useEffect(() => {
-    refreshActivityCompletedKids();
-  }, [refreshActivityCompletedKids]);
+      });
+  }, [accessSessionStatus.state, currentUser.role, leadActivityId]);
 
   if (accessSessionStatus.state === 'loading' || currentUser.role !== 'lead') {
     return null;
