@@ -11,6 +11,7 @@ import { KidsSection, SelectedKidPassport } from '../components/KidsSection';
 import { PassportActivityMosaic } from '../components/PassportActivityMosaic';
 import { ProgressCounter } from '../components/ProgressCounter';
 import { TopBar } from '../components/TopBar';
+import { WheelShotPill } from '../components/WheelShotPill';
 import {
   useActivitiesData,
   useConferenceData,
@@ -235,6 +236,7 @@ export function PassportPage() {
                 total={passport.activities.length}
               />
             </button>
+            <WheelShotPill summary={wheelShotSummary} />
           </>
         }
         showUserMenu

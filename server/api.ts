@@ -339,11 +339,45 @@ function normalizeOptionalLastKnownKidId(value: unknown) {
   return value.trim().toLowerCase();
 }
 
-function passportResponse(
-  passportActivitiesByKid: PassportActivitiesByKid,
-  kidId: string,
-): PassportActivity[] {
-  return passportActivitiesByKid[kidId] ?? passportTemplate(passportActivitiesByKid);
+type PassportApiResponse = {
+  activities: PassportActivity[];
+  wheelShotSummary: {
+    availableShots: number;
+    earnedShots: number;
+    usedShots: number;
+  };
+};
+
+function getPassportWheelShotSummary(snapshot: StoreData, kidId: string) {
+  const passportActivities =
+    snapshot.passportActivitiesByKid[kidId] ??
+    passportTemplate(snapshot.passportActivitiesByKid);
+  const completedActivities = passportActivities.filter(
+    (activity) => activity.completedAt,
+  ).length;
+  const spinEligibleActivities = Math.min(
+    completedActivities,
+    Math.max(passportActivities.length - 1, 0),
+  );
+  const earnedShots = Math.floor(spinEligibleActivities / 4);
+  const usedShots = snapshot.prizeAwards.filter(
+    (award) => award.kidId === kidId && award.source === 'wheel',
+  ).length;
+
+  return {
+    availableShots: Math.max(earnedShots - usedShots, 0),
+    earnedShots,
+    usedShots,
+  };
+}
+
+function passportResponse(snapshot: StoreData, kidId: string): PassportApiResponse {
+  return {
+    activities:
+      snapshot.passportActivitiesByKid[kidId] ??
+      passportTemplate(snapshot.passportActivitiesByKid),
+    wheelShotSummary: getPassportWheelShotSummary(snapshot, kidId),
+  };
 }
 
 function passportTemplate(
@@ -749,7 +783,7 @@ async function handlePassport(
           .map((kidId) => normalizeKidId(kidId, snapshot))
           .map((kidId) => [
             kidId,
-            passportResponse(snapshot.passportActivitiesByKid, kidId),
+            passportResponse(snapshot, kidId),
           ]),
       );
 
@@ -761,7 +795,7 @@ async function handlePassport(
     return jsonResponse(
       request,
       200,
-      passportResponse(snapshot.passportActivitiesByKid, kidId),
+      passportResponse(snapshot, kidId),
     );
   }
 

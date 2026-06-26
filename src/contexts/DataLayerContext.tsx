@@ -27,6 +27,7 @@ import {
   type Kid,
   type PassportActivitiesByKid,
   type PassportData,
+  type PassportWheelShotSummary,
   type Prize,
   type PrizeAward,
   type PrizeSettingsUpdate,
@@ -247,6 +248,8 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
         ? {}
         : clonePassportActivities(initialPassportActivitiesByUser),
   );
+  const [remoteWheelShotSummariesByKid, setRemoteWheelShotSummariesByKid] =
+    useState<Record<string, PassportWheelShotSummary>>({});
   const [selectedCurrentUser, setSelectedCurrentUser] = useState<CurrentUser>(
     () => getInitialMagicLinkUser(isRemoteDataLayer) ?? guestUser,
   );
@@ -271,22 +274,38 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     setKidList(snapshot.kids);
     setPrizeList(clonePrizes(snapshot.prizes));
   };
-  const applyRemotePassport = (kidId: string, activities: PassportData['activities']) => {
+  const applyRemotePassport = (kidId: string, passport: PassportData) => {
     setPassportActivitiesByUser((currentPassportActivities) => ({
       ...currentPassportActivities,
-      [kidId]: activities.map((activity) => ({ ...activity })),
+      [kidId]: passport.activities.map((activity) => ({ ...activity })),
     }));
+    setRemoteWheelShotSummariesByKid((currentSummaries) =>
+      passport.wheelShotSummary
+        ? {
+            ...currentSummaries,
+            [kidId]: passport.wheelShotSummary,
+          }
+        : currentSummaries,
+    );
   };
-  const applyRemotePassports = (
-    passportsByKid: Record<string, PassportData['activities']>,
-  ) => {
+  const applyRemotePassports = (passportsByKid: Record<string, PassportData>) => {
     setPassportActivitiesByUser((currentPassportActivities) => ({
       ...currentPassportActivities,
       ...Object.fromEntries(
-        Object.entries(passportsByKid).map(([kidId, activities]) => [
+        Object.entries(passportsByKid).map(([kidId, passport]) => [
           kidId,
-          activities.map((activity) => ({ ...activity })),
+          passport.activities.map((activity) => ({ ...activity })),
         ]),
+      ),
+    }));
+    setRemoteWheelShotSummariesByKid((currentSummaries) => ({
+      ...currentSummaries,
+      ...Object.fromEntries(
+        Object.entries(passportsByKid).flatMap(([kidId, passport]) =>
+          passport.wheelShotSummary
+            ? [[kidId, passport.wheelShotSummary]]
+            : [],
+        ),
       ),
     }));
   };
@@ -366,7 +385,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   };
   const loadRemotePassportForKid = (kidId: string) => {
     fetchRemotePassport(kidId)
-      .then((activities) => applyRemotePassport(kidId, activities))
+      .then((passport) => applyRemotePassport(kidId, passport))
       .catch((error) => {
         console.error(`Unable to load remote passport for ${kidId}.`, error);
       });
@@ -474,6 +493,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   };
   const getPassportForKid = (kidId: string): PassportData => ({
     activities: passportActivitiesByUser[kidId] ?? [],
+    wheelShotSummary: remoteWheelShotSummariesByKid[kidId],
   });
   const getActivityCounts = async (): Promise<RemoteActivityCounts> => {
     if (isRemoteDataLayer) {
@@ -534,18 +554,29 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
           prizeTitle: prize?.title ?? award.prizeId,
         };
       });
+    const remoteSummary = remoteWheelShotSummariesByKid[kidId];
 
-    if (!kidActivities) {
-      if (isRemoteDataLayer) {
+    if (isRemoteDataLayer && remoteSummary) {
       return {
-        availableShots: 0,
+        ...remoteSummary,
         awards,
         completionAward: awards.find(
           (award) => award.source === 'passportCompletion',
         ),
-        earnedShots: 0,
-        usedShots: awards.filter(isWheelAward).length,
       };
+    }
+
+    if (!kidActivities) {
+      if (isRemoteDataLayer) {
+        return {
+          availableShots: 0,
+          awards,
+          completionAward: awards.find(
+            (award) => award.source === 'passportCompletion',
+          ),
+          earnedShots: 0,
+          usedShots: awards.filter(isWheelAward).length,
+        };
       }
 
       throw new Error(`Unknown passport kid: ${kidId}`);
@@ -703,7 +734,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     if (isRemoteDataLayer) {
       saveRemotePassportActivity(kidId, activityId)
         .then((remotePassportActivities) => {
-          applyRemotePassport(kidId, remotePassportActivities);
+          applyRemotePassport(kidId, { activities: remotePassportActivities });
         })
         .catch((error) => {
           console.error('Unable to save remote passport activity.', error);
@@ -905,6 +936,10 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
           currentUser.role === 'kid'
             ? (passportActivitiesByUser[currentUser.id] ?? [])
             : [],
+        wheelShotSummary:
+          currentUser.role === 'kid'
+            ? remoteWheelShotSummariesByKid[currentUser.id]
+            : undefined,
       },
       prizes,
       refreshPrizes,
@@ -920,6 +955,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       currentUser,
       kidList,
       passportActivitiesByUser,
+      remoteWheelShotSummariesByKid,
       prizes,
       userList,
       accessSessionStatus,

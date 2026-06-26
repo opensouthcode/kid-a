@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import {
   useGetPassportForKid,
+  useGetWheelShotSummaryForKid,
   useReloadPassportActivities,
   type Kid,
 } from '../contexts/DataLayerContext';
@@ -9,6 +10,7 @@ import { FriendStarButton } from './FriendStarButton';
 import { KidGenderIcon } from './KidGenderIcon';
 import { PassportActivityMosaic } from './PassportActivityMosaic';
 import { ProgressCounter } from './ProgressCounter';
+import { WheelShotPill } from './WheelShotPill';
 
 type FriendPassportViewProps = {
   kid: Kid;
@@ -16,9 +18,12 @@ type FriendPassportViewProps = {
 
 export function FriendPassportView({ kid }: FriendPassportViewProps) {
   const getPassportForKid = useGetPassportForKid();
+  const getWheelShotSummaryForKid = useGetWheelShotSummaryForKid();
   const reloadPassportActivities = useReloadPassportActivities();
   const { t } = useI18n();
   const passport = getPassportForKid(kid.id);
+  const wheelShotSummary =
+    passport.wheelShotSummary ?? getWheelShotSummaryForKid(kid.id);
   const completedActivities = passport.activities.filter(
     (activity) => activity.completedAt,
   ).length;
@@ -38,10 +43,13 @@ export function FriendPassportView({ kid }: FriendPassportViewProps) {
           <h3 id="friend-passport-title">{kid.name}</h3>
           <FriendStarButton kid={kid} />
         </div>
-        <ProgressCounter
-          completed={completedActivities}
-          total={passport.activities.length}
-        />
+        <div className="passport-header-counters">
+          <ProgressCounter
+            completed={completedActivities}
+            total={passport.activities.length}
+          />
+          <WheelShotPill summary={wheelShotSummary} />
+        </div>
       </div>
       <PassportActivityMosaic
         activities={passport.activities}

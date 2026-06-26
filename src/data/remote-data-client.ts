@@ -1,5 +1,6 @@
 import type {
   Kid,
+  PassportData,
   PassportActivity,
   Prize,
   PrizeAward,
@@ -14,7 +15,9 @@ export type RemoteDataSnapshot = {
   prizes: Prize[];
 };
 
-export type RemotePassportsByKid = Record<string, PassportActivity[]>;
+export type RemotePassport = PassportData;
+
+export type RemotePassportsByKid = Record<string, RemotePassport>;
 
 export type RemoteActivityKidsSummary = {
   count: number;
@@ -112,7 +115,7 @@ export async function fetchRemotePassport(kidId: string) {
     },
   );
 
-  return readJsonResponse<PassportActivity[]>(response);
+  return readJsonResponse<RemotePassport>(response);
 }
 
 export async function fetchRemotePassports(kidIds: string[]) {

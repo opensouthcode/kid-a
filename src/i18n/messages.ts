@@ -179,6 +179,8 @@ export const messages = {
     'kid.wheel.availablePlural':
       'You have {count} shots available. Go to the wheel desk to spin them.',
     'kid.wheel.none': 'Complete 4 activities to earn your next wheel shot.',
+    'kid.wheel.shotsMade':
+      '{used}/{earned} wheel shots used. {available} available.',
     'kid.wheel.prizes': 'Prizes won',
     'wheel.eyebrow': 'Wheel role',
     'wheel.title': 'Prize wheel',
@@ -399,6 +401,8 @@ export const messages = {
     'kid.wheel.availablePlural':
       'Tienes {count} tiradas disponibles. Ve a la mesa de ruleta para usarlas.',
     'kid.wheel.none': 'Completa 4 actividades para ganar tu próxima tirada.',
+    'kid.wheel.shotsMade':
+      '{used}/{earned} tiradas de ruleta usadas. {available} disponibles.',
     'kid.wheel.prizes': 'Premios ganados',
     'wheel.eyebrow': 'Rol de ruleta',
     'wheel.title': 'Ruleta de premios',
