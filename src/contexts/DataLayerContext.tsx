@@ -566,10 +566,16 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     const remoteSummary = remoteWheelShotSummariesByKid[kidId];
 
     if (isRemoteDataLayer && remoteSummary) {
+      const usedShots = Math.max(
+        remoteSummary.usedShots,
+        awards.filter((award) => award.prizeKind !== 'final').length,
+      );
       return {
-        ...remoteSummary,
+        availableShots: Math.max(remoteSummary.earnedShots - usedShots, 0),
         awards,
         completionAward: awards.find((award) => award.prizeKind === 'final'),
+        earnedShots: remoteSummary.earnedShots,
+        usedShots,
       };
     }
 
@@ -807,6 +813,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
         })
         .catch((error) => {
           console.error('Unable to save remote prize award.', error);
+          loadRemotePrizeAwardsForKid(kidId);
+          loadRemotePassportForKid(kidId);
+          refreshPrizes();
         });
     }
 

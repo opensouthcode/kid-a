@@ -73,6 +73,7 @@ const kidGenders = new Set(['boy', 'girl', 'preferNotToSay']);
 const prizeKinds = new Set<PrizeKind>(['final', 'normal', 'valuable']);
 const staffRoles = new Set<UserRole>(['desk', 'lead', 'wheel']);
 const supportedLocales = new Set(['en', 'es']);
+const normalPrizeKinds = new Set<PrizeKind>(['normal', 'valuable']);
 
 export function normalizeApiPath(pathname: string) {
   if (pathname.startsWith('/.netlify/functions/api/')) {
@@ -957,6 +958,14 @@ async function handlePrizesKid(
   const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
   const prize = snapshot.prizes.find((entry) => entry.id === stock);
   const awardKind = prize?.kind === 'final' ? 'passport-complete' : 'wheel';
+
+  if (prize && normalPrizeKinds.has(prize.kind)) {
+    const shotSummary = getPassportWheelShotSummary(snapshot, kidId);
+
+    if (shotSummary.availableShots <= 0) {
+      throw new HttpError(409, `Kid has no wheel shots available: ${kidId}`);
+    }
+  }
 
   try {
     const response = await awardPrize({
