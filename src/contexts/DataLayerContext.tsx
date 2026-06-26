@@ -1,6 +1,7 @@
 import {
   createContext,
   useEffect,
+  useCallback,
   useContext,
   useMemo,
   useState,
@@ -495,7 +496,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     activities: passportActivitiesByUser[kidId] ?? [],
     wheelShotSummary: remoteWheelShotSummariesByKid[kidId],
   });
-  const getActivityCounts = async (): Promise<RemoteActivityCounts> => {
+  const getActivityCounts = useCallback(async (): Promise<RemoteActivityCounts> => {
     if (isRemoteDataLayer) {
       return fetchRemoteActivityCounts();
     }
@@ -503,6 +504,10 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     return Object.values(passportActivitiesByUser).reduce<RemoteActivityCounts>(
       (counts, passportActivities) => {
         passportActivities.forEach((activity) => {
+          if (!activity.completedAt) {
+            return;
+          }
+
           const activityId = String(activity.id);
           counts[activityId] = (counts[activityId] ?? 0) + 1;
         });
@@ -511,7 +516,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       },
       {},
     );
-  };
+  }, [isRemoteDataLayer, passportActivitiesByUser]);
   const getActivityCompletedKids = async (
     activityId: number,
   ): Promise<RemoteActivityKidsSummary> => {

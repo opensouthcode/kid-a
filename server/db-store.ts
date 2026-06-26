@@ -56,6 +56,7 @@ export type SqlClient = {
 const kidRegistrationRetryDelayMs = 250;
 const maxKidRegistrationAttempts = 20;
 const generatedIdLookahead = 1000;
+const passportActivityIds = Array.from({ length: 16 }, (_, index) => index + 1);
 
 function isPostgresUrl(value: string | undefined): value is string {
   return value?.startsWith('postgres://') === true ||
@@ -222,11 +223,9 @@ function mapMagicToken(row: Row): MagicLinkTokenRecord {
 }
 
 function getPassportTemplate(passportActivitiesByKid: PassportActivitiesByKid) {
-  return (
-    Object.values(passportActivitiesByKid)[0]?.map((activity) => ({
-      id: activity.id,
-    })) ?? []
-  );
+  void passportActivitiesByKid;
+
+  return passportActivityIds.map((id) => ({ id }));
 }
 
 function buildPassports(kids: Kid[], passportRows: Row[]): PassportActivitiesByKid {
@@ -277,12 +276,14 @@ function passportQueries(
 ) {
   return [
     tx`DELETE FROM passport_activities WHERE kid_id = ${kidId}`,
-    ...passport.map(
-      (activity) => tx`
-        INSERT INTO passport_activities (kid_id, activity_id, completed_at)
-        VALUES (${kidId}, ${activity.id}, ${activity.completedAt ?? null}::timestamptz)
-      `,
-    ),
+    ...passport
+      .filter((activity) => activity.completedAt)
+      .map(
+        (activity) => tx`
+          INSERT INTO passport_activities (kid_id, activity_id, completed_at)
+          VALUES (${kidId}, ${activity.id}, ${activity.completedAt}::timestamptz)
+        `,
+      ),
   ];
 }
 
@@ -338,6 +339,7 @@ export function createDbStore(sql: SqlClient = createSqlClient()): StoreAdapter 
         sql`
           SELECT kid_id, activity_id, completed_at::text AS completed_at
           FROM passport_activities
+          WHERE completed_at IS NOT NULL
           ORDER BY kid_id, activity_id
         `,
         sql`
@@ -414,21 +416,6 @@ export function createDbStore(sql: SqlClient = createSqlClient()): StoreAdapter 
           WHERE lower(candidate.id) <> ${command.lastKnownKidId ?? ''}
           ON CONFLICT DO NOTHING
           RETURNING id, name, age, gender, language
-        ),
-        template_kid AS (
-          SELECT kid_id
-          FROM passport_activities
-          ORDER BY kid_id
-          LIMIT 1
-        ),
-        inserted_passport AS (
-          INSERT INTO passport_activities (kid_id, activity_id)
-          SELECT inserted_kid.id, passport_activities.activity_id
-          FROM inserted_kid
-          JOIN template_kid ON true
-          JOIN passport_activities
-            ON passport_activities.kid_id = template_kid.kid_id
-          ON CONFLICT DO NOTHING
         )
         SELECT id, name, age, gender, language
         FROM inserted_kid

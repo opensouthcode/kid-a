@@ -422,6 +422,10 @@ function getActivityCompletionCounts(snapshot: StoreData) {
 
   Object.values(snapshot.passportActivitiesByKid).forEach((passportActivities) => {
     passportActivities.forEach((activity) => {
+      if (!activity.completedAt) {
+        return;
+      }
+
       const activityId = String(activity.id);
       counts[activityId] = (counts[activityId] ?? 0) + 1;
     });
