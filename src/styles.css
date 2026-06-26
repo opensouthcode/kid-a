@@ -2563,3 +2563,129 @@ h2 {
     page-break-inside: avoid;
   }
 }
+
+/* Storage error banner */
+.storage-error-banner {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  z-index: 1000;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: min(600px, calc(100% - 32px));
+  padding: 12px 16px;
+  border: 1px solid #c05621;
+  border-radius: 12px;
+  background: #fff7ed;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 12%);
+  color: #7c2d12;
+  transform: translateX(-50%);
+}
+
+.storage-error-text {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.875rem;
+}
+
+.storage-error-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.storage-error-clear {
+  padding: 6px 12px;
+  border: 1px solid #c05621;
+  border-radius: 999px;
+  background: #c05621;
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.storage-error-clear:hover {
+  background: #9a3412;
+  border-color: #9a3412;
+}
+
+.storage-error-dismiss {
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: #9a3412;
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.storage-error-dismiss:hover {
+  color: #7c2d12;
+}
+
+/* App crash screen */
+.app-crash-screen {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: #eef5df;
+}
+
+.app-crash-card {
+  width: min(480px, 100%);
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid #8c6b3f;
+  border-radius: 24px;
+  background: linear-gradient(135deg, #fbf7ec 0%, #dfecc2 100%);
+  box-shadow: 0 16px 48px rgb(61 85 35 / 16%);
+}
+
+.app-crash-title {
+  margin: 0 0 12px;
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #7c2d12;
+}
+
+.app-crash-message {
+  margin: 0 0 12px;
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: #4a3520;
+}
+
+.app-crash-error {
+  margin: 0 0 20px;
+  padding: 10px 14px;
+  border: 1px solid #e5c89b;
+  border-radius: 8px;
+  background: #fef3e2;
+  font-family: ui-monospace, monospace;
+  font-size: 0.8125rem;
+  color: #7c2d12;
+  word-break: break-word;
+}
+
+.app-crash-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 999px;
+  background: #c05621;
+  color: #fff;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app-crash-btn:hover {
+  background: #9a3412;
+}
