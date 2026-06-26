@@ -351,9 +351,9 @@ type PassportApiResponse = {
 const passportActivityIds = Array.from({ length: 16 }, (_, index) => index + 1);
 
 function getPassportWheelShotSummary(snapshot: StoreData, kidId: string) {
-  const passportActivities =
-    snapshot.passportActivitiesByKid[kidId] ??
-    passportTemplate(snapshot.passportActivitiesByKid);
+  const passportActivities = mergePassportTemplate(
+    snapshot.passportActivitiesByKid[kidId],
+  );
   const completedActivities = passportActivities.filter(
     (activity) => activity.completedAt,
   ).length;
@@ -375,19 +375,25 @@ function getPassportWheelShotSummary(snapshot: StoreData, kidId: string) {
 
 function passportResponse(snapshot: StoreData, kidId: string): PassportApiResponse {
   return {
-    activities:
-      snapshot.passportActivitiesByKid[kidId] ??
-      passportTemplate(snapshot.passportActivitiesByKid),
+    activities: mergePassportTemplate(snapshot.passportActivitiesByKid[kidId]),
     wheelShotSummary: getPassportWheelShotSummary(snapshot, kidId),
   };
 }
 
-function passportTemplate(
-  passportActivitiesByKid: PassportActivitiesByKid,
-): PassportActivity[] {
-  void passportActivitiesByKid;
-
+function passportTemplate(): PassportActivity[] {
   return passportActivityIds.map((id) => ({ id }));
+}
+
+function mergePassportTemplate(
+  passportActivities: PassportActivity[] | undefined,
+): PassportActivity[] {
+  const completedActivitiesById = Object.fromEntries(
+    (passportActivities ?? []).map((activity) => [activity.id, activity]),
+  );
+
+  return passportTemplate().map(
+    (activity) => completedActivitiesById[activity.id] ?? activity,
+  );
 }
 
 function getActivityCompletionSummary(snapshot: StoreData, activityId: number) {
@@ -817,13 +823,17 @@ async function handlePassport(
   const snapshot = await readSnapshot();
   const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
 
-  const passport = await completePassportActivity({
+  await completePassportActivity({
     activityId,
     completedAt: new Date().toISOString(),
     kidId,
   });
 
-  return jsonResponse(request, 200, passport);
+  return jsonResponse(
+    request,
+    200,
+    passportResponse(await readSnapshot(), kidId),
+  );
 }
 
 async function handleWheelPrizes(

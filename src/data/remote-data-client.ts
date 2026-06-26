@@ -1,7 +1,6 @@
 import type {
   Kid,
   PassportData,
-  PassportActivity,
   Prize,
   PrizeAward,
   PrizeAwardSource,
@@ -155,7 +154,11 @@ export async function fetchRemoteActivityKids(activityId: number) {
 export async function fetchRemoteActivityCounts() {
   activityCountsRequest ??= fetch(buildApiUrl('/activity-count'), {
     cache: 'no-store',
-  }).then((response) => readJsonResponse<RemoteActivityCounts>(response));
+  })
+    .then((response) => readJsonResponse<RemoteActivityCounts>(response))
+    .finally(() => {
+      activityCountsRequest = undefined;
+    });
 
   return activityCountsRequest;
 }
@@ -232,7 +235,7 @@ export async function saveRemotePassportActivity(
     },
   );
 
-  return readJsonResponse<PassportActivity[]>(response);
+  return readJsonResponse<RemotePassport>(response);
 }
 
 export async function saveRemoteRegisteredKid(

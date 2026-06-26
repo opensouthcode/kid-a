@@ -738,8 +738,8 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     if (isRemoteDataLayer) {
       saveRemotePassportActivity(kidId, activityId)
-        .then((remotePassportActivities) => {
-          applyRemotePassport(kidId, { activities: remotePassportActivities });
+        .then((remotePassport) => {
+          applyRemotePassport(kidId, remotePassport);
         })
         .catch((error) => {
           console.error('Unable to save remote passport activity.', error);
