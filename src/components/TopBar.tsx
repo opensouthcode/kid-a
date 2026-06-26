@@ -7,6 +7,7 @@ import { isSupportedLocale, supportedLocales, type MessageKey } from '../i18n/me
 
 type TopBarProps = {
   customButtons?: ReactNode;
+  menuActions?: ReactNode;
   navigateOnAvatar?: boolean;
   onLogout?: () => void;
   showGuestAvatar?: boolean;
@@ -53,6 +54,7 @@ function LanguageSwitcher() {
 
 export function TopBar({
   customButtons,
+  menuActions,
   navigateOnAvatar = false,
   onLogout,
   showGuestAvatar = false,
@@ -157,6 +159,7 @@ export function TopBar({
                 <span>{t('language.label')}</span>
                 <LanguageSwitcher />
               </div>
+              {menuActions}
               <button className="logout-button" type="button" onClick={logOut}>
                 {t('user.logout')}
               </button>
