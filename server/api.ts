@@ -348,6 +348,8 @@ type PassportApiResponse = {
   };
 };
 
+const passportActivityIds = Array.from({ length: 16 }, (_, index) => index + 1);
+
 function getPassportWheelShotSummary(snapshot: StoreData, kidId: string) {
   const passportActivities =
     snapshot.passportActivitiesByKid[kidId] ??
@@ -383,11 +385,9 @@ function passportResponse(snapshot: StoreData, kidId: string): PassportApiRespon
 function passportTemplate(
   passportActivitiesByKid: PassportActivitiesByKid,
 ): PassportActivity[] {
-  return (
-    Object.values(passportActivitiesByKid)[0]?.map((activity) => ({
-      id: activity.id,
-    })) ?? []
-  );
+  void passportActivitiesByKid;
+
+  return passportActivityIds.map((id) => ({ id }));
 }
 
 function getActivityCompletionSummary(snapshot: StoreData, activityId: number) {

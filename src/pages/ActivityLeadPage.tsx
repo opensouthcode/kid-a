@@ -41,9 +41,10 @@ export function ActivityLeadPage() {
   const passport = confirmedKid
     ? getPassportForKid(confirmedKid.id)
     : { activities: [] };
-  const leadActivity = passport.activities.find(
+  const storedLeadActivity = passport.activities.find(
     (activity) => activity.id === activityId,
   );
+  const leadActivity = activityId ? (storedLeadActivity ?? { id: activityId }) : undefined;
   const activity = activities.find((entry) => entry.id === String(activityId));
   const completedActivities = passport.activities.filter(
     (activity) => activity.completedAt,
@@ -249,7 +250,7 @@ export function ActivityLeadPage() {
                     <button
                       className="access-button"
                       type="button"
-                      disabled={!leadActivity}
+                      disabled={!activityId}
                       onClick={markActivity}
                     >
                       {t('lead.mark.submit')}
