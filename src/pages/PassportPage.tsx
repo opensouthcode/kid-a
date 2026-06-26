@@ -1,14 +1,13 @@
 import {
   IterationsIcon,
   LocationIcon,
-  PeopleIcon,
   SyncIcon,
 } from '@primer/octicons-react';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { FriendsDialog } from '../components/FriendsDialog';
 import { FriendPassportView } from '../components/FriendPassportView';
+import { KidsSection, SelectedKidPassport } from '../components/KidsSection';
 import { PassportActivityMosaic } from '../components/PassportActivityMosaic';
 import { ProgressCounter } from '../components/ProgressCounter';
 import { TopBar } from '../components/TopBar';
@@ -24,24 +23,7 @@ import {
   type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
-import type { MessageKey } from '../i18n/messages';
 import { createKidPassportUrl } from '../utils/kid-id';
-
-type KidOption = {
-  id: 'wheel' | 'friends';
-  labelKey: MessageKey;
-};
-
-const kidOptions: KidOption[] = [
-  {
-    id: 'wheel',
-    labelKey: 'kid.option.wheel',
-  },
-  {
-    id: 'friends',
-    labelKey: 'kid.option.friends',
-  },
-];
 
 export function PassportPage() {
   const activities = useActivitiesData();
@@ -63,7 +45,7 @@ export function PassportPage() {
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrError, setQrError] = useState('');
   const [isQrExpanded, setIsQrExpanded] = useState(false);
-  const [isFriendsDialogOpen, setIsFriendsDialogOpen] = useState(false);
+  const [selectedFriendKid, setSelectedFriendKid] = useState<Kid | undefined>();
   const completedActivities = passport.activities.filter(
     (activity) => activity.completedAt,
   ).length;
@@ -203,36 +185,6 @@ export function PassportPage() {
         onLogout={() => navigate('/')}
       />
       <section className="kid-content" aria-labelledby="kid-page-title">
-        <nav className="passport-nav" aria-label={t('kid.options.title')}>
-          {kidOptions.map((option) => {
-            const isFriendsOption = option.id === 'friends';
-
-            return (
-              <button
-                className={
-                  isFriendsOption
-                    ? 'passport-nav-button enabled'
-                    : 'passport-nav-button'
-                }
-                type="button"
-                disabled={!isFriendsOption}
-                key={option.id}
-                onClick={
-                  isFriendsOption
-                    ? () => setIsFriendsDialogOpen(true)
-                    : undefined
-                }
-              >
-                {option.id === 'wheel' ? (
-                  <IterationsIcon size={16} aria-hidden="true" />
-                ) : (
-                  <PeopleIcon size={16} aria-hidden="true" />
-                )}
-                {t(option.labelKey)}
-              </button>
-            );
-          })}
-        </nav>
         <p className="eyebrow">{conference.title}</p>
         <div className="passport-title-row">
           <h1 id="kid-page-title">{t('kid.title')}</h1>
@@ -334,10 +286,16 @@ export function PassportPage() {
             }
           />
         </section>
-        <FriendsDialog
-          isOpen={isFriendsDialogOpen}
-          onClose={() => setIsFriendsDialogOpen(false)}
+        <KidsSection
+          blockedKidId={currentUser.id}
+          onKidSelected={setSelectedFriendKid}
         />
+        {selectedFriendKid ? (
+          <SelectedKidPassport
+            kid={selectedFriendKid}
+            onClose={() => setSelectedFriendKid(undefined)}
+          />
+        ) : null}
       </section>
     </>
   );
