@@ -7,6 +7,7 @@ import {
   type PropsWithChildren,
 } from 'react';
 import type { Kid } from '../data/data-model';
+import { useI18n } from '../i18n/I18nProvider';
 
 type LocalDataLayerContextValue = {
   getFriendIds: () => string[];
@@ -18,6 +19,11 @@ type LocalDataLayerContextValue = {
 const friendsStorageKey = 'kid-a:local:friends';
 const friendKidsStorageKey = 'kid-a:local:friend-kids';
 
+type StorageReadResult<T> =
+  | { data: T; kind: 'ok' }
+  | { kind: 'error'; message: string }
+  | { kind: 'empty' };
+
 const LocalDataLayerContext = createContext<
   LocalDataLayerContextValue | undefined
 >(undefined);
@@ -28,27 +34,28 @@ function dedupeFriendIds(friendIds: string[]) {
   );
 }
 
-function readStoredFriends(): string[] {
+function readStoredFriends(): StorageReadResult<string[]> {
   const storedFriends = window.localStorage.getItem(friendsStorageKey);
 
   if (!storedFriends) {
-    return [];
+    return { kind: 'empty' };
   }
 
   try {
     const parsedFriends: unknown = JSON.parse(storedFriends);
 
     if (Array.isArray(parsedFriends)) {
-      return dedupeFriendIds(
-        parsedFriends.filter((friendId) => typeof friendId === 'string'),
-      );
+      return {
+        data: dedupeFriendIds(
+          parsedFriends.filter((friendId) => typeof friendId === 'string'),
+        ),
+        kind: 'ok',
+      };
     }
 
-    console.warn('Ignoring invalid local friends data.');
-    return [];
-  } catch (error) {
-    console.warn('Ignoring unreadable local friends data.', error);
-    return [];
+    return { kind: 'error', message: 'Invalid local friends data' };
+  } catch {
+    return { kind: 'error', message: 'Unreadable local friends data' };
   }
 }
 
@@ -68,37 +75,39 @@ function isStoredKid(value: unknown): value is Kid {
   );
 }
 
-function readStoredFriendKids(): Record<string, Kid> {
+function readStoredFriendKids(): StorageReadResult<Record<string, Kid>> {
   const storedFriendKids = window.localStorage.getItem(friendKidsStorageKey);
 
   if (!storedFriendKids) {
-    return {};
+    return { kind: 'empty' };
   }
 
   try {
     const parsedFriendKids: unknown = JSON.parse(storedFriendKids);
 
     if (Array.isArray(parsedFriendKids)) {
-      return Object.fromEntries(
-        parsedFriendKids
-          .filter(isStoredKid)
-          .map((kid) => [kid.id, kid]),
-      );
+      return {
+        data: Object.fromEntries(
+          parsedFriendKids.filter(isStoredKid).map((kid) => [kid.id, kid]),
+        ),
+        kind: 'ok',
+      };
     }
 
     if (parsedFriendKids && typeof parsedFriendKids === 'object') {
-      return Object.fromEntries(
-        Object.values(parsedFriendKids)
-          .filter(isStoredKid)
-          .map((kid) => [kid.id, kid]),
-      );
+      return {
+        data: Object.fromEntries(
+          Object.values(parsedFriendKids)
+            .filter(isStoredKid)
+            .map((kid) => [kid.id, kid]),
+        ),
+        kind: 'ok',
+      };
     }
 
-    console.warn('Ignoring invalid local friend kids data.');
-    return {};
-  } catch (error) {
-    console.warn('Ignoring unreadable local friend kids data.', error);
-    return {};
+    return { kind: 'error', message: 'Invalid local friend kids data' };
+  } catch {
+    return { kind: 'error', message: 'Unreadable local friend kids data' };
   }
 }
 
@@ -109,10 +118,92 @@ function writeStoredFriendKids(friendKidsById: Record<string, Kid>) {
   );
 }
 
+function clearLocalStorageKidA() {
+  const keysToRemove: string[] = [];
+
+  for (let i = 0; i < window.localStorage.length; i++) {
+    const key = window.localStorage.key(i);
+
+    if (key?.startsWith('kid-a:')) {
+      keysToRemove.push(key);
+    }
+  }
+
+  keysToRemove.forEach((key) => window.localStorage.removeItem(key));
+}
+
+type StorageError = { messages: string[] };
+
+function collectStorageErrors(): StorageError | null {
+  const friendsResult = readStoredFriends();
+  const friendKidsResult = readStoredFriendKids();
+  const errorMessages: string[] = [];
+
+  if (friendsResult.kind === 'error') {
+    errorMessages.push(friendsResult.message);
+  }
+
+  if (friendKidsResult.kind === 'error') {
+    errorMessages.push(friendKidsResult.message);
+  }
+
+  return errorMessages.length > 0 ? { messages: errorMessages } : null;
+}
+
+function StorageErrorBanner({
+  error,
+  onDismiss,
+}: {
+  error: StorageError;
+  onDismiss: () => void;
+}) {
+  const { t } = useI18n();
+
+  function handleClear() {
+    clearLocalStorageKidA();
+    onDismiss();
+  }
+
+  return (
+    <div
+      className="storage-error-banner"
+      role="alert"
+      title={error.messages.join('; ')}
+    >
+      <p className="storage-error-text">{t('storage.error.notice')}</p>
+      <div className="storage-error-actions">
+        <button
+          className="storage-error-clear btn"
+          onClick={handleClear}
+          type="button"
+        >
+          {t('storage.error.clear')}
+        </button>
+        <button
+          className="storage-error-dismiss"
+          onClick={onDismiss}
+          type="button"
+        >
+          {t('storage.error.dismiss')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function LocalDataLayerProvider({ children }: PropsWithChildren) {
-  const [friendIds, setFriendIds] = useState<string[]>(() => readStoredFriends());
+  const [friendIds, setFriendIds] = useState<string[]>(() => {
+    const result = readStoredFriends();
+    return result.kind === 'ok' ? result.data : [];
+  });
   const [friendKidsById, setFriendKidsById] = useState<Record<string, Kid>>(
-    () => readStoredFriendKids(),
+    () => {
+      const result = readStoredFriendKids();
+      return result.kind === 'ok' ? result.data : {};
+    },
+  );
+  const [storageError, setStorageError] = useState<StorageError | null>(() =>
+    collectStorageErrors(),
   );
 
   useEffect(() => {
@@ -126,11 +217,13 @@ export function LocalDataLayerProvider({ children }: PropsWithChildren) {
   useEffect(() => {
     const readFriendsFromAnotherTab = (event: StorageEvent) => {
       if (event.key === friendsStorageKey) {
-        setFriendIds(readStoredFriends());
+        const result = readStoredFriends();
+        setFriendIds(result.kind === 'ok' ? result.data : []);
       }
 
       if (event.key === friendKidsStorageKey) {
-        setFriendKidsById(readStoredFriendKids());
+        const result = readStoredFriendKids();
+        setFriendKidsById(result.kind === 'ok' ? result.data : {});
       }
     };
 
@@ -175,6 +268,12 @@ export function LocalDataLayerProvider({ children }: PropsWithChildren) {
 
   return (
     <LocalDataLayerContext.Provider value={value}>
+      {storageError && (
+        <StorageErrorBanner
+          error={storageError}
+          onDismiss={() => setStorageError(null)}
+        />
+      )}
       {children}
     </LocalDataLayerContext.Provider>
   );
