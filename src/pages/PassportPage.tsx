@@ -6,8 +6,9 @@ import {
 } from '@primer/octicons-react';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FriendsDialog } from '../components/FriendsDialog';
+import { FriendPassportView } from '../components/FriendPassportView';
 import { PassportActivityMosaic } from '../components/PassportActivityMosaic';
 import { ProgressCounter } from '../components/ProgressCounter';
 import { TopBar } from '../components/TopBar';
@@ -15,10 +16,12 @@ import {
   useActivitiesData,
   useConferenceData,
   useCurrentUser,
+  useFindKidById,
   useGetWheelShotSummaryForKid,
   usePassportData,
   useReloadPassportActivities,
   useReloadPrizeAwardsForKid,
+  type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
 import type { MessageKey } from '../i18n/messages';
@@ -44,12 +47,19 @@ export function PassportPage() {
   const activities = useActivitiesData();
   const conference = useConferenceData();
   const currentUser = useCurrentUser();
+  const findKidById = useFindKidById();
   const getWheelShotSummaryForKid = useGetWheelShotSummaryForKid();
   const passport = usePassportData();
   const reloadPassportActivities = useReloadPassportActivities();
   const reloadPrizeAwardsForKid = useReloadPrizeAwardsForKid();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useI18n();
+  const publicKidId = searchParams.get('kid') ?? searchParams.get('id') ?? '';
+  const [publicKid, setPublicKid] = useState<Kid | undefined>();
+  const [publicKidStatus, setPublicKidStatus] = useState<
+    'idle' | 'loading' | 'notFound'
+  >('idle');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrError, setQrError] = useState('');
   const [isQrExpanded, setIsQrExpanded] = useState(false);
@@ -70,10 +80,32 @@ export function PassportPage() {
         };
 
   useEffect(() => {
-    if (currentUser.role !== 'kid') {
+    if (!publicKidId && currentUser.role !== 'kid') {
       navigate('/', { replace: true });
     }
-  }, [currentUser.role, navigate]);
+  }, [currentUser.role, navigate, publicKidId]);
+
+  useEffect(() => {
+    const trimmedPublicKidId = publicKidId.trim();
+
+    if (!trimmedPublicKidId) {
+      setPublicKid(undefined);
+      setPublicKidStatus('idle');
+      return;
+    }
+
+    setPublicKidStatus('loading');
+    findKidById(trimmedPublicKidId)
+      .then((kid) => {
+        setPublicKid(kid);
+        setPublicKidStatus(kid ? 'idle' : 'notFound');
+      })
+      .catch((error) => {
+        console.error(`Unable to load public passport for ${trimmedPublicKidId}.`, error);
+        setPublicKid(undefined);
+        setPublicKidStatus('notFound');
+      });
+  }, [findKidById, publicKidId]);
 
   useEffect(() => {
     if (currentUser.role === 'kid') {
@@ -118,6 +150,22 @@ export function PassportPage() {
 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isQrExpanded]);
+
+  if (publicKidId) {
+    return (
+      <>
+        <TopBar showLanguageSwitcher showUserMenu={currentUser.role !== 'guest'} />
+        <section className="kid-content" aria-label={t('kid.title')}>
+          <p className="eyebrow">{conference.title}</p>
+          {publicKid ? (
+            <FriendPassportView kid={publicKid} />
+          ) : publicKidStatus === 'notFound' ? (
+            <h1>{t('kid.notFound')}</h1>
+          ) : null}
+        </section>
+      </>
+    );
+  }
 
   if (currentUser.role !== 'kid') {
     return null;

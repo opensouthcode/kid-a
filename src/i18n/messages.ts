@@ -136,6 +136,7 @@ export const messages = {
     'lead.error.activityCompleted':
       'This kid already has this activity completed.',
     'kid.title': 'Passport',
+    'kid.notFound': 'Kid passport not found',
     'kid.qr.title': 'Kid passport QR',
     'kid.qr.alt': 'Kid passport QR code',
     'kid.qr.instructions': 'Show this QR to the activity lead.',
@@ -353,6 +354,7 @@ export const messages = {
     'lead.error.activityCompleted':
       'Este kid ya tiene esta actividad completada.',
     'kid.title': 'Pasaporte',
+    'kid.notFound': 'Pasaporte infantil no encontrado',
     'kid.qr.title': 'QR de pasaporte infantil',
     'kid.qr.alt': 'Código QR de pasaporte infantil',
     'kid.qr.instructions': 'Enseña este QR al equipo de actividad.',
