@@ -656,6 +656,26 @@ h2 {
   margin-right: auto;
 }
 
+.passport-public-header {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.passport-public-header .friend-passport-view {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 620px) {
+  .passport-public-header {
+    display: grid;
+  }
+
+  .passport-public-header .kid-qr-corner-button {
+    justify-self: end;
+  }
+}
+
 .friend-star-button {
   display: inline-grid;
   width: 46px;
@@ -743,10 +763,8 @@ h2 {
 }
 
 .kid-qr-corner-button {
-  position: absolute;
-  right: clamp(24px, 4vw, 44px);
-  bottom: clamp(24px, 4vw, 44px);
-  z-index: 10;
+  flex: 0 0 auto;
+  margin-left: auto;
   border: 1px solid #8c6b3f;
   border-radius: 18px;
   padding: 6px;
@@ -764,8 +782,8 @@ h2 {
 
 .kid-qr-corner-button img {
   display: block;
-  width: 86px;
-  height: 86px;
+  width: 82px;
+  height: 82px;
 }
 
 .kid-qr-overlay {

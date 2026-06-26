@@ -181,7 +181,10 @@ export function PassportPage() {
           <p className="eyebrow">{conference.title}</p>
           {publicKid ? (
             <>
-              <FriendPassportView kid={publicKid} />
+              <div className="passport-public-header">
+                <FriendPassportView kid={publicKid} />
+                {passportQrButton}
+              </div>
               <KidsSection
                 blockedKidId={publicKid.id}
                 onKidSelected={setSelectedFriendKid}
@@ -190,7 +193,6 @@ export function PassportPage() {
           ) : publicKidStatus === 'notFound' ? (
             <h1>{t('kid.notFound')}</h1>
           ) : null}
-          {passportQrButton}
         </section>
         {selectedFriendKid ? (
           <SelectedKidPassport
@@ -242,6 +244,7 @@ export function PassportPage() {
         <p className="eyebrow">{conference.title}</p>
         <div className="passport-title-row">
           <h1 id="kid-page-title">{t('kid.title')}</h1>
+          {passportQrButton}
         </div>
         <section
           className={
@@ -290,7 +293,6 @@ export function PassportPage() {
             </div>
           ) : null}
         </section>
-        {passportQrButton}
         {qrError ? <p className="form-error">{qrError}</p> : null}
         {passportQrModal}
 
