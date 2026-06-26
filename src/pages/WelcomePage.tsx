@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { KidsSection, SelectedKidPassport } from '../components/KidsSection';
 import { SampleAccessDialog } from '../components/SampleAccessDialog';
@@ -7,6 +7,7 @@ import {
   useActivitiesData,
   useConferenceData,
   useCurrentUser,
+  useGetActivityCounts,
   type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
@@ -15,9 +16,19 @@ export function WelcomePage() {
   const activities = useActivitiesData();
   const conference = useConferenceData();
   const currentUser = useCurrentUser();
+  const getActivityCounts = useGetActivityCounts();
   const { t } = useI18n();
+  const [activityCounts, setActivityCounts] = useState<Record<string, number>>({});
   const [selectedFriendKid, setSelectedFriendKid] = useState<Kid | undefined>();
   const blockedKidId = currentUser.role === 'kid' ? currentUser.id : '';
+
+  useEffect(() => {
+    getActivityCounts()
+      .then(setActivityCounts)
+      .catch((error) => {
+        console.error('Unable to load activity completion counts.', error);
+      });
+  }, [getActivityCounts]);
 
   return (
     <>
@@ -41,6 +52,14 @@ export function WelcomePage() {
                 <Link to={`/activity?id=${activity.id.padStart(2, '0')}`}>
                   <span>{activity.id.padStart(2, '0')}</span>
                   {activity.title}
+                  <strong
+                    className="activity-count-badge"
+                    aria-label={`${activityCounts[activity.id] ?? 0} ${t(
+                      'activity.count.badge',
+                    )}`}
+                  >
+                    {activityCounts[activity.id] ?? 0}
+                  </strong>
                 </Link>
               </li>
             ))}

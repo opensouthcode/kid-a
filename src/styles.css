@@ -223,6 +223,7 @@ h2 {
 }
 
 .welcome-activity-list a {
+  position: relative;
   display: grid;
   min-height: 78px;
   gap: 4px;
@@ -232,6 +233,24 @@ h2 {
   padding: 10px;
   background: rgb(255 250 240 / 52%);
   text-decoration: none;
+}
+
+.activity-count-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-grid;
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid rgb(78 111 43 / 28%);
+  border-radius: 999px;
+  padding: 0 8px;
+  background: #f4d35e;
+  color: #5a4228;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .welcome-activity-list a:hover,

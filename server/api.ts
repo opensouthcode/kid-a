@@ -63,6 +63,7 @@ const apiPaths = new Set([
   '/admin/export',
   '/admin/import',
   '/auth/session',
+  '/activity-count',
   '/activity-kids',
   '/kids',
   '/passport',
@@ -380,6 +381,19 @@ function getActivityCompletionSummary(snapshot: StoreData, activityId: number) {
       kid: entry.kid,
     })),
   };
+}
+
+function getActivityCompletionCounts(snapshot: StoreData) {
+  const counts: Record<string, number> = {};
+
+  Object.values(snapshot.passportActivitiesByKid).forEach((passportActivities) => {
+    passportActivities.forEach((activity) => {
+      const activityId = String(activity.id);
+      counts[activityId] = (counts[activityId] ?? 0) + 1;
+    });
+  });
+
+  return counts;
 }
 
 function normalizePrizeKind(value: unknown) {
@@ -700,6 +714,18 @@ async function handleActivityKids(
   );
 }
 
+async function handleActivityCount(request: ApiRequest): Promise<ApiResponse> {
+  if (request.method !== 'GET') {
+    throw new HttpError(405, 'Method not allowed');
+  }
+
+  return jsonResponse(
+    request,
+    200,
+    getActivityCompletionCounts(await readSnapshot()),
+  );
+}
+
 async function handlePassport(
   request: ApiRequest,
   url: URL,
@@ -922,6 +948,10 @@ export async function handleApiRequest(request: ApiRequest): Promise<ApiResponse
   try {
     if (path === '/passport') {
       return await handlePassport(request, requestUrl, path);
+    }
+
+    if (path === '/activity-count') {
+      return await handleActivityCount(request);
     }
 
     if (path === '/activity-kids') {

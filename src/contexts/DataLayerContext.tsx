@@ -42,6 +42,7 @@ import {
 import {
   fetchRemoteDataSnapshot,
   fetchRemoteActivityKids,
+  fetchRemoteActivityCounts,
   fetchRemoteKid,
   fetchRemoteMagicLinkSession,
   fetchRemotePassport,
@@ -53,6 +54,7 @@ import {
   saveRemotePrizeAward,
   saveRemoteRegisteredKid,
   type RemoteActivityKidsSummary,
+  type RemoteActivityCounts,
   type RemoteDataSnapshot,
 } from '../data/remote-data-client';
 import {
@@ -92,6 +94,7 @@ type DataLayerContextValue = {
   findKidById: (kidId: string) => Promise<Kid | undefined>;
   findKidByManualNumber: (rawSearchValue: string) => Promise<Kid | undefined>;
   findKidByQrIdData: (qrPayload: string) => Promise<Kid | undefined>;
+  getActivityCounts: () => Promise<RemoteActivityCounts>;
   getActivityCompletedKids: (activityId: number) => Promise<RemoteActivityKidsSummary>;
   getPassportForKid: (kidId: string) => PassportData;
   getWheelShotSummaryForKid: (kidId: string) => WheelShotSummary;
@@ -472,6 +475,23 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
   const getPassportForKid = (kidId: string): PassportData => ({
     activities: passportActivitiesByUser[kidId] ?? [],
   });
+  const getActivityCounts = async (): Promise<RemoteActivityCounts> => {
+    if (isRemoteDataLayer) {
+      return fetchRemoteActivityCounts();
+    }
+
+    return Object.values(passportActivitiesByUser).reduce<RemoteActivityCounts>(
+      (counts, passportActivities) => {
+        passportActivities.forEach((activity) => {
+          const activityId = String(activity.id);
+          counts[activityId] = (counts[activityId] ?? 0) + 1;
+        });
+
+        return counts;
+      },
+      {},
+    );
+  };
   const getActivityCompletedKids = async (
     activityId: number,
   ): Promise<RemoteActivityKidsSummary> => {
@@ -874,6 +894,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       findKidById,
       findKidByManualNumber,
       findKidByQrIdData,
+      getActivityCounts,
       getActivityCompletedKids,
       getPassportForKid,
       getWheelShotSummaryForKid,
@@ -970,6 +991,10 @@ export function useGetPassportForKid() {
 
 export function useGetActivityCompletedKids() {
   return useDataLayer().getActivityCompletedKids;
+}
+
+export function useGetActivityCounts() {
+  return useDataLayer().getActivityCounts;
 }
 
 export function useUsersData() {
