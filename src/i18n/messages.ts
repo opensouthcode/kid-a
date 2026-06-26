@@ -229,6 +229,9 @@ export const messages = {
     'user.idLabel': 'ID',
     'user.nameLabel': 'Name',
     'user.logout': 'Log out',
+    'storage.error.notice': 'Some local data could not be read and was reset.',
+    'storage.error.clear': 'Clear local data',
+    'storage.error.dismiss': 'Dismiss',
   },
   es: {
     'app.titlePrefix': 'Bienvenida a',
@@ -453,6 +456,9 @@ export const messages = {
     'user.idLabel': 'ID',
     'user.nameLabel': 'Nombre',
     'user.logout': 'Cerrar sesión',
+    'storage.error.notice': 'Algunos datos locales no se pudieron leer y se han restablecido.',
+    'storage.error.clear': 'Limpiar datos locales',
+    'storage.error.dismiss': 'Ignorar',
   },
 } as const;
 
