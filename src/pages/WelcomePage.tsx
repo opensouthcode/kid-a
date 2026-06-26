@@ -19,14 +19,19 @@ export function WelcomePage() {
   const getActivityCounts = useGetActivityCounts();
   const { t } = useI18n();
   const [activityCounts, setActivityCounts] = useState<Record<string, number>>({});
+  const [hasLoadedActivityCounts, setHasLoadedActivityCounts] = useState(false);
   const [selectedFriendKid, setSelectedFriendKid] = useState<Kid | undefined>();
   const blockedKidId = currentUser.role === 'kid' ? currentUser.id : '';
 
   useEffect(() => {
     getActivityCounts()
-      .then(setActivityCounts)
+      .then((counts) => {
+        setActivityCounts(counts);
+        setHasLoadedActivityCounts(true);
+      })
       .catch((error) => {
         console.error('Unable to load activity completion counts.', error);
+        setHasLoadedActivityCounts(true);
       });
   }, [getActivityCounts]);
 
@@ -52,14 +57,16 @@ export function WelcomePage() {
                 <Link to={`/activity?id=${activity.id.padStart(2, '0')}`}>
                   <span>{activity.id.padStart(2, '0')}</span>
                   {activity.title}
-                  <strong
-                    className="activity-count-badge"
-                    aria-label={`${activityCounts[activity.id] ?? 0} ${t(
-                      'activity.count.badge',
-                    )}`}
-                  >
-                    {activityCounts[activity.id] ?? 0}
-                  </strong>
+                  {hasLoadedActivityCounts ? (
+                    <strong
+                      className="activity-count-badge"
+                      aria-label={`${activityCounts[activity.id] ?? 0} ${t(
+                        'activity.count.badge',
+                      )}`}
+                    >
+                      {activityCounts[activity.id] ?? 0}
+                    </strong>
+                  ) : null}
                 </Link>
               </li>
             ))}
