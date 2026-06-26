@@ -234,7 +234,22 @@ export function DeskPage() {
 
   return (
     <>
-      <TopBar showUserMenu onLogout={() => navigate('/')} />
+      <TopBar
+        showUserMenu
+        menuActions={
+          <button
+            className="logout-button"
+            type="button"
+            disabled={isGeneratingPrintQrs}
+            onClick={printPassportQrs}
+          >
+            {isGeneratingPrintQrs
+              ? t('desk.printQr.generating')
+              : t('desk.printQr.sheetButton')}
+          </button>
+        }
+        onLogout={() => navigate('/')}
+      />
       <section className="registration-content" aria-labelledby="desk-title">
         <p className="eyebrow">{t('desk.eyebrow')}</p>
         <h1 id="desk-title">{t('desk.title')}</h1>
@@ -281,16 +296,6 @@ export function DeskPage() {
           ) : null}
           {printQrError ? <p className="form-error">{printQrError}</p> : null}
           <div className="desk-actions">
-            <button
-              className="access-button secondary-action"
-              type="button"
-              disabled={isGeneratingPrintQrs}
-              onClick={printPassportQrs}
-            >
-              {isGeneratingPrintQrs
-                ? t('desk.printQr.generating')
-                : t('desk.printQr')}
-            </button>
             <button
               className={
                 isConfirmAttentionActive

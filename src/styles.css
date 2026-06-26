@@ -110,7 +110,32 @@ h2 {
 }
 
 .welcome-friends-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
   margin-bottom: 10px;
+}
+
+.welcome-friends-refresh-button {
+  display: inline-grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(90 66 40 / 10%);
+  color: #5a4228;
+  cursor: pointer;
+}
+
+.welcome-friends-refresh-button:hover,
+.welcome-friends-refresh-button:focus-visible {
+  background: rgb(90 66 40 / 18%);
+}
+
+.welcome-friends-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.55;
 }
 
 .welcome-activity-list h2 {
@@ -198,6 +223,7 @@ h2 {
 }
 
 .welcome-activity-list a {
+  position: relative;
   display: grid;
   min-height: 78px;
   gap: 4px;
@@ -207,6 +233,24 @@ h2 {
   padding: 10px;
   background: rgb(255 250 240 / 52%);
   text-decoration: none;
+}
+
+.activity-count-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-grid;
+  min-width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid rgb(78 111 43 / 28%);
+  border-radius: 999px;
+  padding: 0 8px;
+  background: #f4d35e;
+  color: #5a4228;
+  font-size: 0.82rem;
+  font-weight: 900;
+  line-height: 1;
 }
 
 .welcome-activity-list a:hover,
@@ -228,6 +272,16 @@ h2 {
 
 .activity-hero {
   margin-top: 24px;
+}
+
+.activity-heading-row {
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.activity-heading-row .activity-heading {
+  flex: 1 1 auto;
 }
 
 .activity-heading span {
@@ -254,9 +308,47 @@ h2 {
   background: #dfecc2;
 }
 
-.title-issue-link {
-  margin-left: 12px;
-  vertical-align: middle;
+.activity-details-link {
+  display: grid;
+  flex: 0 0 auto;
+  justify-items: center;
+  gap: 8px;
+  max-width: 132px;
+  color: #5a4228;
+  font-size: 0.82rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.activity-details-link:hover .issue-link,
+.activity-details-link:focus-visible .issue-link {
+  background: #dfecc2;
+}
+
+.activity-details-label {
+  line-height: 1.1;
+}
+
+.activity-details-qr {
+  width: 112px;
+  height: 112px;
+  border: 1px solid #8c6b3f;
+  border-radius: 10px;
+  background: #fff;
+  image-rendering: pixelated;
+}
+
+@media (max-width: 720px) {
+  .activity-heading-row {
+    display: grid;
+  }
+
+  .activity-details-link {
+    justify-self: start;
+  }
 }
 
 .user-toolbar {
@@ -583,6 +675,26 @@ h2 {
   margin-right: auto;
 }
 
+.passport-public-header {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.passport-public-header .friend-passport-view {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 620px) {
+  .passport-public-header {
+    display: grid;
+  }
+
+  .passport-public-header .kid-qr-corner-button {
+    justify-self: end;
+  }
+}
+
 .friend-star-button {
   display: inline-grid;
   width: 46px;
@@ -670,10 +782,8 @@ h2 {
 }
 
 .kid-qr-corner-button {
-  position: absolute;
-  right: clamp(24px, 4vw, 44px);
-  bottom: clamp(24px, 4vw, 44px);
-  z-index: 10;
+  flex: 0 0 auto;
+  margin-left: auto;
   border: 1px solid #8c6b3f;
   border-radius: 18px;
   padding: 6px;
@@ -691,8 +801,8 @@ h2 {
 
 .kid-qr-corner-button img {
   display: block;
-  width: 86px;
-  height: 86px;
+  width: 82px;
+  height: 82px;
 }
 
 .kid-qr-overlay {
@@ -1498,67 +1608,32 @@ h2 {
 }
 
 .kid-gender-icon {
-  position: relative;
-  display: inline-block;
-  width: 30px;
-  height: 30px;
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
   flex: 0 0 auto;
+  place-items: center;
   transform: translateY(6px);
-  overflow: hidden;
-  border: 2px solid #4e6f2b;
-  border-radius: 50%;
-  background: #e5f0d0;
+  color: #5a4228;
 }
 
-.kid-gender-icon::before {
-  position: absolute;
-  z-index: 1;
-  right: 6px;
-  bottom: 3px;
-  left: 6px;
-  height: 19px;
-  border-radius: 50% 50% 45% 45%;
-  background: #ccefb8;
-  content: "";
+.kid-gender-icon svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.8;
 }
 
-.kid-gender-icon::after {
-  position: absolute;
-  content: "";
+.kid-gender-shoulders {
+  stroke-width: 3;
 }
 
-.kid-gender-icon.boy::after {
-  top: 4px;
-  right: 6px;
-  left: 6px;
-  height: 9px;
-  border-radius: 12px 12px 5px 5px;
-  background:
-    radial-gradient(circle at 28% 80%, #d9482f 0 3px, transparent 4px),
-    radial-gradient(circle at 50% 82%, #d9482f 0 3px, transparent 4px),
-    radial-gradient(circle at 72% 80%, #d9482f 0 3px, transparent 4px),
-    #d9482f;
-}
-
-.kid-gender-icon.girl::after {
-  top: 3px;
-  right: 4px;
-  bottom: 2px;
-  left: 4px;
-  border-radius: 14px 14px 9px 9px;
-  background:
-    radial-gradient(ellipse at 18% 58%, #ffd84d 0 5px, transparent 6px),
-    radial-gradient(ellipse at 82% 58%, #ffd84d 0 5px, transparent 6px),
-    linear-gradient(#ffd84d 0 48%, transparent 49%);
-}
-
-.kid-gender-icon.preferNotToSay {
-  background: transparent;
-}
-
-.kid-gender-icon.preferNotToSay::before,
-.kid-gender-icon.preferNotToSay::after {
-  display: none;
+.kid-gender-hair {
+  stroke-width: 3.2;
 }
 
 .kid-count-card {
@@ -1763,6 +1838,33 @@ h2 {
 
 .lead-total-counter strong {
   font-size: 1rem;
+}
+
+.passport-header-counters {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.wheel-shot-pill {
+  display: inline-flex;
+  min-height: 34px;
+  gap: 6px;
+  align-items: center;
+  border: 1px solid rgb(90 66 40 / 22%);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: rgb(90 66 40 / 6%);
+  color: #5a4228;
+  font-size: 0.9rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.wheel-shot-pill.available {
+  border-color: rgb(78 111 43 / 45%);
+  background: #dfecc2;
+  color: #34511c;
 }
 
 .lead-empty-summary {

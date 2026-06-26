@@ -10,8 +10,8 @@ import {
   useAccessSessionStatus,
   useActivitiesData,
   useCurrentUser,
+  useGetActivityCompletedKids,
   useGetPassportForKid,
-  useKidsData,
   useMarkPassportActivityDone,
   useReloadPassportActivities,
   type Kid,
@@ -22,24 +22,29 @@ export function ActivityLeadPage() {
   const accessSessionStatus = useAccessSessionStatus();
   const currentUser = useCurrentUser();
   const activities = useActivitiesData();
+  const getActivityCompletedKids = useGetActivityCompletedKids();
   const getPassportForKid = useGetPassportForKid();
-  const kids = useKidsData();
   const markPassportActivityDone = useMarkPassportActivityDone();
   const reloadPassportActivities = useReloadPassportActivities();
   const navigate = useNavigate();
   const { locale, t } = useI18n();
   const leadActivityId = currentUser.role === 'lead' ? currentUser.activityId : undefined;
-  const activityId = leadActivityId ?? 1;
+  const activityId = leadActivityId ?? 0;
   const [confirmedKidId, setConfirmedKidId] = useState('');
+  const [confirmedKid, setConfirmedKid] = useState<Kid | undefined>();
   const [passportCompletedKidId, setPassportCompletedKidId] = useState('');
   const [lastCompletedKidId, setLastCompletedKidId] = useState('');
-  const confirmedKid = kids.find((kid) => kid.id === confirmedKidId);
+  const [activityCompletedKids, setActivityCompletedKids] = useState<{
+    count: number;
+    kids: Array<{ completedAt: string; kid: Kid }>;
+  }>({ count: 0, kids: [] });
   const passport = confirmedKid
     ? getPassportForKid(confirmedKid.id)
     : { activities: [] };
-  const leadActivity = passport.activities.find(
+  const storedLeadActivity = passport.activities.find(
     (activity) => activity.id === activityId,
   );
+  const leadActivity = activityId ? (storedLeadActivity ?? { id: activityId }) : undefined;
   const activity = activities.find((entry) => entry.id === String(activityId));
   const completedActivities = passport.activities.filter(
     (activity) => activity.completedAt,
@@ -54,29 +59,11 @@ export function ActivityLeadPage() {
       hour: '2-digit',
       minute: '2-digit',
     }).format(new Date(completedAt));
-  const getKidActivity = (kid: Kid) =>
-    getPassportForKid(kid.id).activities.find(
-      (activity) => activity.id === activityId,
-    );
-  const activityCompletedKids = kids
-    .map((kid) => ({
-      completedAt: getKidActivity(kid)?.completedAt,
-      kid,
-    }))
-    .filter(
-      (entry): entry is { completedAt: string; kid: Kid } =>
-        typeof entry.completedAt === 'string',
-    )
-    .sort(
-      (firstEntry, secondEntry) =>
-        new Date(secondEntry.completedAt).getTime() -
-        new Date(firstEntry.completedAt).getTime(),
-    );
   const lastCompletedKids = activityCompletedKids
-    .slice(0, 3)
+    .kids
     .map((entry) => entry.kid);
   const completedAtByKidId = Object.fromEntries(
-    activityCompletedKids.map((entry) => [
+    activityCompletedKids.kids.map((entry) => [
       entry.kid.id,
       formatCompletionTime(entry.completedAt),
     ]),
@@ -103,10 +90,26 @@ export function ActivityLeadPage() {
   }, [accessSessionStatus.state, currentUser.role, navigate]);
 
   useEffect(() => {
-    if (confirmedKidId) {
+    if (confirmedKidId && currentUser.role === 'lead') {
       reloadPassportActivities(confirmedKidId);
     }
-  }, [confirmedKidId]);
+  }, [confirmedKidId, currentUser.role]);
+
+  useEffect(() => {
+    if (
+      accessSessionStatus.state !== 'ready' ||
+      currentUser.role !== 'lead' ||
+      !leadActivityId
+    ) {
+      return;
+    }
+
+    getActivityCompletedKids(leadActivityId)
+      .then(setActivityCompletedKids)
+      .catch((error) => {
+        console.error('Unable to load activity completed kids.', error);
+      });
+  }, [accessSessionStatus.state, currentUser.role, leadActivityId]);
 
   if (accessSessionStatus.state === 'loading' || currentUser.role !== 'lead') {
     return null;
@@ -114,16 +117,19 @@ export function ActivityLeadPage() {
 
   const confirmKid = (kid: Kid) => {
     setConfirmedKidId(kid.id);
+    setConfirmedKid(kid);
     setPassportCompletedKidId('');
     setLastCompletedKidId('');
   };
   const clearConfirmedKid = () => {
     setConfirmedKidId('');
+    setConfirmedKid(undefined);
     setPassportCompletedKidId('');
     setLastCompletedKidId('');
   };
   const returnToKidScan = () => {
     setConfirmedKidId('');
+    setConfirmedKid(undefined);
   };
 
   const markActivity = () => {
@@ -140,6 +146,23 @@ export function ActivityLeadPage() {
       leadActivity.id,
     );
     setLastCompletedKidId(confirmedKid.id);
+    setActivityCompletedKids((currentActivityCompletedKids) => {
+      const alreadyCompleted = currentActivityCompletedKids.kids.some(
+        (entry) => entry.kid.id === confirmedKid.id,
+      );
+
+      if (alreadyCompleted) {
+        return currentActivityCompletedKids;
+      }
+
+      return {
+        count: currentActivityCompletedKids.count + 1,
+        kids: [
+          { completedAt: new Date().toISOString(), kid: confirmedKid },
+          ...currentActivityCompletedKids.kids,
+        ].slice(0, 5),
+      };
+    });
 
     if (nextCompletedActivities === passport.activities.length) {
       setPassportCompletedKidId(confirmedKid.id);
@@ -227,7 +250,7 @@ export function ActivityLeadPage() {
                     <button
                       className="access-button"
                       type="button"
-                      disabled={!leadActivity}
+                      disabled={!activityId}
                       onClick={markActivity}
                     >
                       {t('lead.mark.submit')}
@@ -245,7 +268,7 @@ export function ActivityLeadPage() {
           <div className="lead-summary-header">
             <h2>{t('lead.summary.title')}</h2>
             <p className="lead-total-counter">
-              <strong>{activityCompletedKids.length}</strong>
+              <strong>{activityCompletedKids.count}</strong>
             </p>
           </div>
           {lastCompletedKids.length > 0 ? (

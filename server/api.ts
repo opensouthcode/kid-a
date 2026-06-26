@@ -63,6 +63,8 @@ const apiPaths = new Set([
   '/admin/export',
   '/admin/import',
   '/auth/session',
+  '/activity-count',
+  '/activity-kids',
   '/kids',
   '/passport',
   '/wheel-prizes',
@@ -337,21 +339,105 @@ function normalizeOptionalLastKnownKidId(value: unknown) {
   return value.trim().toLowerCase();
 }
 
-function passportResponse(
-  passportActivitiesByKid: PassportActivitiesByKid,
-  kidId: string,
-): PassportActivity[] {
-  return passportActivitiesByKid[kidId] ?? passportTemplate(passportActivitiesByKid);
+type PassportApiResponse = {
+  activities: PassportActivity[];
+  wheelShotSummary: {
+    availableShots: number;
+    earnedShots: number;
+    usedShots: number;
+  };
+};
+
+const passportActivityIds = Array.from({ length: 16 }, (_, index) => index + 1);
+
+function getPassportWheelShotSummary(snapshot: StoreData, kidId: string) {
+  const passportActivities = mergePassportTemplate(
+    snapshot.passportActivitiesByKid[kidId],
+  );
+  const completedActivities = passportActivities.filter(
+    (activity) => activity.completedAt,
+  ).length;
+  const spinEligibleActivities = Math.min(
+    completedActivities,
+    Math.max(passportActivities.length - 1, 0),
+  );
+  const earnedShots = Math.floor(spinEligibleActivities / 4);
+  const usedShots = snapshot.prizeAwards.filter(
+    (award) => award.kidId === kidId && award.source === 'wheel',
+  ).length;
+
+  return {
+    availableShots: Math.max(earnedShots - usedShots, 0),
+    earnedShots,
+    usedShots,
+  };
 }
 
-function passportTemplate(
-  passportActivitiesByKid: PassportActivitiesByKid,
+function passportResponse(snapshot: StoreData, kidId: string): PassportApiResponse {
+  return {
+    activities: mergePassportTemplate(snapshot.passportActivitiesByKid[kidId]),
+    wheelShotSummary: getPassportWheelShotSummary(snapshot, kidId),
+  };
+}
+
+function passportTemplate(): PassportActivity[] {
+  return passportActivityIds.map((id) => ({ id }));
+}
+
+function mergePassportTemplate(
+  passportActivities: PassportActivity[] | undefined,
 ): PassportActivity[] {
-  return (
-    Object.values(passportActivitiesByKid)[0]?.map((activity) => ({
-      id: activity.id,
-    })) ?? []
+  const completedActivitiesById = Object.fromEntries(
+    (passportActivities ?? []).map((activity) => [activity.id, activity]),
   );
+
+  return passportTemplate().map(
+    (activity) => completedActivitiesById[activity.id] ?? activity,
+  );
+}
+
+function getActivityCompletionSummary(snapshot: StoreData, activityId: number) {
+  const completedEntries = snapshot.kids
+    .map((kid) => {
+      const completedAt = snapshot.passportActivitiesByKid[kid.id]?.find(
+        (activity) => activity.id === activityId,
+      )?.completedAt;
+
+      return completedAt ? { completedAt, kid } : undefined;
+    })
+    .filter((entry): entry is { completedAt: string; kid: StoreData['kids'][number] } =>
+      Boolean(entry),
+    )
+    .sort(
+      (firstEntry, secondEntry) =>
+        new Date(secondEntry.completedAt).getTime() -
+        new Date(firstEntry.completedAt).getTime(),
+    );
+
+  return {
+    count: completedEntries.length,
+    kids: completedEntries.slice(0, 5).map((entry) => ({
+      completedAt: entry.completedAt,
+      kid: entry.kid,
+    })),
+  };
+}
+
+function getActivityCompletionCounts(snapshot: StoreData) {
+  const counts: Record<string, number> = {};
+
+  Object.values(snapshot.passportActivitiesByKid).forEach((passportActivities) => {
+    passportActivities.forEach((activity) => {
+      if (!activity.completedAt) {
+        return;
+      }
+
+      const activityId = String(activity.id);
+      counts[activityId] = (counts[activityId] ?? 0) + 1;
+    });
+  });
+
+  return counts;
 }
 
 function normalizePrizeKind(value: unknown) {
@@ -508,9 +594,23 @@ function parseAdminBackup(body: Record<string, unknown>): AdminBackup {
 }
 
 async function handleKids(request: ApiRequest, url: URL): Promise<ApiResponse> {
-  void url;
-
   if (request.method === 'GET') {
+    const searchedKid = url.searchParams.get('kid')?.trim();
+
+    if (searchedKid) {
+      const snapshot = await readSnapshot();
+      const normalizedKidId = normalizeKidId(searchedKid, snapshot);
+      const kid = snapshot.kids.find(
+        (entry) => entry.id.toLowerCase() === normalizedKidId.toLowerCase(),
+      );
+
+      if (!kid) {
+        throw new HttpError(404, `Unknown kid: ${normalizedKidId}`);
+      }
+
+      return jsonResponse(request, 200, kid);
+    }
+
     await requireMagicLink(request, url, [...staffRoles]);
 
     const snapshot = await readSnapshot();
@@ -636,6 +736,40 @@ async function handleAuth(
   return jsonResponse(request, 200, session);
 }
 
+async function handleActivityKids(
+  request: ApiRequest,
+  url: URL,
+): Promise<ApiResponse> {
+  if (request.method !== 'GET') {
+    throw new HttpError(405, 'Method not allowed');
+  }
+
+  const session = await requireMagicLink(request, url, ['lead']);
+  const activityId = parsePositiveInteger(url.searchParams.get('activity'), 'activity');
+
+  if (session.activityId !== activityId) {
+    throw new HttpError(403, 'Lead magic link cannot view this activity');
+  }
+
+  return jsonResponse(
+    request,
+    200,
+    getActivityCompletionSummary(await readSnapshot(), activityId),
+  );
+}
+
+async function handleActivityCount(request: ApiRequest): Promise<ApiResponse> {
+  if (request.method !== 'GET') {
+    throw new HttpError(405, 'Method not allowed');
+  }
+
+  return jsonResponse(
+    request,
+    200,
+    getActivityCompletionCounts(await readSnapshot()),
+  );
+}
+
 async function handlePassport(
   request: ApiRequest,
   url: URL,
@@ -646,15 +780,32 @@ async function handlePassport(
   }
 
   if (request.method === 'GET') {
-    await requireMagicLink(request, url, [...staffRoles]);
-
     const snapshot = await readSnapshot();
+    const batchKidIds = url.searchParams
+      .getAll('kids')
+      .flatMap((kidIds) => kidIds.split(','))
+      .map((kidId) => kidId.trim())
+      .filter(Boolean);
+
+    if (batchKidIds.length > 0) {
+      const passportsByKid = Object.fromEntries(
+        [...new Set(batchKidIds)]
+          .map((kidId) => normalizeKidId(kidId, snapshot))
+          .map((kidId) => [
+            kidId,
+            passportResponse(snapshot, kidId),
+          ]),
+      );
+
+      return jsonResponse(request, 200, passportsByKid);
+    }
+
     const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
 
     return jsonResponse(
       request,
       200,
-      passportResponse(snapshot.passportActivitiesByKid, kidId),
+      passportResponse(snapshot, kidId),
     );
   }
 
@@ -672,13 +823,17 @@ async function handlePassport(
   const snapshot = await readSnapshot();
   const kidId = normalizeKidId(url.searchParams.get('kid'), snapshot);
 
-  const passport = await completePassportActivity({
+  await completePassportActivity({
     activityId,
     completedAt: new Date().toISOString(),
     kidId,
   });
 
-  return jsonResponse(request, 200, passport);
+  return jsonResponse(
+    request,
+    200,
+    passportResponse(await readSnapshot(), kidId),
+  );
 }
 
 async function handleWheelPrizes(
@@ -841,6 +996,14 @@ export async function handleApiRequest(request: ApiRequest): Promise<ApiResponse
   try {
     if (path === '/passport') {
       return await handlePassport(request, requestUrl, path);
+    }
+
+    if (path === '/activity-count') {
+      return await handleActivityCount(request);
+    }
+
+    if (path === '/activity-kids') {
+      return await handleActivityKids(request, requestUrl);
     }
 
     if (path === '/auth/session') {

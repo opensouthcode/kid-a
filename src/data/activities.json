@@ -1,83 +1,98 @@
 [
   {
     "id": "1",
-    "title": "Micro:bit Luces",
-    "details": "Let's learn about Micro:bit.",
+    "title": "Micro:bit Coches",
+    "details": "Construye y programa un coche con Micro:bit para experimentar con movimiento, sensores y pequeñas pruebas de conducción.",
     "issueUrl": "https://github.com/opensouthcode/2026/issues/38"
   },
   {
     "id": "2",
     "title": "Hackea el Zombie",
+    "details": "Modifica un videojuego de zombis hecho con Godot y cambia reglas, personajes o detalles para hacerlo a tu gusto.",
     "issueUrl": "https://github.com/opensouthcode/2026/issues/31"
   },
   {
     "id": "3",
     "title": "Desenchufao",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+    "details": "Resuelve retos de pensamiento computacional sin pantallas, usando lógica, juego y colaboración.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/45"
   },
   {
     "id": "4",
     "title": "Makey Makey Dance Dance",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+    "details": "Crea un mando de baile con Makey Makey y materiales cotidianos para controlar música o un juego con el cuerpo.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/47"
   },
   {
     "id": "5",
     "title": "Anima tu dibujo",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+    "details": "Haz que tu dibujo baile",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/48"
   },
   {
     "id": "6",
     "title": "Aprende Git",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+    "details": "Da tus primeros pasos con Git mediante una actividad práctica para guardar cambios y colaborar como en un proyecto real.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/49"
   },
   {
     "id": "7",
-    "title": "Magnific workflow",
+    "title": "Magnific flow",
+    "details": "Crea imágenes con IA generativa combinando referencias visuales, texto y prompts para dirigir el resultado.",
     "issueUrl": "https://github.com/opensouthcode/2026/issues/11"
   },
   {
     "id": "8",
-    "title": "Comic AI - Elige tu aventura",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+    "title": "ComicIA - Elige tu aventura",
+    "details": "Añade una viñeta a un cómic colaborativo usando creatividad e imágenes generadas con IA.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/46"
   },
   {
     "id": "9",
-    "title": "NFC Cinexin",
+    "title": "NFC Jukebox",
+    "details": "Explora cómo las etiquetas NFC pueden activar canciones o sonidos y monta una pequeña jukebox interactiva.",
     "issueUrl": "https://github.com/opensouthcode/2026/issues/9"
   },
   {
     "id": "10",
-    "title": "TinkerCAD",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+    "title": "TinkerCAD 3D",
+    "details": "Diseña una pieza sencilla en 3D con TinkerCAD y prepárala para poder imprimirla.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/44"
   },
   {
     "id": "11",
-    "title": "YWT 1 y 2",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+    "title": "YesWeTech - Detective digital",
+    "details": "Conviértete en detective digital y descifra códigos aprendiendo conceptos básicos de criptografía.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/42"
   },
   {
     "id": "12",
-    "title": "YWT 3 y 4",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/4"
+    "title": "YesWeTech - LEDs",
+    "details": "Programa señales luminosas y pequeñas secuencias con LEDs para entender cómo se controla la luz desde el código.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/43"
   },
   {
     "id": "13",
-    "title": "Mural digital",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/6"
+    "title": "OpenSouthQuiz",
+    "details": "Participa en un juego de preguntas en tiempo real con rondas por edades, puntuación rápida y ranking final.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/10"
   },
   {
     "id": "14",
     "title": "Si fueras un Octogato",
+    "details": "Diseña tu propio Octogato personalizado, ideal para imaginar un avatar divertido y compartirlo.",
     "issueUrl": "https://github.com/opensouthcode/2026/issues/7"
   },
   {
     "id": "15",
-    "title": "Ada & Zangemann: Manualidades",
-    "issueUrl": "https://github.com/opensouthcode/2026/issues/3"
+    "title": "Ada Kraft",
+    "details": "Haz manualidades inspiradas en Ada & Zangemann y en la tecnología libre.",
+    "issueUrl": "https://github.com/opensouthcode/2026/issues/41"
   },
   {
     "id": "16",
-    "title": "Ada & Zangemann: Cine",
+    "title": "Cine Zangemann",
+    "details": "Disfruta la historia de Ada & Zangemann y descubre ideas sobre software libre, creatividad y tecnología.",
     "issueUrl": "https://github.com/opensouthcode/2026/issues/3"
   }
 ]

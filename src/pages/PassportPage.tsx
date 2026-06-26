@@ -1,64 +1,60 @@
 import {
   IterationsIcon,
   LocationIcon,
-  PeopleIcon,
   SyncIcon,
 } from '@primer/octicons-react';
 import QRCode from 'qrcode';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FriendsDialog } from '../components/FriendsDialog';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { FriendPassportView } from '../components/FriendPassportView';
+import { KidsSection, SelectedKidPassport } from '../components/KidsSection';
 import { PassportActivityMosaic } from '../components/PassportActivityMosaic';
 import { ProgressCounter } from '../components/ProgressCounter';
 import { TopBar } from '../components/TopBar';
+import { WheelShotPill } from '../components/WheelShotPill';
 import {
   useActivitiesData,
   useConferenceData,
   useCurrentUser,
+  useFindKidById,
   useGetWheelShotSummaryForKid,
   usePassportData,
   useReloadPassportActivities,
   useReloadPrizeAwardsForKid,
+  type Kid,
 } from '../contexts/DataLayerContext';
 import { useI18n } from '../i18n/I18nProvider';
-import type { MessageKey } from '../i18n/messages';
 import { createKidPassportUrl } from '../utils/kid-id';
-
-type KidOption = {
-  id: 'wheel' | 'friends';
-  labelKey: MessageKey;
-};
-
-const kidOptions: KidOption[] = [
-  {
-    id: 'wheel',
-    labelKey: 'kid.option.wheel',
-  },
-  {
-    id: 'friends',
-    labelKey: 'kid.option.friends',
-  },
-];
 
 export function PassportPage() {
   const activities = useActivitiesData();
   const conference = useConferenceData();
   const currentUser = useCurrentUser();
+  const findKidById = useFindKidById();
   const getWheelShotSummaryForKid = useGetWheelShotSummaryForKid();
   const passport = usePassportData();
   const reloadPassportActivities = useReloadPassportActivities();
   const reloadPrizeAwardsForKid = useReloadPrizeAwardsForKid();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { t } = useI18n();
+  const publicKidId = searchParams.get('kid') ?? searchParams.get('id') ?? '';
+  const [publicKid, setPublicKid] = useState<Kid | undefined>();
+  const [publicKidStatus, setPublicKidStatus] = useState<
+    'idle' | 'loading' | 'notFound'
+  >('idle');
   const [qrCodeUrl, setQrCodeUrl] = useState('');
   const [qrError, setQrError] = useState('');
   const [isQrExpanded, setIsQrExpanded] = useState(false);
-  const [isFriendsDialogOpen, setIsFriendsDialogOpen] = useState(false);
+  const [selectedFriendKid, setSelectedFriendKid] = useState<Kid | undefined>();
   const completedActivities = passport.activities.filter(
     (activity) => activity.completedAt,
   ).length;
-  const kidPassportPayload =
-    currentUser.role === 'kid' ? createKidPassportUrl(currentUser.id) : '';
+  const displayedKidId =
+    publicKid?.id ?? (currentUser.role === 'kid' ? currentUser.id : '');
+  const kidPassportPayload = displayedKidId
+    ? createKidPassportUrl(displayedKidId)
+    : '';
   const wheelShotSummary =
     currentUser.role === 'kid'
       ? getWheelShotSummaryForKid(currentUser.id)
@@ -70,10 +66,32 @@ export function PassportPage() {
         };
 
   useEffect(() => {
-    if (currentUser.role !== 'kid') {
+    if (!publicKidId && currentUser.role !== 'kid') {
       navigate('/', { replace: true });
     }
-  }, [currentUser.role, navigate]);
+  }, [currentUser.role, navigate, publicKidId]);
+
+  useEffect(() => {
+    const trimmedPublicKidId = publicKidId.trim();
+
+    if (!trimmedPublicKidId) {
+      setPublicKid(undefined);
+      setPublicKidStatus('idle');
+      return;
+    }
+
+    setPublicKidStatus('loading');
+    findKidById(trimmedPublicKidId)
+      .then((kid) => {
+        setPublicKid(kid);
+        setPublicKidStatus(kid ? 'idle' : 'notFound');
+      })
+      .catch((error) => {
+        console.error(`Unable to load public passport for ${trimmedPublicKidId}.`, error);
+        setPublicKid(undefined);
+        setPublicKidStatus('notFound');
+      });
+  }, [findKidById, publicKidId]);
 
   useEffect(() => {
     if (currentUser.role === 'kid') {
@@ -119,6 +137,75 @@ export function PassportPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isQrExpanded]);
 
+  const passportQrButton = qrCodeUrl ? (
+    <button
+      className="kid-qr-corner-button"
+      type="button"
+      aria-label={t('kid.qr.open')}
+      title={t('kid.qr.open')}
+      onClick={() => setIsQrExpanded(true)}
+    >
+      <img src={qrCodeUrl} alt={t('kid.qr.alt')} />
+    </button>
+  ) : null;
+  const passportQrModal = isQrExpanded ? (
+    <div
+      className="kid-qr-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="kid-qr-title"
+      onClick={() => setIsQrExpanded(false)}
+    >
+      <section
+        className="kid-qr-dialog"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <h2 id="kid-qr-title">{t('kid.qr.title')}</h2>
+        <img src={qrCodeUrl} alt={t('kid.qr.alt')} />
+        <p>{t('kid.qr.instructions')}</p>
+        <button
+          className="secondary-button"
+          type="button"
+          onClick={() => setIsQrExpanded(false)}
+        >
+          {t('kid.qr.close')}
+        </button>
+      </section>
+    </div>
+  ) : null;
+
+  if (publicKidId) {
+    return (
+      <>
+        <TopBar showLanguageSwitcher showUserMenu={currentUser.role !== 'guest'} />
+        <section className="kid-content" aria-label={t('kid.title')}>
+          <p className="eyebrow">{conference.title}</p>
+          {publicKid ? (
+            <>
+              <div className="passport-public-header">
+                <FriendPassportView kid={publicKid} />
+                {passportQrButton}
+              </div>
+              <KidsSection
+                blockedKidId={publicKid.id}
+                onKidSelected={setSelectedFriendKid}
+              />
+            </>
+          ) : publicKidStatus === 'notFound' ? (
+            <h1>{t('kid.notFound')}</h1>
+          ) : null}
+        </section>
+        {selectedFriendKid ? (
+          <SelectedKidPassport
+            kid={selectedFriendKid}
+            onClose={() => setSelectedFriendKid(undefined)}
+          />
+        ) : null}
+        {passportQrModal}
+      </>
+    );
+  }
+
   if (currentUser.role !== 'kid') {
     return null;
   }
@@ -149,45 +236,17 @@ export function PassportPage() {
                 total={passport.activities.length}
               />
             </button>
+            <WheelShotPill summary={wheelShotSummary} />
           </>
         }
         showUserMenu
         onLogout={() => navigate('/')}
       />
       <section className="kid-content" aria-labelledby="kid-page-title">
-        <nav className="passport-nav" aria-label={t('kid.options.title')}>
-          {kidOptions.map((option) => {
-            const isFriendsOption = option.id === 'friends';
-
-            return (
-              <button
-                className={
-                  isFriendsOption
-                    ? 'passport-nav-button enabled'
-                    : 'passport-nav-button'
-                }
-                type="button"
-                disabled={!isFriendsOption}
-                key={option.id}
-                onClick={
-                  isFriendsOption
-                    ? () => setIsFriendsDialogOpen(true)
-                    : undefined
-                }
-              >
-                {option.id === 'wheel' ? (
-                  <IterationsIcon size={16} aria-hidden="true" />
-                ) : (
-                  <PeopleIcon size={16} aria-hidden="true" />
-                )}
-                {t(option.labelKey)}
-              </button>
-            );
-          })}
-        </nav>
         <p className="eyebrow">{conference.title}</p>
         <div className="passport-title-row">
           <h1 id="kid-page-title">{t('kid.title')}</h1>
+          {passportQrButton}
         </div>
         <section
           className={
@@ -236,43 +295,8 @@ export function PassportPage() {
             </div>
           ) : null}
         </section>
-        {qrCodeUrl ? (
-          <button
-            className="kid-qr-corner-button"
-            type="button"
-            aria-label={t('kid.qr.open')}
-            title={t('kid.qr.open')}
-            onClick={() => setIsQrExpanded(true)}
-          >
-            <img src={qrCodeUrl} alt={t('kid.qr.alt')} />
-          </button>
-        ) : null}
         {qrError ? <p className="form-error">{qrError}</p> : null}
-        {isQrExpanded ? (
-          <div
-            className="kid-qr-overlay"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="kid-qr-title"
-            onClick={() => setIsQrExpanded(false)}
-          >
-            <section
-              className="kid-qr-dialog"
-              onClick={(event) => event.stopPropagation()}
-            >
-              <h2 id="kid-qr-title">{t('kid.qr.title')}</h2>
-              <img src={qrCodeUrl} alt={t('kid.qr.alt')} />
-              <p>{t('kid.qr.instructions')}</p>
-              <button
-                className="secondary-button"
-                type="button"
-                onClick={() => setIsQrExpanded(false)}
-              >
-                {t('kid.qr.close')}
-              </button>
-            </section>
-          </div>
-        ) : null}
+        {passportQrModal}
 
         <section
           className="activity-section"
@@ -286,10 +310,16 @@ export function PassportPage() {
             }
           />
         </section>
-        <FriendsDialog
-          isOpen={isFriendsDialogOpen}
-          onClose={() => setIsFriendsDialogOpen(false)}
+        <KidsSection
+          blockedKidId={currentUser.id}
+          onKidSelected={setSelectedFriendKid}
         />
+        {selectedFriendKid ? (
+          <SelectedKidPassport
+            kid={selectedFriendKid}
+            onClose={() => setSelectedFriendKid(undefined)}
+          />
+        ) : null}
       </section>
     </>
   );

@@ -21,6 +21,7 @@ export type PassportActivity = {
 
 export type PassportData = {
   activities: PassportActivity[];
+  wheelShotSummary?: PassportWheelShotSummary;
 };
 
 export type PassportActivitiesByKid = Record<string, PassportActivity[]>;
@@ -58,6 +59,11 @@ export type WheelShotSummary = {
   earnedShots: number;
   usedShots: number;
 };
+
+export type PassportWheelShotSummary = Pick<
+  WheelShotSummary,
+  'availableShots' | 'earnedShots' | 'usedShots'
+>;
 
 export type UserRole = 'desk' | 'wheel' | 'lead';
 

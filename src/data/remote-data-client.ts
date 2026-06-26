@@ -1,6 +1,6 @@
 import type {
   Kid,
-  PassportActivity,
+  PassportData,
   Prize,
   PrizeAward,
   PrizeAwardSource,
@@ -13,6 +13,22 @@ export type RemoteDataSnapshot = {
   kids: Kid[];
   prizes: Prize[];
 };
+
+export type RemotePassport = PassportData;
+
+export type RemotePassportsByKid = Record<string, RemotePassport>;
+
+export type RemoteActivityKidsSummary = {
+  count: number;
+  kids: Array<{
+    completedAt: string;
+    kid: Kid;
+  }>;
+};
+
+export type RemoteActivityCounts = Record<string, number>;
+
+let activityCountsRequest: Promise<RemoteActivityCounts> | undefined;
 
 type RemotePrizeResponse = {
   prize?: Prize;
@@ -54,13 +70,32 @@ export function isRemoteDataLayerEnabled() {
   return import.meta.env.VITE_DATA_LAYER === 'remote';
 }
 
+export async function fetchRemoteKid(rawKid: string): Promise<Kid | undefined> {
+  const response = await fetch(buildApiUrl(`/kids?kid=${encodeURIComponent(rawKid)}`), {
+    cache: 'no-store',
+  });
+
+  if (response.status === 404) {
+    return undefined;
+  }
+
+  return readJsonResponse<Kid>(response);
+}
+
+async function fetchRemoteKidList(headers: HeadersInit): Promise<Kid[]> {
+  const response = await fetch(buildApiUrl('/kids'), {
+    cache: 'no-store',
+    headers,
+  });
+
+  return readJsonResponse<Kid[]>(response);
+}
+
 export async function fetchRemoteDataSnapshot(): Promise<RemoteDataSnapshot> {
   const headers = magicLinkRequestHeaders();
   const requestInit = { cache: 'no-store', headers } satisfies RequestInit;
   const [kids, prizes] = await Promise.all([
-    fetch(buildApiUrl('/kids'), requestInit).then((response) =>
-      readJsonResponse<Kid[]>(response),
-    ),
+    fetchRemoteKidList(headers),
     fetch(buildApiUrl('/wheel-prizes'), requestInit).then((response) =>
       readJsonResponse<Prize[]>(response),
     ),
@@ -81,7 +116,51 @@ export async function fetchRemotePassport(kidId: string) {
     },
   );
 
-  return readJsonResponse<PassportActivity[]>(response);
+  return readJsonResponse<RemotePassport>(response);
+}
+
+export async function fetchRemotePassports(kidIds: string[]) {
+  const uniqueKidIds = [...new Set(kidIds.map((kidId) => kidId.trim()))].filter(
+    Boolean,
+  );
+  const query = new URLSearchParams();
+
+  query.set('kids', uniqueKidIds.join(','));
+
+  const response = await fetch(buildApiUrl(`/passport?${query.toString()}`), {
+    cache: 'no-store',
+    headers: magicLinkRequestHeaders(),
+  });
+
+  return readJsonResponse<RemotePassportsByKid>(response);
+}
+
+export async function fetchRemoteActivityKids(activityId: number) {
+  const response = await fetch(
+    buildApiUrl(
+      `/activity-kids?activity=${encodeURIComponent(
+        String(activityId).padStart(2, '0'),
+      )}`,
+    ),
+    {
+      cache: 'no-store',
+      headers: magicLinkRequestHeaders(),
+    },
+  );
+
+  return readJsonResponse<RemoteActivityKidsSummary>(response);
+}
+
+export async function fetchRemoteActivityCounts() {
+  activityCountsRequest ??= fetch(buildApiUrl('/activity-count'), {
+    cache: 'no-store',
+  })
+    .then((response) => readJsonResponse<RemoteActivityCounts>(response))
+    .finally(() => {
+      activityCountsRequest = undefined;
+    });
+
+  return activityCountsRequest;
 }
 
 export async function fetchRemotePrizeAwardsForKid(kidId: string) {
@@ -156,7 +235,7 @@ export async function saveRemotePassportActivity(
     },
   );
 
-  return readJsonResponse<PassportActivity[]>(response);
+  return readJsonResponse<RemotePassport>(response);
 }
 
 export async function saveRemoteRegisteredKid(

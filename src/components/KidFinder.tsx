@@ -61,8 +61,16 @@ export function KidFinder({
     onKidSelected(kid);
   };
 
-  const readKidQrPayload = (qrPayload: string) => {
-    const matchingKid = findKidByQrIdData(qrPayload);
+  const readKidQrPayload = async (qrPayload: string) => {
+    let matchingKid: Kid | undefined;
+
+    try {
+      matchingKid = await findKidByQrIdData(qrPayload);
+    } catch (error) {
+      console.error('Unable to find kid from QR data.', error);
+      setFormError(t(messages.kidNotFound));
+      return;
+    }
 
     if (!matchingKid) {
       setFormError(t(messages.invalidKidQr));
@@ -77,10 +85,19 @@ export function KidFinder({
     selectKid(matchingKid);
   };
 
-  const searchManualKid = (event: React.FormEvent<HTMLFormElement>) => {
+  const searchManualKid = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    const matchingKid = findKidByManualNumber(manualKidNumber);
+    let matchingKid: Kid | undefined;
+
+    try {
+      matchingKid = await findKidByManualNumber(manualKidNumber);
+    } catch (error) {
+      console.error('Unable to find kid by manual number.', error);
+      setPendingKid(undefined);
+      setFormError(t(messages.kidNotFound));
+      return;
+    }
 
     if (!matchingKid) {
       setPendingKid(undefined);
@@ -113,7 +130,9 @@ export function KidFinder({
           stopScanner: t('scanner.stopScanner'),
         }}
         onError={(message) => setFormError(message)}
-        onRead={readKidQrPayload}
+        onRead={(qrPayload) => {
+          void readKidQrPayload(qrPayload);
+        }}
       />
       <div className="manual-kid-panel">
         <form className="manual-kid-search" onSubmit={searchManualKid}>
