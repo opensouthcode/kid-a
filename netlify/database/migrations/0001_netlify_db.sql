@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS prize_awards (
   id text PRIMARY KEY,
   kid_id text NOT NULL,
   prize_id text NOT NULL,
+  source text CHECK (source IS NULL OR source IN ('passportCompletion', 'wheel')),
   awarded_at timestamptz NOT NULL
 );
 
@@ -52,6 +53,10 @@ CREATE INDEX IF NOT EXISTS prize_awards_kid_id_idx
 
 CREATE INDEX IF NOT EXISTS prize_awards_prize_id_idx
   ON prize_awards (prize_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS prize_awards_passport_completion_per_kid_idx
+  ON prize_awards (kid_id)
+  WHERE source = 'passportCompletion';
 
 CREATE INDEX IF NOT EXISTS magic_link_tokens_expires_at_idx
   ON magic_link_tokens (expires_at);
