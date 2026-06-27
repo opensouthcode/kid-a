@@ -28,6 +28,10 @@ export type SavePrizeCommand =
       prizeKind?: Prize['kind'];
       title?: string;
       type: 'update';
+    }
+  | {
+      prizeId: string;
+      type: 'deleteIfUnawarded';
     };
 
 export type PrizeMutationResult = {
@@ -41,7 +45,6 @@ export type AwardPrizeCommand = {
   awardedAt: string;
   kidId: string;
   prizeId: string;
-  source?: PrizeAward['source'];
 };
 
 export type WritableStoreData = Pick<

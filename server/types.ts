@@ -29,14 +29,11 @@ export type Prize = {
   title: string;
 };
 
-export type PrizeAwardSource = 'passportCompletion' | 'wheel';
-
 export type PrizeAward = {
   awardedAt: string;
   id: string;
   kidId: string;
   prizeId: string;
-  source?: PrizeAwardSource;
 };
 
 export type UserRole = 'desk' | 'lead' | 'wheel';

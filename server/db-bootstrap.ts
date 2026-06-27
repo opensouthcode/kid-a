@@ -52,6 +52,33 @@ function splitSqlStatements(sqlText: string) {
     .filter(Boolean);
 }
 
+function isLegacyPrizeAwardSourceIndex(statement: string) {
+  return statement.includes('prize_awards_passport_completion_per_kid_idx') &&
+    statement.includes('WHERE source');
+}
+
+async function hasPrizeAwardSourceColumn(sql: SqlClient) {
+  const rows = (await sql`
+    SELECT EXISTS (
+      SELECT 1
+      FROM information_schema.columns
+      WHERE table_schema = current_schema()
+        AND table_name = 'prize_awards'
+        AND column_name = 'source'
+    ) AS has_source
+  `) as Array<{ has_source: boolean }>;
+
+  return rows[0]?.has_source === true;
+}
+
+async function shouldApplySchemaStatement(sql: SqlClient, statement: string) {
+  if (!isLegacyPrizeAwardSourceIndex(statement)) {
+    return true;
+  }
+
+  return hasPrizeAwardSourceColumn(sql);
+}
+
 export async function applyDbSchema(sql: SqlClient = createSqlClient()) {
   const migrationFiles = (await readdir(migrationsDir))
     .filter((fileName) => fileName.endsWith('.sql'))
@@ -61,6 +88,10 @@ export async function applyDbSchema(sql: SqlClient = createSqlClient()) {
     const sqlText = await readFile(path.join(migrationsDir, migrationFile), 'utf8');
 
     for (const statement of splitSqlStatements(sqlText)) {
+      if (!(await shouldApplySchemaStatement(sql, statement))) {
+        continue;
+      }
+
       await sql.query(statement);
     }
   }

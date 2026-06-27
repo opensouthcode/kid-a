@@ -20,7 +20,6 @@ import {
   clonePrizes,
   getPrizeGiven,
   getPrizeRemaining,
-  isWheelAward,
   syncPrizeGivenCache,
   type Activity,
   type ConferenceData,
@@ -88,7 +87,7 @@ type DataLayerContextValue = {
   accessSessionStatus: AccessSessionStatus;
   activities: Activity[];
   addRegisteredKid: (registration: RegistrationInput) => Promise<Kid>;
-  addPrize: (title: string) => Prize;
+  addPrize: (title?: string) => Prize;
   awardPassportCompletionPrize: (kidId: string) => PrizeAward;
   awardPrizeToKid: (kidId: string, prizeId: string) => PrizeAward;
   conference: ConferenceData;
@@ -316,6 +315,16 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       ...clonePrizeAwards(awards),
     ]);
   };
+  const applyRemoteWheelShotAward = (kidId: string, summary: WheelShotSummary) => {
+    setRemoteWheelShotSummariesByKid((currentSummaries) => ({
+      ...currentSummaries,
+      [kidId]: {
+        availableShots: Math.max(summary.availableShots - 1, 0),
+        earnedShots: summary.earnedShots,
+        usedShots: summary.usedShots + 1,
+      },
+    }));
+  };
 
   useEffect(() => {
     const token = getActiveMagicLinkToken();
@@ -463,13 +472,8 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
 
     return registeredKid;
   };
-  const addPrize = (title: string) => {
+  const addPrize = (title = '') => {
     const trimmedTitle = title.trim();
-
-    if (!trimmedTitle) {
-      throw new Error('Prize title cannot be empty');
-    }
-
     const createdPrize: Prize = {
       given: 0,
       id: createPrizeId(prizeList),
@@ -562,12 +566,16 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     const remoteSummary = remoteWheelShotSummariesByKid[kidId];
 
     if (isRemoteDataLayer && remoteSummary) {
+      const usedShots = Math.max(
+        remoteSummary.usedShots,
+        awards.filter((award) => award.prizeKind !== 'final').length,
+      );
       return {
-        ...remoteSummary,
+        availableShots: Math.max(remoteSummary.earnedShots - usedShots, 0),
         awards,
-        completionAward: awards.find(
-          (award) => award.source === 'passportCompletion',
-        ),
+        completionAward: awards.find((award) => award.prizeKind === 'final'),
+        earnedShots: remoteSummary.earnedShots,
+        usedShots,
       };
     }
 
@@ -576,11 +584,9 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
         return {
           availableShots: 0,
           awards,
-          completionAward: awards.find(
-            (award) => award.source === 'passportCompletion',
-          ),
+          completionAward: awards.find((award) => award.prizeKind === 'final'),
           earnedShots: 0,
-          usedShots: awards.filter(isWheelAward).length,
+          usedShots: awards.filter((award) => award.prizeKind !== 'final').length,
         };
       }
 
@@ -595,14 +601,12 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       Math.max(kidActivities.length - 1, 0),
     );
     const earnedShots = Math.floor(spinEligibleActivities / 4);
-    const usedShots = awards.filter(isWheelAward).length;
+    const usedShots = awards.filter((award) => award.prizeKind !== 'final').length;
 
     return {
       availableShots: Math.max(earnedShots - usedShots, 0),
       awards,
-      completionAward: awards.find(
-        (award) => award.source === 'passportCompletion',
-      ),
+      completionAward: awards.find((award) => award.prizeKind === 'final'),
       earnedShots,
       usedShots,
     };
@@ -800,13 +804,18 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     );
 
     if (isRemoteDataLayer) {
+      applyRemoteWheelShotAward(kidId, shotSummary);
       saveRemotePrizeAward(kidId, prizeId)
         .then((awards) => {
           applyRemotePrizeAwards(kidId, awards);
+          loadRemotePassportForKid(kidId);
           refreshPrizes();
         })
         .catch((error) => {
           console.error('Unable to save remote prize award.', error);
+          loadRemotePrizeAwardsForKid(kidId);
+          loadRemotePassportForKid(kidId);
+          refreshPrizes();
         });
     }
 
@@ -827,18 +836,23 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       throw new Error(`Passport is not complete: ${kidId}`);
     }
 
-    const existingAward = prizeAwards.find(
-      (award) => award.kidId === kidId && award.source === 'passportCompletion',
-    );
-
-    if (existingAward) {
-      return existingAward;
-    }
-
     const prize = prizes.find((entry) => entry.kind === 'final');
 
     if (!prize) {
       throw new Error('No final prize configured');
+    }
+
+    const finalPrizeIds = new Set(
+      prizes
+        .filter((entry) => entry.kind === 'final')
+        .map((entry) => entry.id),
+    );
+    const existingAward = prizeAwards.find(
+      (award) => award.kidId === kidId && finalPrizeIds.has(award.prizeId),
+    );
+
+    if (existingAward) {
+      return existingAward;
     }
 
     if (getPrizeRemaining(prize) <= 0) {
@@ -850,7 +864,6 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
       id: `${kidId}-passport-complete-${Date.now()}`,
       kidId,
       prizeId: prize.id,
-      source: 'passportCompletion',
     };
     const nextPrizeAwards = [...prizeAwards, award];
 
@@ -864,7 +877,7 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
     );
 
     if (isRemoteDataLayer) {
-      saveRemotePrizeAward(kidId, prize.id, 'passportCompletion')
+      saveRemotePrizeAward(kidId, prize.id)
         .then((awards) => {
           applyRemotePrizeAwards(kidId, awards);
           refreshPrizes();
@@ -888,23 +901,24 @@ export function DataLayerProvider({ children }: PropsWithChildren) {
         }
 
         const title = updates.title ?? prize.title;
+        const given = getPrizeGiven(prizeAwards, prizeId);
         const initialUnits = Math.max(
           normalizePrizeCount(updates.initialUnits ?? prize.initialUnits),
-          getPrizeGiven(prizeAwards, prizeId),
+          given,
         );
 
-        if (!title.trim()) {
-          throw new Error(`Prize title cannot be empty: ${prizeId}`);
+        if (!title.trim() && given === 0) {
+          return undefined;
         }
 
         return {
           ...prize,
-          given: getPrizeGiven(prizeAwards, prizeId),
+          given,
           initialUnits,
           kind: updates.kind ?? prize.kind,
           title: title.trim(),
         };
-      });
+      }).filter((prize): prize is Prize => prize !== undefined);
     });
 
     if (isRemoteDataLayer) {
